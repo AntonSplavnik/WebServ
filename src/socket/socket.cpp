@@ -1,16 +1,23 @@
 
 #include "socket.hpp"
 
-Socket::Socket(){ create(AF_INET, SOCK_STREAM, 0); }
-
-Socket::Socket(int domain, int type, int protocol){ create(domain, type, protocol); }
+Socket::Socket():_fd(-1){ }
 
 Socket::~Socket(){}
 
-void Socket::create(int domain, int type, int protocol){
+void Socket::createCustom(int domain, int type, int protocol){
 
-	int _fd = socket(domain, type, protocol);
-	if(socket < 0)
+	_fd = socket(domain, type, protocol);
+	if(_fd < 0)
+		std::cout << "socket creation error" << std::endl;
+
+	// _is_created = true;
+}
+
+void Socket::createDefault(){
+
+	_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(_fd < 0)
 		std::cout << "socket creation error" << std::endl;
 
 	// _is_created = true;
@@ -23,12 +30,12 @@ void Socket::setReuseAddr(bool enable){
 }
 
 
-void Socket::binding(const std::string& ip, int port){
+void Socket::binding(int port){
 
 	std::memset(&_address, 0, sizeof(_address));
 	_address.sin_family = AF_INET;
 	_address.sin_port = htons(port);
-	_address.sin_addr.s_addr = INADDR_ANY; // or parse ip parameter
+ 	_address.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(_fd, (sockaddr*)&_address, sizeof(_address)) < 0) {
 		std::cerr << "Bind failed.\n";
@@ -37,7 +44,7 @@ void Socket::binding(const std::string& ip, int port){
 	std::cout << "Bound socket FD " << _fd << " to port " << PORT << std::endl;
 }
 
-void Socket::listening(int backlog){
+void Socket::listening(){
 
 	 if (listen(_fd, MAX_CON_BACKLOG) < 0) {
 		std::cerr << "Listen failed.\n";

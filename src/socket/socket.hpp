@@ -12,19 +12,21 @@
 #define BUFFER_SIZE 1024
 #define MAX_CON_BACKLOG 10
 
+
+
 class Socket{
 
 	public:
 		Socket();
-		Socket(int domain, int type, int protocol);
 		~Socket();
 
 		// Socket operations
-		void create(int domain, int type, int protocol);
-		void binding(const std::string& ip, int port);
-		void listening(int backlog);
+		void createDefault();
+		void createCustom(int domain, int type, int protocol);
+		void binding(int port);
+		void listening();
 		int accepting();
-		void closing(int _fd);
+		void closing(short _fd);
 
 		// Getters
 		int getFd() const;
@@ -36,7 +38,7 @@ class Socket{
 		void setNonBlocking(void);
 
 	private:
-		int _fd;
+		short _fd;
 		struct sockaddr_in _address;
 		// bool _is_created;
 		// bool _is_bound;
