@@ -3,6 +3,8 @@
 
 Socket::Socket():_fd(-1){ }
 
+Socket::Socket(short fd): _fd(fd){}
+
 Socket::~Socket(){}
 
 void Socket::createCustom(int domain, int type, int protocol){
@@ -64,7 +66,6 @@ int Socket::accepting(){
 	return client_fd;
 }
 
-
 void Socket::setNonBlocking(void){
 
 	std::cout << "Making socket FD " << _fd << " non-blocking" << std::endl;
@@ -72,10 +73,10 @@ void Socket::setNonBlocking(void){
 	fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-void Socket::closing(int _fd){
-	if (_fd >= 0) {
-		::close(_fd);  // Call standard close()
-		_fd = -1;
+void Socket::closing(short fd){
+	if (fd >= 0) {
+		::close(fd);  // Call standard close()
+		fd = -1;
 		// _is_bound = false;
 		// _is_listening = false;
 		// _is_created = false;

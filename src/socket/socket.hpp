@@ -17,6 +17,7 @@
 class Socket{
 
 	public:
+		Socket(short fd);
 		Socket();
 		~Socket();
 
@@ -26,7 +27,7 @@ class Socket{
 		void binding(int port);
 		void listening();
 		int accepting();
-		void closing(short _fd);
+		void closing(short fd);
 
 		// Getters
 		int getFd() const;

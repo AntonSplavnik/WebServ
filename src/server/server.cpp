@@ -78,32 +78,86 @@ Then implement:
 - handleClientSocket() - Process client data
 */
 
+	for (size_t i = 0; i < _pollFds.size(); i++){
 
-if (_pollFds.data()->revents & POLLIN) {
-		std::cout << "Event detected on listening socket FD " << _pollFds.data()->fd << std::endl;
-
-		// Accept the new connection
-		ClientInfo client;
-		int client_fd = _serverSocket.accepting();
-
-		if (client.fd >= 0 && MAX_CON_BACKLOG < 10) {
-			std::cout << "New connection accepted! Client FD: " << client.fd << std::endl;
-
-			// Make client socket non-blocking
-			make_socket_non_blocking(client.fd);
-
-			// Add client socket to poll array
-			fds[nfds].fd = client_fd;
-			fds[nfds].events = POLLIN;  // Start by reading the request
-
-			// Initialize client info
-			clients[nfds].fd = client_fd;
-			clients[nfds].state = READING_REQUEST;
-
-			std::cout << "Added client socket FD " << client_fd << " to poll array at index " << nfds << std::endl;
-			nfds++;
-			std::cout << "New client connected. Total FDs: " << nfds << std::endl;
-		}
+		if(i == 0)
+			handlePollEvents();
+		else
+			handleClientSocket(_pollFds[i].fd, _pollFds[i].revents);
 	}
 
 }
+
+void Server::handleServerSocket(size_t index){
+
+if (_pollFds.data()->revents & POLLIN){
+		std::cout << "Event detected on listening socket FD " << _pollFds.data()->fd << std::endl;
+
+		//Accept the new connection
+		short client_fd = _serverSocket.accepting();
+		_clients[client_fd] = ClientInfo(client_fd);
+
+		if (client_fd >= 0 && MAX_CON_BACKLOG < 10) {
+			std::cout << "New connection accepted! Client FD: " << client_fd << std::endl;
+
+			// Make client socket non-blocking
+			_clients[client_fd].socket.setNonBlocking();
+
+			std::cout << "Making socket FD " << client_fd << " non-blocking" << std::endl;
+
+			// Add client socket to poll array
+			struct pollfd clientPollFd;
+			clientPollFd.fd = client_fd;
+			clientPollFd.events = POLLIN;
+			clientPollFd.revents = 0;
+			_pollFds.push_back(clientPollFd);
+
+			std::cout << "Added client socket FD " << client_fd << " to poll vector at index " << index << std::endl;
+
+			std::cout << "New client connected. Total FDs: " << _pollFds.size() << std::endl;
+		}
+	}
+}
+
+void Server::handleClientSocket(short fd, short revents){
+
+	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
+
+		char buffer[BUFFER_SIZE];
+		std::memset(buffer, 0, BUFFER_SIZE);
+		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
+
+		std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
+
+
+		if (bytes =0 ) {
+			// Client disconnected or error
+			std::cout << "Client FD " << fd << " disconnected" << std::endl;
+			close(fd);
+
+			// Remove from arrays by shifting remaining elements
+			for (int j = ; j <  - 1; j++) {
+				fds[j] = fds[j + 1];
+				clients[j] = clients[j + 1];
+			}
+			nfds--;
+			i--;  // Adjust index since we shifted elements
+		}
+
+		if (bytes < 0 && !revents & POLLIN && !_clients[fd].state == READING_REQUEST) {
+			// Client disconnected or error
+			std::cout << "Client FD " << fd << " disconnected" << std::endl;
+
+			// Remove from arrays by shifting remaining elements
+			for (int j = i; j <  - 1; j++) {
+				fds[j] = fds[j + 1];
+				clients[j] = clients[j + 1];
+			}
+			nfds--;
+			i--;  // Adjust index since we shifted elements
+		}
+	}
+
+
+}
+

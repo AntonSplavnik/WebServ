@@ -7,7 +7,6 @@
 #include <poll.h>
 
 
-
 // Client connection states
 enum ClientState {
 	READING_REQUEST,   // Waiting to read HTTP request
@@ -16,11 +15,11 @@ enum ClientState {
 
 // Structure to track client connection info
 struct ClientInfo {
-	int fd;
+	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0) {}
+	Socket socket;
 	ClientState state;
 	std::string responseData;
 	size_t bytesSent;
-	ClientInfo() : fd(-1), state(READING_REQUEST), bytesSent(0) {}
 };
 
 
@@ -50,8 +49,8 @@ class Server {
 
 		// Event loop
 		void handlePollEvents();
-		void handleServerSocket();
-		void handleClientSocket(int fd, short revents);
+		void handleServerSocket(size_t index);
+		void handleClientSocket(short fd, short revents);
 
 		// Configuration
 		void setPort(int port);
