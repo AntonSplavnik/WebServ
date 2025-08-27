@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdint>
+#include <map>
 
 struct ConfigData{
 	std::string host;
@@ -11,6 +12,7 @@ struct ConfigData{
 	std::string root;
 	std::string index;
 	int         backlog;
+	std::map <int, std::string> error_pages;
 
 	ConfigData();
 };

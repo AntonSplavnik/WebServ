@@ -23,6 +23,9 @@ int main(int argc, char* argv[]) {
     std::cout << config.getConfigData().root << std::endl;
     std::cout << config.getConfigData().index << std::endl;
     std::cout << config.getConfigData().backlog << std::endl;
-
+    const std::map<int, std::string>& errorPages = config.getConfigData().error_pages;
+    for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); it++) {
+        std::cout << it->first << " => " << it->second << std::endl;
+    }
     return 0;
 }
