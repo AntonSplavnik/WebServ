@@ -27,5 +27,7 @@ int main(int argc, char* argv[]) {
     for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); it++) {
         std::cout << it->first << " => " << it->second << std::endl;
     }
+    std::cout << config.getConfigData().access_log << std::endl;
+    std::cout << config.getConfigData().error_log << std::endl;
     return 0;
 }

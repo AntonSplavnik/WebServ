@@ -64,6 +64,20 @@ bool Config::parseConfig(const std::string& path)
             }
         }
     }
+    else if (key == "access_log") {
+    std::string value;
+    if (iss >> value) {
+        if (!value.empty() && value.back() == ';') value.pop_back();
+        _configData.access_log = value;
+    }
+}
+else if (key == "error_log") {
+    std::string value;
+    if (iss >> value) {
+        if (!value.empty() && value.back() == ';') value.pop_back();
+        _configData.error_log = value;
+    }
+}
 }
 return true;
 }

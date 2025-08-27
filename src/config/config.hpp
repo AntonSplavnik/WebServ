@@ -13,6 +13,8 @@ struct ConfigData{
 	std::string index;
 	int         backlog;
 	std::map <int, std::string> error_pages;
+	std::string access_log;
+	std::string error_log;
 
 	ConfigData();
 };
