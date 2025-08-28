@@ -39,5 +39,6 @@ int main(int argc, char* argv[]) {
         std::cout << *it << " ";
     }
     std::cout << std::endl;
+    std::cout << (data.autoindex ? "Autoindex is enabled" : "Autoindex is disabled") << std::endl;
     return 0;
 }

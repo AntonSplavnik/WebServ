@@ -17,6 +17,7 @@ struct ConfigData{
 	std::string error_log;
 	std::vector<std::string> cgi_path;
 	std::vector<std::string> cgi_ext;
+	bool	autoindex;
 
 	ConfigData();
 };
