@@ -16,4 +16,19 @@ struct ConfigData{
 	std::string access_log;
 	std::string error_log;
 	std::vector<std::string> cgi_path;
-	std::vector<std::string> cgi_ex
+	std::vector<std::string> cgi_ext;
+
+	ConfigData();
+};
+
+class Config {
+
+	public:
+		ConfigData getConfigData() const;
+		bool parseConfig(const std::string& path);
+
+	private:
+		ConfigData _configData;
+};
+
+#endif
