@@ -29,5 +29,15 @@ int main(int argc, char* argv[]) {
     }
     std::cout << config.getConfigData().access_log << std::endl;
     std::cout << config.getConfigData().error_log << std::endl;
+    std::cout << std::endl;
+    for (size_t i = 0; i < config.getConfigData().cgi_ext.size(); i++) {
+        std::cout << config.getConfigData().cgi_ext[i] << " ";
+    }
+    std::cout << std::endl;
+    ConfigData data = config.getConfigData();
+    for (std::vector<std::string>::const_iterator it = data.cgi_path.begin(); it != data.cgi_path.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
     return 0;
 }

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 ConfigData::ConfigData()
     : host("0.0.0.0"),
@@ -47,37 +48,4 @@ bool Config::parseConfig(const std::string& path)
     else if (key == "server_name") { std::string value; if (iss >> value) _configData.server_name = value; }
     else if (key == "root") { std::string value; if (iss >> value) _configData.root = value; }
     else if (key == "index") { std::string value; if (iss >> value) _configData.index = value; }
-    else if (key == "backlog") { std::string value; if (iss >> value) { int backlog; std::istringstream valStream(value); if (valStream >> backlog) _configData.backlog = backlog; } }
-    else if (key == "error_page") {
-        std::vector<std::string> tokens;
-        std::string token;
-        while (iss >> token) tokens.push_back(token);
-        if (tokens.size() >= 2) {
-            std::string path = tokens.back();
-            if (!path.empty() && path.back() == ';') path.pop_back();
-            for (size_t i = 0; i < tokens.size() - 1; ++i) {
-                int code;
-                std::istringstream codeStream(tokens[i]);
-                if (codeStream >> code) {
-                    _configData.error_pages[code] = path;
-                }
-            }
-        }
-    }
-    else if (key == "access_log") {
-    std::string value;
-    if (iss >> value) {
-        if (!value.empty() && value.back() == ';') value.pop_back();
-        _configData.access_log = value;
-    }
-}
-else if (key == "error_log") {
-    std::string value;
-    if (iss >> value) {
-        if (!value.empty() && value.back() == ';') value.pop_back();
-        _configData.error_log = value;
-    }
-}
-}
-return true;
-}
+    else if 

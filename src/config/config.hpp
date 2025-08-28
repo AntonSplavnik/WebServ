@@ -15,18 +15,5 @@ struct ConfigData{
 	std::map <int, std::string> error_pages;
 	std::string access_log;
 	std::string error_log;
-
-	ConfigData();
-};
-
-class Config {
-
-	public:
-		ConfigData getConfigData() const;
-		bool parseConfig(const std::string& path);
-
-	private:
-		ConfigData _configData;
-};
-
-#endif
+	std::vector<std::string> cgi_path;
+	std::vector<std::string> cgi_ex
