@@ -4,17 +4,65 @@
 #include <iostream>
 #include <algorithm>
 
+LocationConfig::LocationConfig()
+    : path("/"),
+      autoindex(false),
+      index("index.html"),
+      root("./www"),
+      allow_methods(),
+      error_pages() {}
+
 ConfigData::ConfigData()
     : host("0.0.0.0"),
       port(8080),
       server_name("localhost"),
       root("./www"),
       index("index.html"),
-      backlog(128)
+      backlog(128),
+      access_log(""),
+      error_log(""),
+      autoindex(false),
+      locations(),
+      cgi_path(),
+      cgi_ext(),
+      error_pages()
 {}
 
 ConfigData Config::getConfigData() const {
     return _configData;
+}
+
+// Helper to add unique values from 'src' to 'dest'
+template<typename T>
+void addUnique(std::vector<T>& dest, const std::vector<T>& src) {
+    for (size_t i = 0; i < src.size(); ++i) {
+        if (std::find(dest.begin(), dest.end(), src[i]) == dest.end()) {
+            dest.push_back(src[i]);
+        }
+    }
+}
+
+// Helper to parse common config fields
+template<typename ConfigT>
+void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
+    if (key == "autoindex" && !tokens.empty()) {
+        config.autoindex = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
+    } else if (key == "index" && !tokens.empty()) {
+        config.index = tokens[0];
+    } else if (key == "root" && !tokens.empty()) {
+        config.root = tokens[0];
+    } else if (key == "allow_methods" && !tokens.empty()) {
+        addUnique(config.allow_methods, tokens);
+    } else if (key == "error_page" && tokens.size() >= 2) {
+        std::string path = tokens.back();
+        for (size_t i = 0; i < tokens.size() - 1; ++i) {
+            int code = 0;
+            std::istringstream codeStream(tokens[i]);
+            if (codeStream >> code) {
+                config.error_pages[code] = path;
+            }
+        }
+    }
 }
 
 // Helper to read all values from iss, stripping trailing semicolons
@@ -40,8 +88,56 @@ bool Config::parseConfig(const std::string& path)
         std::string key;
         if (!(iss >> key)) continue;
         std::vector<std::string> tokens = readValues(iss);
+        if (key == "location" && !tokens.empty()) {
+    LocationConfig loc;
+    loc.path = tokens[0];
 
-        if (key == "listen" && !tokens.empty()) {
+    // Check for '{' at end of line or next line
+    bool foundBrace = false;
+    std::cout << "Reading location for path: " << loc.path << std::endl;
+    std::cout << "tokens" << std::endl;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        std::cout << "  Token[" << i << "]: '" << tokens[i]
+                    << "'" << std::endl;
+    }
+    std::cout << "Line: '" << line << "'" << std::endl;
+    if (!tokens.empty() && tokens.back() == "{") {
+    foundBrace = true;
+} else if (!loc.path.empty() && loc.path.back() == '{') {
+    foundBrace = true;
+    loc.path.pop_back();
+}
+
+    std::cout << "Found brace on same line: " << (foundBrace ? "yes" : "no") << std::endl;
+    if (!foundBrace) {
+        // Try next line for '{'
+        if (!std::getline(file, line)) continue;
+        std::istringstream brace_iss(line);
+        std::string maybeBrace;
+        if (!(brace_iss >> maybeBrace) || maybeBrace != "{") continue;
+    }
+	std::cout << "Parsing location block for path: " << loc.path << std::endl;
+    // Parse the location block
+    while (std::getline(file, line)) {
+        // Remove possible trailing '}'
+        size_t closePos = line.find('}');
+        bool blockEnd = (closePos != std::string::npos);
+        std::string lineContent = blockEnd ? line.substr(0, closePos) : line;
+
+        std::istringstream liss(lineContent);
+        std::string lkey;
+        if (!(liss >> lkey)) {
+            if (blockEnd) break;
+            continue;
+        }
+        std::vector<std::string> ltokens = readValues(liss);
+        parseCommonConfigField(loc, lkey, ltokens);
+        if (blockEnd) break;
+    }
+    _configData.locations.push_back(loc);
+    continue;
+}
+        else if (key == "listen" && !tokens.empty()) {
             std::string value = tokens[0];
             size_t colon = value.find(':');
             if (colon != std::string::npos) {
@@ -62,26 +158,10 @@ bool Config::parseConfig(const std::string& path)
         else if (key == "server_name" && !tokens.empty()) {
             _configData.server_name = tokens[0];
         }
-        else if (key == "root" && !tokens.empty()) {
-            _configData.root = tokens[0];
-        }
-        else if (key == "index" && !tokens.empty()) {
-            _configData.index = tokens[0];
-        }
         else if (key == "backlog" && !tokens.empty()) {
             int backlog = 0;
             std::istringstream valStream(tokens[0]);
             if (valStream >> backlog) _configData.backlog = backlog;
-        }
-        else if (key == "error_page" && tokens.size() >= 2) {
-            std::string path = tokens.back();
-            for (size_t i = 0; i < tokens.size() - 1; ++i) {
-                int code = 0;
-                std::istringstream codeStream(tokens[i]);
-                if (codeStream >> code) {
-                    _configData.error_pages[code] = path;
-                }
-            }
         }
         else if (key == "access_log" && !tokens.empty()) {
             _configData.access_log = tokens[0];
@@ -90,22 +170,13 @@ bool Config::parseConfig(const std::string& path)
             _configData.error_log = tokens[0];
         }
         else if (key == "cgi_path") {
-            for (size_t i = 0; i < tokens.size(); ++i) {
-                if (std::find(_configData.cgi_path.begin(), _configData.cgi_path.end(), tokens[i]) == _configData.cgi_path.end()) {
-                    _configData.cgi_path.push_back(tokens[i]);
-                }
-            }
+          addUnique(_configData.cgi_path, tokens);
         }
         else if (key == "cgi_ext") {
-            for (size_t i = 0; i < tokens.size(); ++i) {
-                if (std::find(_configData.cgi_ext.begin(), _configData.cgi_ext.end(), tokens[i]) == _configData.cgi_ext.end()) {
-                    _configData.cgi_ext.push_back(tokens[i]);
-                }
-            }
+            addUnique(_configData.cgi_ext, tokens);
         }
-        else if (key == "autoindex" && !tokens.empty()) {
-            std::string value = tokens[0];
-            _configData.autoindex = (value == "on" || value == "true" || value == "1");
+        else {
+            parseCommonConfigField(_configData, key, tokens);
         }
     }
     return true;

@@ -27,6 +27,10 @@ int main(int argc, char* argv[]) {
     for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); it++) {
         std::cout << it->first << " => " << it->second << std::endl;
     }
+    for (size_t i = 0; i < config.getConfigData().allow_methods.size(); i++) {
+        std::cout << config.getConfigData().allow_methods[i] << " ";
+    }
+    std::cout << std::endl;
     std::cout << config.getConfigData().access_log << std::endl;
     std::cout << config.getConfigData().error_log << std::endl;
     std::cout << std::endl;
@@ -40,5 +44,24 @@ int main(int argc, char* argv[]) {
     }
     std::cout << std::endl;
     std::cout << (data.autoindex ? "Autoindex is enabled" : "Autoindex is disabled") << std::endl;
+    std::cout << "Locations:" << std::endl;
+    std::cout << "Number of locations: " << data.locations.size() << std::endl;
+    for (size_t i = 0; i < data.locations.size(); i++) {
+        const LocationConfig& loc = data.locations[i];
+        std::cout << "  Path: " << loc.path << std::endl;
+        std::cout << "  Root: " << loc.root << std::endl;
+        std::cout << "  Index: " << loc.index << std::endl;
+        std::cout << "  Autoindex: " << (loc.autoindex ? "on" : "off") << std::endl;
+        std::cout << "  Allowed Methods: ";
+        for (size_t j = 0; j < loc.allow_methods.size(); j++) {
+            std::cout << loc.allow_methods[j] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "  Error Pages: ";
+        for (std::map<int, std::string>::const_iterator it = loc.error_pages.begin(); it != loc.error_pages.end(); ++it) {
+            std::cout << it->first << "=>" << it->second << " ";
+        }
+        std::cout << std::endl << std::endl;
+    }
     return 0;
 }
