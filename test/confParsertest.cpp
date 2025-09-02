@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
     std::cout << (data.autoindex ? "Autoindex is enabled" : "Autoindex is disabled") << std::endl;
     std::cout << "Locations:" << std::endl;
     std::cout << "Number of locations: " << data.locations.size() << std::endl;
+    std::cout << "Client max body size: " << data.client_max_body_size << std::endl;
     for (size_t i = 0; i < data.locations.size(); i++) {
         const LocationConfig& loc = data.locations[i];
         std::cout << "  Path: " << loc.path << std::endl;
@@ -62,6 +63,15 @@ int main(int argc, char* argv[]) {
             std::cout << it->first << "=>" << it->second << " ";
         }
         std::cout << std::endl << std::endl;
+        for (size_t j = 0; j < loc.cgi_path.size(); j++) {
+            std::cout << loc.cgi_path[j] << " ";
+        }
+        std::cout << std::endl;
+        for (size_t j = 0; j < loc.cgi_ext.size(); j++) {
+            std::cout << loc.cgi_ext[j] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "client max body size: " << loc.client_max_body_size << std::endl;
     }
     return 0;
 }

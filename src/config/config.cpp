@@ -62,6 +62,18 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
                 config.error_pages[code] = path;
             }
         }
+        }
+    else if (key == "cgi_path" && !tokens.empty()) {
+        addUnique(config.cgi_path, tokens);
+    } else if (key == "cgi_ext" && !tokens.empty()) {
+        addUnique(config.cgi_ext, tokens);
+    }
+    else if (key == "client_max_body_size" && !tokens.empty()) {
+        std::istringstream iss(tokens[0]);
+        size_t size = 0;
+        if (iss >> size) {
+            config.client_max_body_size = size;
+        }
     }
 }
 
@@ -168,12 +180,6 @@ bool Config::parseConfig(const std::string& path)
         }
         else if (key == "error_log" && !tokens.empty()) {
             _configData.error_log = tokens[0];
-        }
-        else if (key == "cgi_path") {
-          addUnique(_configData.cgi_path, tokens);
-        }
-        else if (key == "cgi_ext") {
-            addUnique(_configData.cgi_ext, tokens);
         }
         else {
             parseCommonConfigField(_configData, key, tokens);

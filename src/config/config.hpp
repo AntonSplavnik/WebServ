@@ -12,6 +12,9 @@ struct LocationConfig {
 	std::string root;
 	std::vector<std::string> allow_methods;
 	std::map <int, std::string> error_pages;
+	std::vector<std::string> cgi_path;
+	std::vector<std::string> cgi_ext;
+	size_t client_max_body_size;
 	LocationConfig();
 };
 
@@ -30,6 +33,7 @@ struct ConfigData{
 	std::vector<std::string> cgi_ext;
 	bool	autoindex;
 	std::vector<LocationConfig> locations;
+	size_t client_max_body_size;
 	ConfigData();
 };
 
