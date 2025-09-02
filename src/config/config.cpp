@@ -10,7 +10,10 @@ LocationConfig::LocationConfig()
       index("index.html"),
       root("./www"),
       allow_methods(),
-      error_pages() {}
+      error_pages(),
+      cgi_path(),
+      cgi_ext(),
+      client_max_body_size(INT_MAX) {}
 
 ConfigData::ConfigData()
     : host("0.0.0.0"),
@@ -25,13 +28,18 @@ ConfigData::ConfigData()
       locations(),
       cgi_path(),
       cgi_ext(),
-      error_pages()
-{}
+      error_pages(),
+      allow_methods(),
+      client_max_body_size(INT_MAX) {}
 
 ConfigData Config::getConfigData() const {
     return _configData;
 }
-
+bool isValidAutoindexValue(const std::string& value) {
+    return value == "on" || value == "off" ||
+           value == "true" || value == "false" ||
+           value == "1" || value == "0";
+}
 // Helper to add unique values from 'src' to 'dest'
 template<typename T>
 void addUnique(std::vector<T>& dest, const std::vector<T>& src) {
@@ -46,6 +54,10 @@ void addUnique(std::vector<T>& dest, const std::vector<T>& src) {
 template<typename ConfigT>
 void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "autoindex" && !tokens.empty()) {
+        if (!isValidAutoindexValue(tokens[0])) {
+            std::cerr << "Warning: Invalid autoindex value '" << tokens[0] << "'. Set to default: " << config.autoindex << std::endl;
+        return; // Skip this directive, continue parsing
+        }
         config.autoindex = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
     } else if (key == "index" && !tokens.empty()) {
         config.index = tokens[0];
@@ -70,10 +82,16 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
     }
     else if (key == "client_max_body_size" && !tokens.empty()) {
         std::istringstream iss(tokens[0]);
-        size_t size = 0;
-        if (iss >> size) {
-            config.client_max_body_size = size;
+        int size = 0;
+        if (!(iss >> size)) {
+            std::cerr << "Warning: Invalid client_max_body_size value '" << tokens[0] << "'. Set to INT maximum: " << config.client_max_body_size << std::endl;
+            return;
         }
+        if (size > MAX_CLIENT_BODY_SIZE) {
+            std::cerr << "Warning: client_max_body_size (" << size << ") exceeds maximum allowed (" << MAX_CLIENT_BODY_SIZE << "). Set to INT maximum: " << config.client_max_body_size << std::endl;
+            return;
+        }
+        config.client_max_body_size = size;
     }
 }
 

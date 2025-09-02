@@ -11,9 +11,12 @@ int main(int argc, char* argv[]) {
     }
 
     Config config;
-    if (!config.parseConfig(configPath)) {
-        std::cerr << "Failed to load config file: " << configPath << std::endl;
-        return 1;
+    try {
+        if (!config.parseConfig(configPath)) {
+            std::cerr << "Failed to load config file: " << configPath << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error parsing config file: " << e.what() << std::endl;
     }
     std::cout << "Config file loaded successfully from: " << configPath << std::endl;
     // Use config.getConfigData() as needed
@@ -71,6 +74,7 @@ int main(int argc, char* argv[]) {
             std::cout << loc.cgi_ext[j] << " ";
         }
         std::cout << std::endl;
+
         std::cout << "client max body size: " << loc.client_max_body_size << std::endl;
     }
     return 0;

@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <map>
 
+const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
+
 struct LocationConfig {
 	std::string path;
 	bool autoindex;
@@ -14,7 +16,7 @@ struct LocationConfig {
 	std::map <int, std::string> error_pages;
 	std::vector<std::string> cgi_path;
 	std::vector<std::string> cgi_ext;
-	size_t client_max_body_size;
+	int client_max_body_size;
 	LocationConfig();
 };
 
@@ -33,7 +35,7 @@ struct ConfigData{
 	std::vector<std::string> cgi_ext;
 	bool	autoindex;
 	std::vector<LocationConfig> locations;
-	size_t client_max_body_size;
+	int client_max_body_size;
 	ConfigData();
 };
 
