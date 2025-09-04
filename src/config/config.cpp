@@ -125,6 +125,22 @@ void addUnique(std::vector<T>& dest, const std::vector<T>& src) {
     }
 }
 
+// Helper to assign log file paths with validation and creation if needed
+bool assignLogFile(std::string& logField, const std::string& path) {
+    if (!isValidFile(path, W_OK) && !path.empty()) {
+        std::ofstream ofs(path.c_str(), std::ios::app);
+        if (!ofs) {
+            std::cerr << "Warning: Cannot create or open log file '" << path
+                      << "'. Keeping: " << logField << std::endl;
+            return false;
+        } else {
+            std::cout << "Info: Created log file '" << path << "'." << std::endl;
+        }
+    }
+    logField = path;
+    return true;
+}
+
 // Helper to parse common config fields
 template<typename ConfigT>
 void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
@@ -344,30 +360,10 @@ bool Config::parseConfig(const std::string& path)
     _configData.backlog = backlog;
         }
         else if (key == "access_log" && !tokens.empty()) {
-    if (!isValidFile(tokens[0], W_OK) && !tokens[0].empty()) {
-        std::ofstream ofs(tokens[0].c_str(), std::ios::app);
-        if (!ofs) {
-            std::cerr << "Warning: Cannot create or open log file '" << tokens[0]
-                      << "'. Keeping: " << _configData.access_log << std::endl;
-            continue;
-        } else {
-            std::cout << "Info: Created log file '" << tokens[0] << "'." << std::endl;
-        }
-    }
-    _configData.access_log = tokens[0];
+    assignLogFile(_configData.access_log, tokens[0]);
 }
-        else if (key == "error_log" && !tokens.empty()) {
-    if (!isValidFile(tokens[0], W_OK) && !tokens[0].empty()) {
-    std::ofstream ofs(tokens[0].c_str(), std::ios::app);
-    if (!ofs) {
-        std::cerr << "Warning: Cannot create or open log file '" << tokens[0]
-                  << "'. Keeping: " << _configData.access_log << std::endl;
-        continue;
-    } else {
-        std::cout << "Info: Created log file '" << tokens[0] << "'." << std::endl;
-    }
-}
-_configData.access_log = tokens[0];
+else if (key == "error_log" && !tokens.empty()) {
+    assignLogFile(_configData.error_log, tokens[0]);
 }
         else {
             parseCommonConfigField(_configData, key, tokens);
