@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <regex>
 
 Config::Config() : _configData() {}
 
@@ -46,6 +47,44 @@ bool isValidHttpMethod(const std::string& method) {
     return std::find(valid, valid + 9, method) != (valid + 9);
 }
 
+// Helper to validate HTTP status codes
+bool isValidHttpStatusCode(int code) {
+    return code >= 100 && code <= 599;
+}
+// Helper to validate IPv4 addresses
+bool isValidIPv4(const std::string& ip) {
+    size_t start = 0, end = 0, count = 0;
+    while (end != std::string::npos) {
+        end = ip.find('.', start);
+        std::string part = ip.substr(start, (end == std::string::npos) ? std::string::npos : end - start);
+        if (part.empty() || part.size() > 3) return false;
+        for (size_t i = 0; i < part.size(); ++i)
+            if (!isdigit(part[i])) return false;
+        int num = std::atoi(part.c_str());
+        if (num < 0 || num > 255) return false;
+        start = end + 1;
+        ++count;
+    }
+    return count == 4;
+}
+// Helper to validate CGI extension
+bool isValidCgiExt(const std::string& ext) {
+    return !ext.empty() && ext[0] == '.';
+}
+
+// Helper to validate host (simple check for IP or hostname)
+bool isValidHost(const std::string& host) {
+    if (isValidIPv4(host)) return true;
+    static const std::regex hostname("^([a-zA-Z0-9\\-\\.]+)$");
+    if (std::regex_match(host, hostname)) {
+        // Reject all-numeric hostnames
+        if (std::find_if(host.begin(), host.end(), ::isalpha) == host.end())
+            return false;
+        return true;
+    }
+    return false;
+}
+
 // Helper to validate autoindex values
 bool isValidAutoindexValue(const std::string& value) {
     return value == "on" || value == "off" ||
@@ -86,15 +125,30 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
         }
     }
     } else if (key == "error_page" && tokens.size() >= 2) {
-        std::string path = tokens.back();
-        for (size_t i = 0; i < tokens.size() - 1; ++i) {
-            int code = 0;
-            std::istringstream codeStream(tokens[i]);
-            if (codeStream >> code) {
-                config.error_pages[code] = path;
+    std::string path = tokens.back();
+    for (size_t i = 0; i < tokens.size() - 1; ++i) {
+        int code = 0;
+        std::istringstream codeStream(tokens[i]);
+        if (codeStream >> code) {
+            if (!isValidHttpStatusCode(code)) {
+                std::cerr << "Warning: Invalid HTTP status code '" << code << "' in error_page. Skipping.\n";
+                continue;
             }
+            config.error_pages[code] = path;
         }
+    }
+}
+else if (key == "cgi_ext" && !tokens.empty()) {
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (!isValidCgiExt(tokens[i])) {
+            std::cerr << "Warning: Invalid CGI extension '" << tokens[i] << "'. Skipping.\n";
+            continue;
         }
+        if (std::find(config.cgi_ext.begin(), config.cgi_ext.end(), tokens[i]) == config.cgi_ext.end()) {
+            config.cgi_ext.push_back(tokens[i]);
+        }
+    }
+}
     else if (key == "cgi_path" && !tokens.empty()) {
         addUnique(config.cgi_path, tokens);
     } else if (key == "cgi_ext" && !tokens.empty()) {
@@ -193,25 +247,35 @@ bool Config::parseConfig(const std::string& path)
     size_t colon = value.find(':');
     int port = 0;
     if (colon != std::string::npos) {
-        _configData.host = value.substr(0, colon);
-        std::istringstream portStream(value.substr(colon + 1));
+        std::string hostPart = value.substr(0, colon);
+        std::string portPart = value.substr(colon + 1);
+        if (!isValidHost(hostPart)) {
+            std::cerr << "Warning: Invalid host in listen directive: '" << hostPart << "'. Keeping default: " << _configData.host << std::endl;
+        } else {
+            _configData.host = hostPart;
+        }
+        std::istringstream portStream(portPart);
         if (portStream >> port && port >= 1 && port <= 65535) {
             _configData.port = static_cast<uint16_t>(port);
         } else {
-            std::cerr << "Warning: Invalid port value '" << value.substr(colon + 1) << "'. Set to previous or default: " << _configData.port << std::endl;
+            std::cerr << "Warning: Invalid port value '" << portPart << "'. Keeping default: " << _configData.port << std::endl;
         }
     } else {
         std::istringstream portStream(value);
         if (portStream >> port && port >= 1 && port <= 65535) {
             _configData.port = static_cast<uint16_t>(port);
         } else {
-            std::cerr << "Warning: Invalid port value '" << value.substr(colon + 1) << "Set to previous or default: " << _configData.port << std::endl;
+            std::cerr << "Warning: Invalid port value '" << value << "'. Keeping default: " << _configData.port << std::endl;
         }
-            }
-        }
+    }
+}
         else if (key == "host" && !tokens.empty()) {
-            _configData.host = tokens[0];
-        }
+    if (!isValidHost(tokens[0])) {
+        std::cerr << "Warning: Invalid host value '" << tokens[0] << ". Set to default or previous line: " << _configData.host << std::endl;
+        continue;
+    }
+    _configData.host = tokens[0];
+}
         else if (key == "port" && !tokens.empty()) {
     int port = 0;
     std::istringstream valStream(tokens[0]);
