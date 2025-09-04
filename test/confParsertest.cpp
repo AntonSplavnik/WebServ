@@ -2,12 +2,13 @@
 #include <iostream>
 #include <string>
 
-// c++ -std=c++98 confParsertest.cpp ../src/config/config.cpp
+// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp
+
 int main(int argc, char* argv[]) {
-    std::string configPath = "../src/config/default.conf";
+    std::string configPath = "conf/default.conf";
     if (argc > 1)
     {
-        configPath = "../src/config/" + std::string(argv[1]);
+        configPath = "conf/" + std::string(argv[1]);
     }
 
     Config config;

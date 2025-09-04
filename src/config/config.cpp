@@ -4,6 +4,8 @@
 #include <iostream>
 #include <algorithm>
 #include <regex>
+#include <sys/stat.h>
+#include <unistd.h>
 
 Config::Config() : _configData() {}
 
@@ -23,10 +25,10 @@ ConfigData::ConfigData()
       port(8080),
       server_name("localhost"),
       root("./www"),
-      index("index.html"),
+      index("./www/index.html"),
       backlog(128),
-      access_log(""),
-      error_log(""),
+      access_log(),
+      error_log(),
       autoindex(false),
       locations(),
       cgi_path(),
@@ -39,6 +41,28 @@ ConfigData Config::getConfigData() const {
     return _configData;
 }
 
+// Helper to normalize paths (resolve ., .., symlinks)
+std::string normalizePath(const std::string& path) {
+    char resolved[PATH_MAX];
+    if (realpath(path.c_str(), resolved)) {
+        return std::string(resolved);
+    }
+    return path; // fallback if path does not exist
+}
+
+// Helper to validate if a path is a regular file and has the specified access mode
+bool isValidFile(const std::string& path, int mode) {
+    struct stat sb;
+    if (stat(path.c_str(), &sb) != 0) return false;
+    return S_ISREG(sb.st_mode) && (access(path.c_str(), mode) == 0);
+}
+
+// Helper to validate if a path is a directory and has the specified access mode
+bool isValidPath(const std::string& path, int mode) {
+    struct stat sb;
+    if (stat(path.c_str(), &sb) != 0) return false;
+    return (sb.st_mode & S_IFDIR) && (access(path.c_str(), mode) == 0);
+}
 // Helper to validate HTTP methods
 bool isValidHttpMethod(const std::string& method) {
     static const char* valid[] = {
@@ -106,14 +130,23 @@ template<typename ConfigT>
 void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "autoindex" && !tokens.empty()) {
         if (!isValidAutoindexValue(tokens[0])) {
-            std::cerr << "Warning: Invalid autoindex value '" << tokens[0] << "'. Set to default: " << config.autoindex << std::endl;
+            std::cerr << "Warning: Invalid autoindex value '" << tokens[0] << "'. Set to: " << config.autoindex << std::endl;
         return; // Skip this directive, continue parsing
         }
         config.autoindex = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
     } else if (key == "index" && !tokens.empty()) {
-        config.index = tokens[0];
+    if (!isValidFile(tokens[0], R_OK)) {
+        std::cerr << "Warning: Invalid or inaccessible index file '" << tokens[0]
+                  << "'. Keeping: " << config.index << std::endl;
+        return;
+    }
+    config.index = tokens[0];
     } else if (key == "root" && !tokens.empty()) {
-        config.root = tokens[0];
+    if (!isValidPath(tokens[0], R_OK | X_OK)) {
+        std::cerr << "Warning: Invalid or inaccessible root path '" << tokens[0] << "'. Keeping: " << config.root << std::endl;
+        return;
+    }
+    config.root = normalizePath(tokens[0]);
     } else if (key == "allow_methods" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
         if (!isValidHttpMethod(tokens[i])) {
@@ -126,6 +159,10 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
     }
     } else if (key == "error_page" && tokens.size() >= 2) {
     std::string path = tokens.back();
+    if (!isValidFile(path, R_OK)) {
+        std::cerr << "Warning: Invalid or inaccessible error_page file '" << path << "'. Skipping.\n";
+        return;
+    }
     for (size_t i = 0; i < tokens.size() - 1; ++i) {
         int code = 0;
         std::istringstream codeStream(tokens[i]);
@@ -150,15 +187,21 @@ else if (key == "cgi_ext" && !tokens.empty()) {
     }
 }
     else if (key == "cgi_path" && !tokens.empty()) {
-        addUnique(config.cgi_path, tokens);
-    } else if (key == "cgi_ext" && !tokens.empty()) {
-        addUnique(config.cgi_ext, tokens);
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (!isValidFile(tokens[i], X_OK)) {
+            std::cerr << "Warning: Invalid or non-executable CGI path '" << tokens[i] << "'. Skipping.\n";
+            continue;
+        }
+        if (std::find(config.cgi_path.begin(), config.cgi_path.end(), tokens[i]) == config.cgi_path.end()) {
+            config.cgi_path.push_back(tokens[i]);
+        }
     }
+}
     else if (key == "client_max_body_size" && !tokens.empty()) {
         std::istringstream iss(tokens[0]);
         int size = 0;
         if (!(iss >> size)) {
-            std::cerr << "Warning: Invalid client_max_body_size value '" << tokens[0] << "'. Set to default or previous line: " << config.client_max_body_size << std::endl;
+            std::cerr << "Warning: Invalid client_max_body_size value '" << tokens[0] << "'. Set to: " << config.client_max_body_size << std::endl;
             return;
         }
         if (size > MAX_CLIENT_BODY_SIZE) {
@@ -250,7 +293,7 @@ bool Config::parseConfig(const std::string& path)
         std::string hostPart = value.substr(0, colon);
         std::string portPart = value.substr(colon + 1);
         if (!isValidHost(hostPart)) {
-            std::cerr << "Warning: Invalid host in listen directive: '" << hostPart << "'. Keeping default: " << _configData.host << std::endl;
+            std::cerr << "Warning: Invalid host in listen directive: '" << hostPart << "'. Keeping: " << _configData.host << std::endl;
         } else {
             _configData.host = hostPart;
         }
@@ -258,20 +301,20 @@ bool Config::parseConfig(const std::string& path)
         if (portStream >> port && port >= 1 && port <= 65535) {
             _configData.port = static_cast<uint16_t>(port);
         } else {
-            std::cerr << "Warning: Invalid port value '" << portPart << "'. Keeping default: " << _configData.port << std::endl;
+            std::cerr << "Warning: Invalid port value '" << portPart << "'. Keeping: " << _configData.port << std::endl;
         }
     } else {
         std::istringstream portStream(value);
         if (portStream >> port && port >= 1 && port <= 65535) {
             _configData.port = static_cast<uint16_t>(port);
         } else {
-            std::cerr << "Warning: Invalid port value '" << value << "'. Keeping default: " << _configData.port << std::endl;
+            std::cerr << "Warning: Invalid port value '" << value << "'. Keeping: " << _configData.port << std::endl;
         }
     }
 }
         else if (key == "host" && !tokens.empty()) {
     if (!isValidHost(tokens[0])) {
-        std::cerr << "Warning: Invalid host value '" << tokens[0] << ". Set to default or previous line: " << _configData.host << std::endl;
+        std::cerr << "Warning: Invalid host value '" << tokens[0] << ". Set to : " << _configData.host << std::endl;
         continue;
     }
     _configData.host = tokens[0];
@@ -295,17 +338,37 @@ bool Config::parseConfig(const std::string& path)
     if (!(valStream >> backlog) || backlog < 1 || backlog > MAX_BACKLOG) {
         std::cerr << "Warning: Invalid backlog value '" << tokens[0]
                   << "'. Must be between 1 and " << MAX_BACKLOG
-                  << ". Set to default or previous line: " << _configData.backlog << std::endl;
+                  << ". Set to: " << _configData.backlog << std::endl;
         continue;
     }
     _configData.backlog = backlog;
         }
         else if (key == "access_log" && !tokens.empty()) {
-            _configData.access_log = tokens[0];
+    if (!isValidFile(tokens[0], W_OK) && !tokens[0].empty()) {
+        std::ofstream ofs(tokens[0].c_str(), std::ios::app);
+        if (!ofs) {
+            std::cerr << "Warning: Cannot create or open log file '" << tokens[0]
+                      << "'. Keeping: " << _configData.access_log << std::endl;
+            continue;
+        } else {
+            std::cout << "Info: Created log file '" << tokens[0] << "'." << std::endl;
         }
+    }
+    _configData.access_log = tokens[0];
+}
         else if (key == "error_log" && !tokens.empty()) {
-            _configData.error_log = tokens[0];
-        }
+    if (!isValidFile(tokens[0], W_OK) && !tokens[0].empty()) {
+    std::ofstream ofs(tokens[0].c_str(), std::ios::app);
+    if (!ofs) {
+        std::cerr << "Warning: Cannot create or open log file '" << tokens[0]
+                  << "'. Keeping: " << _configData.access_log << std::endl;
+        continue;
+    } else {
+        std::cout << "Info: Created log file '" << tokens[0] << "'." << std::endl;
+    }
+}
+_configData.access_log = tokens[0];
+}
         else {
             parseCommonConfigField(_configData, key, tokens);
         }
