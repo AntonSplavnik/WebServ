@@ -1,10 +1,11 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
-
 #include <string>
 #include <cstdint>
 #include <map>
 
+
+const int MAX_BACKLOG = 1024;
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
 
 struct LocationConfig {
@@ -42,6 +43,7 @@ struct ConfigData{
 class Config {
 
 	public:
+	    Config();
 		ConfigData getConfigData() const;
 		bool parseConfig(const std::string& path);
 

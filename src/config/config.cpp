@@ -4,6 +4,8 @@
 #include <iostream>
 #include <algorithm>
 
+Config::Config() : _configData() {}
+
 LocationConfig::LocationConfig()
     : path("/"),
       autoindex(false),
@@ -13,7 +15,7 @@ LocationConfig::LocationConfig()
       error_pages(),
       cgi_path(),
       cgi_ext(),
-      client_max_body_size(INT_MAX) {}
+      client_max_body_size(1024 * 1024) {}
 
 ConfigData::ConfigData()
     : host("0.0.0.0"),
@@ -30,11 +32,21 @@ ConfigData::ConfigData()
       cgi_ext(),
       error_pages(),
       allow_methods(),
-      client_max_body_size(INT_MAX) {}
+      client_max_body_size(1024 * 1024) {}
 
 ConfigData Config::getConfigData() const {
     return _configData;
 }
+
+// Helper to validate HTTP methods
+bool isValidHttpMethod(const std::string& method) {
+    static const char* valid[] = {
+        "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH", "TRACE", "CONNECT"
+    };
+    return std::find(valid, valid + 9, method) != (valid + 9);
+}
+
+// Helper to validate autoindex values
 bool isValidAutoindexValue(const std::string& value) {
     return value == "on" || value == "off" ||
            value == "true" || value == "false" ||
@@ -64,7 +76,15 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
     } else if (key == "root" && !tokens.empty()) {
         config.root = tokens[0];
     } else if (key == "allow_methods" && !tokens.empty()) {
-        addUnique(config.allow_methods, tokens);
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (!isValidHttpMethod(tokens[i])) {
+            std::cerr << "Warning: Invalid HTTP method '" << tokens[i] << "' in allow_methods. Skipping.\n";
+            continue;
+        }
+        if (std::find(config.allow_methods.begin(), config.allow_methods.end(), tokens[i]) == config.allow_methods.end()) {
+            config.allow_methods.push_back(tokens[i]);
+        }
+    }
     } else if (key == "error_page" && tokens.size() >= 2) {
         std::string path = tokens.back();
         for (size_t i = 0; i < tokens.size() - 1; ++i) {
@@ -84,7 +104,7 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
         std::istringstream iss(tokens[0]);
         int size = 0;
         if (!(iss >> size)) {
-            std::cerr << "Warning: Invalid client_max_body_size value '" << tokens[0] << "'. Set to INT maximum: " << config.client_max_body_size << std::endl;
+            std::cerr << "Warning: Invalid client_max_body_size value '" << tokens[0] << "'. Set to default or previous line: " << config.client_max_body_size << std::endl;
             return;
         }
         if (size > MAX_CLIENT_BODY_SIZE) {
@@ -169,30 +189,52 @@ bool Config::parseConfig(const std::string& path)
     continue;
 }
         else if (key == "listen" && !tokens.empty()) {
-            std::string value = tokens[0];
-            size_t colon = value.find(':');
-            if (colon != std::string::npos) {
-                _configData.host = value.substr(0, colon);
-                int port = 0;
-                std::istringstream portStream(value.substr(colon + 1));
-                if (portStream >> port) _configData.port = static_cast<uint16_t>(port);
+    std::string value = tokens[0];
+    size_t colon = value.find(':');
+    int port = 0;
+    if (colon != std::string::npos) {
+        _configData.host = value.substr(0, colon);
+        std::istringstream portStream(value.substr(colon + 1));
+        if (portStream >> port && port >= 1 && port <= 65535) {
+            _configData.port = static_cast<uint16_t>(port);
+        } else {
+            std::cerr << "Warning: Invalid port value '" << value.substr(colon + 1) << "'. Set to previous or default: " << _configData.port << std::endl;
+        }
+    } else {
+        std::istringstream portStream(value);
+        if (portStream >> port && port >= 1 && port <= 65535) {
+            _configData.port = static_cast<uint16_t>(port);
+        } else {
+            std::cerr << "Warning: Invalid port value '" << value.substr(colon + 1) << "Set to previous or default: " << _configData.port << std::endl;
+        }
             }
         }
         else if (key == "host" && !tokens.empty()) {
             _configData.host = tokens[0];
         }
         else if (key == "port" && !tokens.empty()) {
-            int port = 0;
-            std::istringstream valStream(tokens[0]);
-            if (valStream >> port) _configData.port = static_cast<uint16_t>(port);
-        }
+    int port = 0;
+    std::istringstream valStream(tokens[0]);
+    std::cout << "Parsing port value: '" << tokens[0] << "'" << std::endl;
+    if (!(valStream >> port) || port < 1 || port > 65535) {
+        std::cerr << "Warning: Invalid port value '" << tokens[0] << "'. Skipping.\n";
+        continue;
+    }
+    _configData.port = static_cast<uint16_t>(port);
+}
         else if (key == "server_name" && !tokens.empty()) {
             _configData.server_name = tokens[0];
         }
         else if (key == "backlog" && !tokens.empty()) {
-            int backlog = 0;
-            std::istringstream valStream(tokens[0]);
-            if (valStream >> backlog) _configData.backlog = backlog;
+    int backlog = 0;
+    std::istringstream valStream(tokens[0]);
+    if (!(valStream >> backlog) || backlog < 1 || backlog > MAX_BACKLOG) {
+        std::cerr << "Warning: Invalid backlog value '" << tokens[0]
+                  << "'. Must be between 1 and " << MAX_BACKLOG
+                  << ". Set to default or previous line: " << _configData.backlog << std::endl;
+        continue;
+    }
+    _configData.backlog = backlog;
         }
         else if (key == "access_log" && !tokens.empty()) {
             _configData.access_log = tokens[0];
