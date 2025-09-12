@@ -1,8 +1,10 @@
 #include "../src/config/config.hpp"
 #include <iostream>
 #include <string>
+#include "../src/logging/logger.hpp"
 
-// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp
+// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp
+
 
 int main(int argc, char* argv[]) {
     std::string configPath = "conf/default.conf";
@@ -78,5 +80,18 @@ int main(int argc, char* argv[]) {
 
         std::cout << "client max body size: " << loc.client_max_body_size << std::endl;
     }
+
+
+    // test logging:
+
+    Logger logger(config.getConfigData().access_log, config.getConfigData().error_log);
+
+    // Test access log
+    logger.logAccess("127.0.0.1", "GET", "/index.html", 200, 512);
+
+    // Test error log
+    logger.logError("ERROR", "Failed to open configuration file.");
+
+    std::cout << "Logging test complete. Check access.log and error.log files." << std::endl;
     return 0;
 }
