@@ -15,7 +15,7 @@ enum ClientState {
 
 // Structure to track client connection info
 struct ClientInfo {
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0) {}
+	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), responseData(nullptr){}
 	Socket socket;
 	ClientState state;
 	std::string responseData;
@@ -64,6 +64,7 @@ class Server {
 		size_t getClientCount() const;
 
 		// Utility
+		void clientDisconetion(short fd);
 		void cleanup();
 		void logConnection(const Client& client);
 		void logDisconnection(int client_fd);

@@ -53,7 +53,6 @@ void Socket::listening(){
 		close(_fd);
 	}
 	std::cout << "Socket FD " << _fd << " is now listening (backlog: 10)" << std::endl;
-
 }
 
 int Socket::accepting(){
