@@ -1,7 +1,8 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "socket.hpp"
+#include "../socket/socket.hpp"
+#include "../config/config.hpp"
 #include <vector>
 #include <map>
 #include <poll.h>
@@ -15,6 +16,7 @@ enum ClientState {
 
 // Structure to track client connection info
 struct ClientInfo {
+	ClientInfo() : socket(-1), state(READING_REQUEST), bytesSent(0) {}
 	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0) {}
 	Socket socket;
 	ClientState state;
@@ -65,7 +67,7 @@ class Server {
 
 		// Utility
 		void cleanup();
-		void logConnection(const Client& client);
+		void logConnection(int client_fd);
 		void logDisconnection(int client_fd);
 
 	private:

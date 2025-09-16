@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <cstring>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024

@@ -43,7 +43,7 @@ void Socket::binding(int port){
 		std::cerr << "Bind failed.\n";
 	close(_fd);
 	}
-	std::cout << "Bound socket FD " << _fd << " to port " << PORT << std::endl;
+	std::cout << "Bound socket FD " << _fd << " to port " << port << std::endl;
 }
 
 void Socket::listening(){
