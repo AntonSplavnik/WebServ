@@ -15,11 +15,12 @@ enum ClientState {
 
 // Structure to track client connection info
 struct ClientInfo {
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), responseData(nullptr){}
+	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0) {}
+	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0) {}
 	Socket socket;
 	ClientState state;
-	std::string responseData;
 	size_t bytesSent;
+	std::string responseData;
 };
 
 
@@ -27,7 +28,7 @@ class Server {
 
 	public:
 		Server();
-		Server(Config config);
+		// Server(Config config);
 		~Server();
 
 		// // Server lifecycle
@@ -37,15 +38,15 @@ class Server {
 		void run();
 
 		// Connection management
-		void acceptNewClient();
-		void disconnectClient(int client_fd);
-		void addToPoll(int fd, short events);
-		void removeFromPoll(int fd);
+		// void acceptNewClient();
+		// void disconnectClient(int client_fd);
+		// void addToPoll(int fd, short events);
+		// void removeFromPoll(int fd);
 
 		// Client handling
-		void handleClientData(int client_fd);
-		void handleClientWrite(int client_fd);
-		void processClientRequest(int client_fd);
+		// void handleClientData(int client_fd);
+		// void handleClientWrite(int client_fd);
+		// void processClientRequest(int client_fd);
 
 		// Event loop
 		void handlePollEvents();
@@ -53,31 +54,31 @@ class Server {
 		void handleClientSocket(short fd, short revents);
 
 		// Configuration
-		void setPort(int port);
-		void setHost(const std::string& host);
-		void setMaxClients(int max_clients);
+		// void setPort(int port);
+		// void setHost(const std::string& host);
+		// void setMaxClients(int max_clients);
 
 		// Getters
-		int getPort() const;
-		std::string getHost() const;
-		bool isRunning() const;
-		size_t getClientCount() const;
+		// int getPort() const;
+		// std::string getHost() const;
+		// bool isRunning() const;
+		// size_t getClientCount() const;
 
 		// Utility
 		void clientDisconetion(short fd);
-		void cleanup();
-		void logConnection(const Client& client);
-		void logDisconnection(int client_fd);
+		// void cleanup();
+		// void logConnection(const Client& client);
+		// void logDisconnection(int client_fd);
 
 	private:
-		Config _config;
+		// Config _config;
 		Socket _serverSocket;
 		std::vector<struct pollfd> _pollFds;
 		std::map<int, ClientInfo> _clients;
 		std::string _host;
 		int _port;
 		bool _running;
-		int _maxClients;
+		size_t _maxClients;
 };
 
 #endif
