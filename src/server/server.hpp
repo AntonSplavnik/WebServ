@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/16 17:18:33 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/17 17:06:43 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <vector>
 #include <map>
 #include <poll.h>
-
+#include "http_request.hpp"
 
 // Client connection states
 enum ClientState {
@@ -33,6 +33,7 @@ struct ClientInfo {
 	ClientState state;
 	size_t bytesSent;
 	std::string responseData;
+	std::string requstData;
 };
 
 

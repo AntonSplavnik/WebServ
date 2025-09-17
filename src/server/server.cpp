@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/16 17:18:41 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/17 17:11:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,7 +160,6 @@ void Server::handleClientSocket(short fd, short revents){
 		std::memset(buffer, 0, BUFFER_SIZE);
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
 
-		std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 		if (bytes <= 0) {
 
@@ -169,9 +168,16 @@ void Server::handleClientSocket(short fd, short revents){
 			clientDisconetion(fd);
 		}
 		else {
+			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
-			// Request received, prepare response
-			std::cout << "Request received from FD " << fd << ":\n" << buffer << std::endl;
+			// Full request is received, prepare response
+			_clients[fd].requstData += buffer;
+			if(_clients[fd].requstData.find("\r\n\r\n") == std::string::npos)
+				return;
+			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requstData << std::endl;
+
+			HttpRequest requestParser;
+			requestParser.parseRequest(_clients[fd]);
 
 			// Prepare HTTP response
 			_clients[fd].responseData =

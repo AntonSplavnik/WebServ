@@ -6,12 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 14:23:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/16 14:29:48 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/16 17:20:00 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
-
 
 int main(){
 	Server server;
