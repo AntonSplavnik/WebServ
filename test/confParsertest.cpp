@@ -82,6 +82,8 @@ int main(int argc, char* argv[]) {
         std::cout << "upload enabled: " << (loc.upload_enabled ? "yes" : "no") << std::endl;
         std::cout << "upload store: " << loc.upload_store << std::endl;
         std::cout << "redirect: " << loc.redirect << std::endl;
+        std::cout << "redirect code: " << loc.redirect_code << std::endl;
+        std::cout << "------------------------" << std::endl;
     }
 
 

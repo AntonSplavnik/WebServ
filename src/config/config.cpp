@@ -21,7 +21,8 @@ LocationConfig::LocationConfig()
       client_max_body_size(1024 * 1024),
       upload_enabled(false),
       upload_store(""),
-      redirect("") {}
+      redirect(""),
+      redirect_code(302) {}
 
 ConfigData::ConfigData()
     : host("0.0.0.0"),
@@ -157,11 +158,28 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
         config.upload_store = normalizePath(tokens[0]);
     }
     else if (key == "redirect" && !tokens.empty()) {
-        config.redirect = tokens[0]; // Store the redirect value
-        std::cout << "Redirect set to: " << config.redirect << std::endl;
+        if (tokens.size() >= 2) {
+            int code = std::atoi(tokens[0].c_str());
+            if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
+                config.redirect_code = code;
+                config.redirect = tokens[1];
+            } else {
+                std::cerr << "Warning: Invalid redirect status code '" << tokens[0] << "'. Defaulting to 302.\n";
+                config.redirect_code = 302;
+                config.redirect = tokens[1];
+            }
+            if (tokens.size() > 2) {
+                std::cerr << "Warning: Extra tokens in redirect directive. Ignoring additional values.\n";
+            }
+        } else {
+            config.redirect = tokens[0];
+            config.redirect_code = 302; // Default to 302 if no status code is provided
+        }
+        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
     }
-
 }
+
+
 
 // Helper to parse common config fields
 template<typename ConfigT>

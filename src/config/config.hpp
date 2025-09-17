@@ -21,6 +21,7 @@ struct LocationConfig {
 	bool upload_enabled;
 	std::string upload_store;
 	std::string redirect;
+	int redirect_code;
 	LocationConfig();
 };
 
