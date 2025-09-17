@@ -184,20 +184,35 @@ void Server::handleClientSocket(short fd, short revents){
 			// Successfully received data
 			buffer[bytes] = '\0';
 			std::cout << "Received " << bytes << " bytes from client FD " << fd << std::endl;
-			std::cout << "Data: " << buffer << std::endl;
 			
-			// TODO: Parse HTTP request and prepare response
-			// For now, just echo back a simple HTTP response
-			std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello World!\n";
-			_clients[fd].responseData = response;
-			_clients[fd].state = SENDING_RESPONSE;
+			// Add received data to client's request buffer (accumulation)
+			_clients[fd].requestBuffer.append(buffer, bytes);
+			std::cout << "Total accumulated data: " << _clients[fd].requestBuffer.size() << " bytes" << std::endl;
 			
-			// Modify poll events to watch for POLLOUT
-			for (size_t i = 0; i < _pollFds.size(); i++) {
-				if (_pollFds[i].fd == fd) {
-					_pollFds[i].events = POLLOUT;
-					break;
+			// Check if we have a complete HTTP request
+			if (isRequestComplete(_clients[fd].requestBuffer)) {
+				std::cout << "Complete HTTP request detected!" << std::endl;
+				std::cout << "Request content:\n" << _clients[fd].requestBuffer << std::endl;
+				
+				// Process the complete request
+				std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 25\r\n\r\nRequest received and parsed!";
+				_clients[fd].responseData = response;
+				_clients[fd].state = SENDING_RESPONSE;
+				
+				// Clear the accumulated buffer after processing (for next request)
+				_clients[fd].requestBuffer.clear();
+				
+				// Modify poll events to watch for POLLOUT
+				for (size_t i = 0; i < _pollFds.size(); i++) {
+					if (_pollFds[i].fd == fd) {
+						_pollFds[i].events = POLLOUT;
+						break;
+					}
 				}
+			} else {
+				std::cout << "Request incomplete, waiting for more data..." << std::endl;
+				// Keep the connection open and wait for more data
+				// No state change, poll events remain POLLIN
 			}
 		}
 	}
@@ -320,4 +335,17 @@ void Server::logConnection(int client_fd) {
 
 void Server::logDisconnection(int client_fd) {
 	std::cout << "Client disconnected: FD " << client_fd << std::endl;
+}
+
+// HTTP request processing methods
+bool Server::isRequestComplete(const std::string& buffer) {
+	// Look for the end of HTTP headers (\r\n\r\n)
+	size_t headerEnd = buffer.find("\r\n\r\n");
+	if (headerEnd == std::string::npos) {
+		return false; // Headers not complete yet
+	}
+	
+	// For now, we consider the request complete when headers are complete
+	// TODO: Later we'll add Content-Length handling for POST requests
+	return true;
 }

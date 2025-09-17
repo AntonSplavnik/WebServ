@@ -21,6 +21,7 @@ struct ClientInfo {
 	Socket socket;
 	ClientState state;
 	std::string responseData;
+	std::string requestBuffer;  // Buffer to accumulate incoming HTTP request data
 	size_t bytesSent;
 };
 
@@ -79,6 +80,9 @@ class Server {
 		int _port;
 		bool _running;
 		int _maxClients;
+		
+		// HTTP request processing
+		bool isRequestComplete(const std::string& buffer); 
 };
 
 #endif
