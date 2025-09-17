@@ -79,6 +79,9 @@ int main(int argc, char* argv[]) {
         std::cout << std::endl;
 
         std::cout << "client max body size: " << loc.client_max_body_size << std::endl;
+        std::cout << "upload enabled: " << (loc.upload_enabled ? "yes" : "no") << std::endl;
+        std::cout << "upload store: " << loc.upload_store << std::endl;
+        std::cout << "redirect: " << loc.redirect << std::endl;
     }
 
 

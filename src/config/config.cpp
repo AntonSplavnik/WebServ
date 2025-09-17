@@ -18,7 +18,10 @@ LocationConfig::LocationConfig()
       error_pages(),
       cgi_path(),
       cgi_ext(),
-      client_max_body_size(1024 * 1024) {}
+      client_max_body_size(1024 * 1024),
+      upload_enabled(false),
+      upload_store(""),
+      redirect("") {}
 
 ConfigData::ConfigData()
     : host("0.0.0.0"),
@@ -141,6 +144,25 @@ bool assignLogFile(std::string& logField, const std::string& path) {
     return true;
 }
 
+// Helper to parse location-specific config fields
+void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
+    if (key == "upload_enabled" && !tokens.empty()) {
+        config.upload_enabled = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
+    }
+    else if (key == "upload_store" && !tokens.empty()) {
+        if (!isValidPath(tokens[0], W_OK | X_OK)) {
+            std::cerr << "Warning: Invalid or inaccessible upload_store path '" << tokens[0] << "'. Skipping.\n";
+            return;
+        }
+        config.upload_store = normalizePath(tokens[0]);
+    }
+    else if (key == "redirect" && !tokens.empty()) {
+        config.redirect = tokens[0]; // Store the redirect value
+        std::cout << "Redirect set to: " << config.redirect << std::endl;
+    }
+
+}
+
 // Helper to parse common config fields
 template<typename ConfigT>
 void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
@@ -226,7 +248,6 @@ else if (key == "cgi_ext" && !tokens.empty()) {
         }
         config.client_max_body_size = size;
     }
-
 }
 
 // Helper to read all values from iss, stripping trailing semicolons
@@ -296,6 +317,7 @@ bool Config::parseConfig(const std::string& path)
         }
         std::vector<std::string> ltokens = readValues(liss);
         parseCommonConfigField(loc, lkey, ltokens);
+        parseLocationConfigField(loc, lkey, ltokens);
         if (blockEnd) break;
     }
     _configData.locations.push_back(loc);
@@ -313,7 +335,7 @@ bool Config::parseConfig(const std::string& path)
         } else {
             _configData.host = hostPart;
         }
-        std::istringstream portStream(portPart);
+         std::istringstream portStream(portPart);
         if (portStream >> port && port >= 1 && port <= 65535) {
             _configData.port = static_cast<uint16_t>(port);
         } else {

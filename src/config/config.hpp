@@ -18,6 +18,9 @@ struct LocationConfig {
 	std::vector<std::string> cgi_path;
 	std::vector<std::string> cgi_ext;
 	int client_max_body_size;
+	bool upload_enabled;
+	std::string upload_store;
+	std::string redirect;
 	LocationConfig();
 };
 
