@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 13:59:50 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 14:13:36 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <map>
 #include <poll.h>
 #include "http_request.hpp"
+#include "http_response.hpp"
 
 enum Methods {
 	GET,

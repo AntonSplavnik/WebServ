@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 14:01:13 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 14:09:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,4 +86,4 @@ void HttpRequest::parseBody(){
 	*/
 }
 
-	std::string HttpRequest::getMethod(){ return _method}
+std::string HttpRequest::getMethod(){ return _method;}

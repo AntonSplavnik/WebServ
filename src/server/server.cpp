@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 14:07:34 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 16:10:43 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -270,6 +270,49 @@ void Server::clientDisconetion(short fd){
 
 void handleGET(const HttpRequest& request, ClientInfo& client){
 
+	/*
+
+	The GET method finds the directory/file, reads it, and uses HttpResponse methods to
+	properly format the HTTP response with headers, status codes, etc.
+
+	1. Parse the request path → /index.html, /images/logo.png
+	2. Map to file system path → /var/www/html/index.html
+	3. Check if file exists and is readable
+	4. Read file contents (if it exists)
+	5. Use HttpResponse to build response
+
+
+	//example of the get function
+
+	void Server::handleGET(const HttpRequest& request, ClientInfo& client) {
+	std::string requestedPath = request.getPath();  // "/index.html"
+	std::string filePath = _documentRoot + requestedPath;  // "/var/www/html/index.html"
+
+	HttpResponse response;
+
+	// Try to read file
+	std::ifstream file(filePath);
+	if (file.is_open()) {
+		// File exists - read content
+		std::string content((std::istreambuf_iterator<char>(file)),
+							std::istreambuf_iterator<char>());
+
+		response.setStatusCode(200);
+		response.setReasonPhrase("OK");
+		response.setContentType("text/html");  // or detect from extension
+		response.setBody(content);
+	} else {
+		// File not found
+		response.setStatusCode(404);
+		response.setReasonPhrase("Not Found");
+		response.setContentType("text/html");
+		response.setBody("<h1>404 - File Not Found</h1>");
+	}
+
+	client.responseData = response.toString();
+	}
+
+	*/
 	// Prepare HTTP response
 	client.responseData =
 		"HTTP/1.1 200 OK\r\n"
@@ -278,3 +321,109 @@ void handleGET(const HttpRequest& request, ClientInfo& client){
 		"\r\n";
 
 }
+
+void handlePOST(const HttpRequest& request, ClientInfo& client){
+
+/*
+	The POST method receives data from the client, processes it, and uses HttpResponse methods to
+	send back a result.
+
+	1. Extract data from request body → form data, JSON, file uploads
+	2. Process the data → save to database, execute CGI script, handle form submission
+	3. Generate appropriate response → success/failure message
+	4. Use HttpResponse to build response
+
+	  Unlike GET which reads files from server, POST accepts data from client:
+
+	- Form submissions → username=john&password=123
+	- File uploads → image/document data in request body
+	- API calls → JSON data for creating/updating resources
+	- CGI execution → pass data to scripts for processing
+
+
+	GET Method Can Handle:
+
+	1. Static Files:
+	- /index.html → read file from disk
+	- /images/logo.png → serve static content
+
+	2. Dynamic Content (CGI):
+	- /cgi-bin/search.py?q=webserv → execute script with query parameters
+	- /api/users?limit=10 → database query via CGI
+	- /weather.php?city=paris → dynamic page generation
+
+	3. Server-side Processing:
+	- Database queries (read-only)
+	- API calls to external services
+	- Template rendering
+
+	Key Differences:
+
+	GET with CGI:
+	- Parameters in URL query string: ?name=value&foo=bar
+	- No request body data
+	- Should be idempotent (safe to repeat)
+
+	POST with CGI:
+	- Data in request body: form data, JSON, files
+	- Can modify server state (create/update/delete)
+	- Not idempotent
+
+	Example GET with CGI:
+
+	void Server::handleGET(const HttpRequest& request, ClientInfo& client) {
+		std::string path = request.getPath();  // "/cgi-bin/search.py"
+
+		if (path.find("/cgi-bin/") == 0) {
+			// Execute CGI script with query parameters
+			executeCGI(path, request.getQuery(), "", client);  // No body for GET
+		} else {
+			// Serve static file
+			serveStaticFile(path, client);
+		}
+	}
+*/
+}
+
+
+
+/*
+	CGI for GET and POST
+
+	Without CGI (Static):
+	- GET /index.html → Server reads /var/www/index.html file and sends it
+	- POST /contact.html → Server processes form data itself and sends response
+
+	With CGI (Dynamic):
+	- GET /cgi-bin/weather.py?city=paris → Server executes Python script, script generates HTML
+	response
+	- POST /cgi-bin/contact.py → Server passes form data to Python script, script processes it and
+	generates response
+
+	CGI Role:
+
+	CGI = External program that generates web content
+
+	Instead of serving static files, the server:
+	1. Executes a program (Python, PHP, C++, etc.)
+	2. Passes request data to the program
+	3. Captures program's output
+	4. Sends that output as HTTP response
+
+	Examples:
+
+	GET with CGI:
+	Client: GET /cgi-bin/time.py
+	Server: executes time.py script
+	Script: prints "Current time: 2:30 PM"
+	Server: sends that as HTTP response
+
+	POST with CGI:
+	Client: POST /cgi-bin/save.py (with form data)
+	Server: executes save.py, passes form data to it
+	Script: processes data, prints "Data saved successfully"
+	Server: sends that as HTTP response
+
+	CGI turns your server into a platform that can run any program to generate web pages
+	dynamically.
+*/
