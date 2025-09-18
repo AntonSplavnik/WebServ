@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/17 17:37:19 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 14:01:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,20 +29,11 @@ HttpRequest::HttpRequest()
 
 HttpRequest::~HttpRequest(){}
 
-typedef struct s_dataToParse{
-	std::string line;
-	std::string headers;
-	std::string body;
-}t_dataToParse;
-
 void HttpRequest::parseRequest(ClientInfo& requestDate){
 
-	t_dataToParse data;
-
-	splitRequest(requestDate.requstData, data&);
+	extractLineHeaderBodyLen();
 
 	ParseState state = PARSE_REQUEST_LINE;
-
 	switch (state) {
 	case PARSE_REQUEST_LINE:
 		parseRequestLine();
@@ -56,23 +47,43 @@ void HttpRequest::parseRequest(ClientInfo& requestDate){
 		parseBody();
 		break;
 	}
-
-	// if (parseline())
-
-	// 	ifparseMethod();
-
-
-
-	// switch():
-	// 	case(GET)
-	// 		handleGET
-	// 	case(POST)
-	// 		handlePOST
-	// 	case(DELETE)
-	// 		handleDELETE
 }
 
-void parseRequestLine(t_dataToParse data){
 
-	data.
+
+void HttpRequest::extractLineHeaderBodyLen(){
+
+	/*
+	extraction logic
+	_line =
+	_heders =
+	_body =
+	_contentLength =
+	*/
 }
+
+void HttpRequest::parseRequestLine(){
+
+	/*
+	exctraction logic
+	_method =
+	_path =
+	_version =
+	*/
+}
+
+void HttpRequest::parseHeaders(){
+
+	/*
+	_headers = builds header map
+	*/
+}
+
+void HttpRequest::parseBody(){
+
+	/*
+	_body =
+	*/
+}
+
+	std::string HttpRequest::getMethod(){ return _method}

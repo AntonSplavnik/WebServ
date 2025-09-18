@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/17 17:06:43 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 13:59:50 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,12 @@
 #include <map>
 #include <poll.h>
 #include "http_request.hpp"
+
+enum Methods {
+	GET,
+	POST,
+	DELETE
+};
 
 // Client connection states
 enum ClientState {
@@ -60,6 +66,12 @@ class Server {
 		// void handleClientData(int client_fd);
 		// void handleClientWrite(int client_fd);
 		// void processClientRequest(int client_fd);
+
+		// Methods handeling
+		Methods stringToMethod(const std::string& method);
+		void handleGET(const HttpRequest& request, ClientInfo& client);
+		void handlePOST(const HttpRequest& request, ClientInfo& client);
+		void handleDELETE(const HttpRequest& request, ClientInfo& client);
 
 		// Event loop
 		void handlePollEvents();

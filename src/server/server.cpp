@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/17 17:11:19 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/18 14:07:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,6 +152,13 @@ void Server::handleServerSocket(size_t index){
 	}
 }
 
+Methods stringToMethod(const std::string& method) {
+	if (method == "GET") return GET;
+	if (method == "POST") return POST;
+	if (method == "DELETE") return DELETE;
+	throw std::invalid_argument("Unknown method");
+}
+
 void Server::handleClientSocket(short fd, short revents){
 
 	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
@@ -179,12 +186,12 @@ void Server::handleClientSocket(short fd, short revents){
 			HttpRequest requestParser;
 			requestParser.parseRequest(_clients[fd]);
 
-			// Prepare HTTP response
-			_clients[fd].responseData =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: 12\r\n"
-				"\r\n";
+			Methods method = stringToMethod(requestParser.getMethod());
+			switch (method) {
+				case GET: handleGET(requestParser, _clients[fd]); break;
+				case POST: handlePOST(requestParser, _clients[fd]); break;
+				case DELETE: handleDELETE(requestParser, _clients[fd]); break;
+			}
 
 			_clients[fd].bytesSent = 0;
 			_clients[fd].state = SENDING_RESPONSE;
@@ -258,5 +265,16 @@ void Server::clientDisconetion(short fd){
 				break;
 			}
 		}
+
+}
+
+void handleGET(const HttpRequest& request, ClientInfo& client){
+
+	// Prepare HTTP response
+	client.responseData =
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/plain\r\n"
+		"Content-Length: 12\r\n"
+		"\r\n";
 
 }
