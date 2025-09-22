@@ -1,4 +1,5 @@
 #include "../src/config/config.hpp"
+#include "../src/exceptions/config_exceptions.hpp"
 #include <iostream>
 #include <string>
 #include "../src/logging/logger.hpp"
@@ -7,20 +8,24 @@
 
 
 int main(int argc, char* argv[]) {
-    std::string configPath = "conf/default.conf";
-    if (argc > 1)
-    {
-        configPath = "conf/" + std::string(argv[1]);
+    if (argc != 2) {
+        std::cout << "Wrong config path" << std::endl;
+        return 1;
     }
+    std::string configPath;
+    configPath = "conf/" + std::string(argv[1]);
 
     Config config;
     try {
-        if (!config.parseConfig(configPath)) {
-            std::cerr << "Failed to load config file: " << configPath << std::endl;
-        }
-    } catch (const std::exception& e) {
+        config.parseConfig(configPath);
+    } catch (const ConfigParseException& e) {
         std::cerr << "Error parsing config file: " << e.what() << std::endl;
+        return 1;
     }
+
+
+
+    //debug print config data:
     std::cout << "Config file loaded successfully from: " << configPath << std::endl;
     // Use config.getConfigData() as needed
     std::cout << config.getConfigData().host << std::endl;
