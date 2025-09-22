@@ -6,14 +6,14 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 16:10:43 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/22 16:31:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
 #include "config.hpp"
 #include "socket.hpp"
-
+#include <ctime>
 
 /* - initialize() - Create and configure the listening socket using your
    Socket class
@@ -96,8 +96,8 @@ void Server::run(){
 		}
 
 		std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
-
 		handlePollEvents();
+		checkClientTimeouts();
 	}
 }
 
@@ -130,7 +130,15 @@ void Server::handleServerSocket(size_t index){
 		if (client_fd >= 0 && _clients.size() < _maxClients) {
 
 			_clients[client_fd] = ClientInfo(client_fd);
-			std::cout << "New connection accepted! Client FD: " << client_fd << std::endl;
+			_clients[client_fd].keepAliveTimeout = 15;
+			_clients[client_fd].lastActivity = time(NULL);
+			_clients[client_fd].maxRequests = 100;
+			_clients[client_fd].requestCount = 0;
+			std::cout << "New connection accepted! Client FD: " << client_fd
+					  << "Timeout: " << _clients[client_fd].keepAliveTimeout
+					  << "Max Max Requests: " << _clients[client_fd].maxRequests
+					  << std::endl;
+
 
 			// Make client socket non-blocking
 			_clients[client_fd].socket.setNonBlocking();
@@ -161,12 +169,16 @@ Methods stringToMethod(const std::string& method) {
 
 void Server::handleClientSocket(short fd, short revents){
 
+	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
+		std::cout << "Max request count reachead: " << fd << std::endl;
+		clientDisconetion(fd);
+	}
+
 	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
 
 		char buffer[BUFFER_SIZE];
 		std::memset(buffer, 0, BUFFER_SIZE);
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
-
 
 		if (bytes <= 0) {
 
@@ -175,6 +187,9 @@ void Server::handleClientSocket(short fd, short revents){
 			clientDisconetion(fd);
 		}
 		else {
+
+			updateClientActivity(fd);
+
 			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 			// Full request is received, prepare response
@@ -213,7 +228,10 @@ void Server::handleClientSocket(short fd, short revents){
 		std::cout << "send() returned " << bytes_sent << " bytes to FD " << fd << std::endl;
 
 		if (bytes_sent > 0) {
+
 			_clients[fd].bytesSent += bytes_sent;
+
+			updateClientActivity(fd);
 
 			// Check if entire response was sent
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
@@ -236,8 +254,8 @@ void Server::handleClientSocket(short fd, short revents){
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;
 			}
 		} else {
-			// Send failed, close connection
 
+			// Send failed, close connection
 			std::cout << "Send failed for FD " << fd << ". Closing connection." << std::endl;
 			clientDisconetion(fd);
 		}
@@ -256,15 +274,16 @@ void Server::handleClientSocket(short fd, short revents){
 void Server::clientDisconetion(short fd){
 
 	close(fd);
-		// Remove from arrays by shifting remaining elements
-		_clients.erase(fd);
-		for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
-		{
-			if(it->fd == fd){
-				_pollFds.erase(it);
-				break;
-			}
+
+	// Remove from arrays by shifting remaining elements
+	_clients.erase(fd);
+	for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
+	{
+		if(it->fd == fd){
+			_pollFds.erase(it);
+			break;
 		}
+	}
 
 }
 
@@ -385,8 +404,6 @@ void handlePOST(const HttpRequest& request, ClientInfo& client){
 */
 }
 
-
-
 /*
 	CGI for GET and POST
 
@@ -426,4 +443,174 @@ void handlePOST(const HttpRequest& request, ClientInfo& client){
 
 	CGI turns your server into a platform that can run any program to generate web pages
 	dynamically.
+*/
+
+void handleDELETE(const HttpRequest& request, ClientInfo& client) {
+
+	/*
+	DELETE Method Purpose
+
+  The DELETE method is used to remove resources from the server.
+  Unlike GET (retrieves) and POST (creates/modifies), DELETE
+  specifically removes existing resources.
+
+  DELETE Method Logic
+
+  Looking at your GET logic pattern, here's what DELETE should
+  conceptually do:
+
+  1. Path Resolution (like GET)
+
+  Client request: DELETE /uploads/document.pdf
+  Server maps to: /var/www/uploads/document.pdf
+
+  2. Resource Validation
+
+  - Check if the file/resource exists
+  - Verify permissions (can the client delete this?)
+  - Check if it's a protected file (don't delete system files!)
+
+  3. Security Checks
+
+  - Validate the path (prevent ../../../etc/passwd attacks)
+  - Check if deletion is allowed for this resource type
+  - Verify client authorization (if implemented)
+
+  4. Deletion Operation
+
+  - If file exists and deletion is allowed: remove it from
+  filesystem
+  - If file doesn't exist: return 404 (Not Found)
+  - If forbidden: return 403 (Forbidden)
+
+  5. Response Generation (like your GET/POST pattern)
+
+  HttpResponse response;
+
+  if (file_deleted_successfully) {
+      response.setStatusCode(204);  // No Content (successful
+  deletion)
+      response.setReasonPhrase("No Content");
+      // No body needed for successful DELETE
+  } else if (file_not_found) {
+      response.setStatusCode(404);
+      response.setReasonPhrase("Not Found");
+  } else if (forbidden) {
+      response.setStatusCode(403);
+      response.setReasonPhrase("Forbidden");
+  }
+
+  Key Differences from GET/POST
+
+  - GET: Reads and returns file content
+  - POST: Accepts data to create/modify resources
+  - DELETE: Removes existing resources entirely
+
+  CGI with DELETE
+
+  Just like your POST CGI comments, DELETE can also trigger CGI
+  scripts:
+  DELETE /cgi-bin/remove_user.py?id=123
+  → Script processes deletion logic
+  → Returns success/failure response
+
+  The core pattern follows your existing structure: parse path →
+  validate → perform operation → generate HTTP response using
+  HttpResponse class.
+  */
+}
+
+bool Server::isClientTimedOut(int fd){
+
+	time_t now = time(NULL);
+	if (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) true;
+	return false;
+}
+
+void Server::updateClientActivity(int fd){
+
+	_clients[fd].lastActivity = time(NULL);
+}
+
+void Server::checkClientTimeouts(){
+
+	for(std::map<int, ClientInfo>::iterator it = _clients.begin(); it != _clients.end(); ++it){
+
+		int currentFd = it->first;
+		if(isClientTimedOut(currentFd)){
+			std::cout << "Client: " << currentFd << " timed out." << std::endl;
+			clientDisconetion(currentFd);
+		}
+	}
+}
+
+/*
+For HTTP 1.1 connection timeouts, you need to track keep-alive timeout
+   and implement timer checking.
+
+  Headers to Check:
+
+  1. Keep-Alive Header (from client):
+
+  Connection: keep-alive
+  Keep-Alive: timeout=5, max=100
+
+  2. Server Response Headers:
+
+  Connection: keep-alive
+  Keep-Alive: timeout=15, max=100
+
+  Implementation Strategy:
+
+  1. Add Timeout Tracking to ClientInfo:
+
+  // In server.hpp - ClientInfo structure
+  struct ClientInfo {
+      // ... existing fields ...
+      time_t lastActivity;        // Last time client sent data
+      int keepAliveTimeout;       // Timeout in seconds (default 15)
+      int maxRequests;           // Max requests per connection
+      int requestCount;          // Current request count
+  };
+
+  2. Functions to Add:
+
+  // In Server class
+  void updateClientActivity(int fd);           // Reset timer on
+  activity
+  void checkClientTimeouts();                 // Check all clients for
+  timeout
+  bool isClientTimedOut(int fd);              // Check specific client
+  void parseKeepAliveHeader(const HttpRequest& req, ClientInfo& client);
+
+  3. Timer Check Logic:
+
+  void Server::checkClientTimeouts() {
+      time_t now = time(NULL);
+
+      for (auto it = _clients.begin(); it != _clients.end();) {
+          if (now - it->second.lastActivity >
+  it->second.keepAliveTimeout) {
+              std::cout << "Client FD " << it->first << " timed out" <<
+  std::endl;
+              clientDisconetion(it->first);
+              it = _clients.erase(it);  // Safe erase during iteration
+          } else {
+              ++it;
+          }
+      }
+  }
+
+  4. Where to Call Timer Check:
+
+  - In main poll loop (server.cpp:90-101) - check every poll cycle
+  - After handling all poll events (server.cpp:100)
+
+  5. Update Activity:
+
+  - On recv() (server.cpp:168) - reset lastActivity = time(NULL)
+  - On successful request parsing (server.cpp:184)
+
+  The key is tracking lastActivity timestamp and checking it against
+  keepAliveTimeout in your main event loop.
 */

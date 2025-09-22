@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 14:13:36 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/22 16:02:31 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,12 @@ struct ClientInfo {
 	size_t bytesSent;
 	std::string responseData;
 	std::string requstData;
+	//timeout data
+	time_t lastActivity;        // Last time client sent data
+	int keepAliveTimeout;       // Timeout in seconds (default 15)
+	int maxRequests;           // Max requests per connection
+	int requestCount;          // Current request count
+
 };
 
 
@@ -92,6 +98,9 @@ class Server {
 
 		// Utility
 		void clientDisconetion(short fd);
+		bool isClientTimedOut(int fd);  // Check specific client
+		void updateClientActivity(int fd);	// Reset timer onactivity
+		void checkClientTimeouts();	// Check all clients fortimeout
 		// void cleanup();
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
