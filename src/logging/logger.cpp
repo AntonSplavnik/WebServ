@@ -12,6 +12,7 @@ Logger::Logger(const std::string& accessPath, const std::string& errorPath)
     : _accessLog(accessPath.c_str(), std::ios::app),
       _errorLog(errorPath.c_str(), std::ios::app) {}
 
+
 // Get current timestamp in YYYY-MM-DD HH:MM:SS format
 std::string Logger::getTimestamp() const {
     time_t now = time(0);
