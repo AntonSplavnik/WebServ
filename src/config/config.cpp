@@ -154,7 +154,14 @@ bool assignLogFile(std::string& logField, const std::string& path) {
 // Helper to parse location-specific config fields
 void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "upload_enabled" && !tokens.empty()) {
-        config.upload_enabled = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
+        const std::string& val = tokens[0];
+        if (val == "on" || val == "true" || val == "1") {
+            config.upload_enabled = true;
+        } else if (val == "off" || val == "false" || val == "0") {
+            config.upload_enabled = false;
+        } else {
+            throw ConfigParseException("Invalid upload_enabled value: " + val);
+        }
     }
     else if (key == "upload_store" && !tokens.empty()) {
         if (!isValidPath(tokens[0], W_OK | X_OK))
@@ -198,6 +205,12 @@ void validateConfig(ConfigData& config) {
     }
     if (config.listeners.empty())
     	throw ConfigParseException("Missing required config: at least one listen directive");
+    if (config.error_pages.empty()) {
+    	config.error_pages[404] = "runtime/www/errors/40x.html";
+    	config.error_pages[500] = "runtime/www/errors/50x.html";
+    	config.error_pages[403] = "runtime/www/errors/40x.html";
+	}
+
 
 
 
@@ -246,10 +259,12 @@ void validateConfig(ConfigData& config) {
     		loc.error_pages = config.error_pages;
 
         // Upload validation
-        if (loc.upload_enabled && loc.upload_store.empty())
-            throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
-        if (loc.upload_enabled && !isValidPath(loc.upload_store, W_OK | X_OK))
-            throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
+        if (loc.upload_enabled) {
+    if (loc.upload_store.empty())
+        throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
+    if (!isValidPath(loc.upload_store, W_OK | X_OK))
+        throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
+}
 
         // Redirect validation
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
@@ -268,15 +283,29 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
         if (!isValidAutoindexValue(tokens[0]))
           throw ConfigParseException("Invalid autoindex value: " + tokens[0]);
         config.autoindex = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
-    } else if (key == "index" && !tokens.empty()) {
-    if (!isValidFile(tokens[0], R_OK))
-      throw ConfigParseException("Invalid or inaccessible index file: " + tokens[0]);
-    config.index = tokens[0];
     } else if (key == "root" && !tokens.empty()) {
+    if (!config.root.empty())
+        throw ConfigParseException("Duplicate root directive");
     if (!isValidPath(tokens[0], R_OK | X_OK))
-      throw ConfigParseException("Invalid or inaccessible root path: " + tokens[0]);
+        throw ConfigParseException("Invalid or inaccessible root path: " + tokens[0]);
     config.root = normalizePath(tokens[0]);
-    } else if (key == "allow_methods" && !tokens.empty()) {
+} else if (key == "index" && !tokens.empty()) {
+    if (!config.index.empty())
+        throw ConfigParseException("Duplicate index directive");
+    if (!isValidFile(tokens[0], R_OK))
+        throw ConfigParseException("Invalid or inaccessible index file: " + tokens[0]);
+    config.index = tokens[0];
+} else if (key == "client_max_body_size" && !tokens.empty()) {
+    if (config.client_max_body_size > 0)
+        throw ConfigParseException("Duplicate client_max_body_size directive");
+    std::istringstream iss(tokens[0]);
+    int size = 0;
+    if (!(iss >> size))
+        throw ConfigParseException("Invalid client_max_body_size value: " + tokens[0]);
+    if (size > MAX_CLIENT_BODY_SIZE)
+        throw ConfigParseException("client_max_body_size (" + tokens[0] + ") exceeds maximum allowed (" + std::to_string(MAX_CLIENT_BODY_SIZE) + ")");
+    config.client_max_body_size = size;
+} else if (key == "allow_methods" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
         if (!isValidHttpMethod(tokens[i]))
           throw ConfigParseException("Invalid HTTP method in allow_methods: " + tokens[i]);
@@ -317,15 +346,7 @@ else if (key == "cgi_ext" && !tokens.empty()) {
         }
     }
 }
-    else if (key == "client_max_body_size" && !tokens.empty()) {
-        std::istringstream iss(tokens[0]);
-        int size = 0;
-        if (!(iss >> size))
-          throw ConfigParseException("Invalid client_max_body_size value: " + tokens[0]);
-        if (size > MAX_CLIENT_BODY_SIZE)
-          throw ConfigParseException("client_max_body_size (" + tokens[0] + ") exceeds maximum allowed (" + std::to_string(MAX_CLIENT_BODY_SIZE) + ")");
-        config.client_max_body_size = size;
-    }
+
 }
 
 // Helper to read all values from iss, stripping trailing semicolons
@@ -470,7 +491,7 @@ else if (key == "error_log" && !tokens.empty()) {
         "server", "location", "listen", "server_name", "backlog",
         "access_log", "error_log", "autoindex", "index", "root",
         "allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-        "upload_enabled", "upload_store", "redirect"
+         "redirect"
     };
     static const size_t knownDirectivesCount = sizeof(knownDirectivesArr) / sizeof(knownDirectivesArr[0]);
     if (std::find(knownDirectivesArr, knownDirectivesArr + knownDirectivesCount, key) == knownDirectivesArr + knownDirectivesCount) {

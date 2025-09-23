@@ -40,6 +40,7 @@ struct ConfigData{
 	bool	autoindex;
 	std::vector<LocationConfig> locations;
 	int client_max_body_size;
+	std::string upload_store;
 	ConfigData();
 };
 
