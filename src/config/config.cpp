@@ -158,23 +158,21 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
     }
     else if (key == "upload_store" && !tokens.empty()) {
         if (!isValidPath(tokens[0], W_OK | X_OK))
-      		throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
+            throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
         config.upload_store = normalizePath(tokens[0]);
     }
     else if (key == "redirect" && !tokens.empty()) {
-        if (tokens.size() >= 2) {
-            int code = std::atoi(tokens[0].c_str());
-            if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
-                config.redirect_code = code;
-                config.redirect = tokens[1];
-            } else
-                throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-            if (tokens.size() > 2)
-              throw ConfigParseException("Too many arguments for redirect directive");
+        if (tokens.size() < 2)
+            throw ConfigParseException("Redirect directive requires status code and target path/URL");
+        int code = std::atoi(tokens[0].c_str());
+        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
+            config.redirect_code = code;
+            config.redirect = tokens[1];
         } else {
-            config.redirect = tokens[0];
-            config.redirect_code = 302; // Default to 302 if no status code is provided
+            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
         }
+        if (tokens.size() > 2)
+            throw ConfigParseException("Too many arguments for redirect directive");
         std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
     }
 }
@@ -200,6 +198,7 @@ void validateConfig(ConfigData& config) {
     }
     if (config.listeners.empty())
     	throw ConfigParseException("Missing required config: at least one listen directive");
+
 
 
     // --- Each location ---
