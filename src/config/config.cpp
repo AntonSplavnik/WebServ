@@ -155,22 +155,21 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
       		throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
         config.upload_store = normalizePath(tokens[0]);
     }
-    else if (key == "redirect" && !tokens.empty()) {
-        if (tokens.size() >= 2) {
-            int code = std::atoi(tokens[0].c_str());
-            if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
-                config.redirect_code = code;
-                config.redirect = tokens[1];
-            } else
-                throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-            if (tokens.size() > 2)
-              throw ConfigParseException("Too many arguments for redirect directive");
-        } else {
-            config.redirect = tokens[0];
-            config.redirect_code = 302; // Default to 302 if no status code is provided
-        }
-        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
+    // In parseLocationConfigField
+else if (key == "redirect" && !tokens.empty()) {
+    if (tokens.size() == 2) {
+        int code = std::atoi(tokens[0].c_str());
+        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
+            config.redirect_code = code;
+            config.redirect = tokens[1];
+        } else
+            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
+    } else if (tokens.size() == 1) {
+        throw ConfigParseException("Redirect directive requires both code and target");
+    } else {
+        throw ConfigParseException("Too many arguments for redirect directive");
     }
+}
 }
 
 void validateConfig(ConfigData& config) {
@@ -192,6 +191,9 @@ void validateConfig(ConfigData& config) {
         config.allow_methods.push_back("GET");
         std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
     }
+    if (config.listeners.empty())
+    	throw ConfigParseException("Missing required config: at least one listen directive");
+
 
     // --- Each location ---
     for (size_t i = 0; i < config.locations.size(); ++i) {
@@ -234,6 +236,18 @@ void validateConfig(ConfigData& config) {
             throw ConfigParseException("Missing required location config: cgi_path for CGI");
         if (!loc.cgi_path.empty() && loc.cgi_ext.empty())
             throw ConfigParseException("Missing required location config: cgi_ext for CGI");
+        if (loc.error_pages.empty())
+    		loc.error_pages = config.error_pages;
+
+        // Upload validation
+        if (loc.upload_enabled && loc.upload_store.empty())
+            throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
+        if (loc.upload_enabled && !isValidPath(loc.upload_store, W_OK | X_OK))
+            throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
+
+        // Redirect validation
+        if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
+            throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
     }
 }
 
@@ -267,13 +281,15 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
     if (!isValidFile(path, R_OK))
       throw ConfigParseException("Invalid or inaccessible error_page file: " + path);
     for (size_t i = 0; i < tokens.size() - 1; ++i) {
-        int code = 0;
-        std::istringstream codeStream(tokens[i]);
-        if (codeStream >> code) {
-            if (!isValidHttpStatusCode(code))
-              throw ConfigParseException("Invalid HTTP status code in error_page: " + tokens[i]);
-        }
+    if (tokens[i].empty()) continue; // Skip empty tokens
+    int code = 0;
+    std::istringstream codeStream(tokens[i]);
+    if (codeStream >> code) {
+        if (!isValidHttpStatusCode(code))
+            throw ConfigParseException("Invalid HTTP status code in error_page: " + tokens[i]);
+        config.error_pages[code] = path;
     }
+}
 }
 else if (key == "cgi_ext" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
