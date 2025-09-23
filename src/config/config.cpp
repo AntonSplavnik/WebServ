@@ -363,6 +363,8 @@ std::vector<std::string> readValues(std::istringstream& iss) {
 // Returns true if the file was successfully read and parsed, false otherwise
 bool Config::parseConfig(const std::string& path)
 {
+	bool inLocationBlock = false;
+	int braceCount = 0;
     std::ifstream file(path);
     if (!file.is_open())
       throw ConfigParseException("Failed to open config file: " + path);
@@ -374,8 +376,9 @@ bool Config::parseConfig(const std::string& path)
         if (!(iss >> key)) continue;
         std::vector<std::string> tokens = readValues(iss);
         if (key == "location" && !tokens.empty()) {
-    LocationConfig loc;
-    loc.path = tokens[0];
+         inLocationBlock = true;
+    	LocationConfig loc;
+    	loc.path = tokens[0];
 
     // Check for '{' at end of line or next line
     bool foundBrace = false;
@@ -387,9 +390,9 @@ bool Config::parseConfig(const std::string& path)
     }
     std::cout << "Line: '" << line << "'" << std::endl;
     if (!tokens.empty() && tokens.back() == "{") {
-    foundBrace = true;
+    braceCount++;
 } else if (!loc.path.empty() && loc.path.back() == '{') {
-    foundBrace = true;
+    braceCount--;
     loc.path.pop_back();
 }
 
@@ -413,6 +416,7 @@ bool Config::parseConfig(const std::string& path)
         std::string lkey;
         if (!(liss >> lkey)) {
             if (blockEnd) break;
+            inLocationBlock = false;
             continue;
         }
         else {
@@ -423,9 +427,12 @@ static const char* locationDirectivesArr[] = {
     "upload_enabled", "upload_store", "redirect", "error_page", "client_max_body_size"
 };
 static const size_t locationDirectivesCount = sizeof(locationDirectivesArr) / sizeof(locationDirectivesArr[0]);
+if (inLocationBlock) {
 if (std::find(locationDirectivesArr, locationDirectivesArr + locationDirectivesCount, lkey) == locationDirectivesArr + locationDirectivesCount)
     throw ConfigParseException("Unknown directive: " + lkey);
 }
+}
+
         std::vector<std::string> ltokens = readValues(liss);
         parseCommonConfigField(loc, lkey, ltokens);
         parseLocationConfigField(loc, lkey, ltokens);
@@ -493,13 +500,18 @@ else if (key == "error_log" && !tokens.empty()) {
         "allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
          "redirect"
     };
+
     static const size_t knownDirectivesCount = sizeof(knownDirectivesArr) / sizeof(knownDirectivesArr[0]);
+   	if (!inLocationBlock) {
     if (std::find(knownDirectivesArr, knownDirectivesArr + knownDirectivesCount, key) == knownDirectivesArr + knownDirectivesCount) {
         throw ConfigParseException("Unknown directive: " + key);
+    }
     }
     parseCommonConfigField(_configData, key, tokens);
 }
     }
+    if (braceCount != 0)
+    	throw ConfigParseException("Unmatched braces in config file");
     validateConfig(_configData);
     return true;
 }
