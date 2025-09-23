@@ -26,8 +26,7 @@ struct LocationConfig {
 };
 
 struct ConfigData{
-	std::string host;
-	uint16_t    port;
+	std::vector<std::pair<std::string, uint16_t> > listeners;
 	std::string server_name;
 	std::string root;
 	std::string index;

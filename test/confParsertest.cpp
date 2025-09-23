@@ -28,8 +28,9 @@ int main(int argc, char* argv[]) {
     //debug print config data:
     std::cout << "Config file loaded successfully from: " << configPath << std::endl;
     // Use config.getConfigData() as needed
-    std::cout << config.getConfigData().host << std::endl;
-    std::cout << config.getConfigData().port << std::endl;
+    for (size_t i = 0; i < config.getConfigData().listeners.size(); i++) {
+        std::cout << config.getConfigData().listeners[i].first << ":" << config.getConfigData().listeners[i].second << std::endl;
+    }
     std::cout << config.getConfigData().server_name << std::endl;
     std::cout << config.getConfigData().root << std::endl;
     std::cout << config.getConfigData().index << std::endl;

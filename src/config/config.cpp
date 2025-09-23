@@ -26,8 +26,7 @@ LocationConfig::LocationConfig()
       redirect_code() {}
 
 ConfigData::ConfigData()
-    : host(),
-      port(),
+    :
       server_name(),
       root(),
       index(),
@@ -176,10 +175,6 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
 
 void validateConfig(ConfigData& config) {
     // --- Top-level required fields ---
-    if (config.host.empty())
-        throw ConfigParseException("Missing required config: host");
-    if (config.port == 0)
-        throw ConfigParseException("Missing required config: port");
     if (config.root.empty())
         throw ConfigParseException("Missing required config: root");
     if (config.index.empty() && !config.autoindex)
@@ -226,8 +221,8 @@ void validateConfig(ConfigData& config) {
 		if (!isValidPath(loc.root, R_OK | X_OK))
     		throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
 
-        if (loc.index.empty())
-            throw ConfigParseException("Missing required location config: index");
+        if (loc.index.empty() && loc.autoindex == false)
+            throw ConfigParseException("Missing index and autoindex is off in location: " + loc.path);
         if (loc.allow_methods.empty())
             throw ConfigParseException("Missing required location config: allow_methods");
         if (loc.client_max_body_size <= 0)
@@ -383,43 +378,50 @@ bool Config::parseConfig(const std::string& path)
     _configData.locations.push_back(loc);
     continue;
 }
-        else if (key == "listen" && !tokens.empty()) {
+else if (key == "listen" && !tokens.empty()) {
     std::string value = tokens[0];
+    std::string host = "0.0.0.0";
+    int port = 80; // default port
+
     size_t colon = value.find(':');
-    int port = 0;
     if (colon != std::string::npos) {
-        std::string hostPart = value.substr(0, colon);
+        // Case: host:port
+        host = value.substr(0, colon);
         std::string portPart = value.substr(colon + 1);
-        if (!isValidHost(hostPart))
-          throw ConfigParseException("Invalid host in listen directive: " + hostPart);
-		else
-            _configData.host = hostPart;
+
+        if (!isValidIPv4(host) && !isValidHost(host))
+            throw ConfigParseException("Invalid host in listen directive: " + host);
+
         std::istringstream portStream(portPart);
-        if (portStream >> port && port >= 1 && port <= 65535)
-            _configData.port = static_cast<uint16_t>(port);
-        else
-          throw ConfigParseException("Invalid port in listen directive: " + portPart);
-    } else {
-        std::istringstream portStream(value);
-        if (portStream >> port && port >= 1 && port <= 65535)
-            _configData.port = static_cast<uint16_t>(port);
-        else
-          throw ConfigParseException("Invalid port in listen directive: " + value);
+        if (!(portStream >> port) || port < 1 || port > 65535)
+            throw ConfigParseException("Invalid port in listen directive: " + portPart);
     }
+    else {
+        // Case: only number (port) or only host
+        std::istringstream portStream(value);
+        if (portStream >> port) {
+            if (port < 1 || port > 65535)
+                throw ConfigParseException("Invalid port in listen directive: " + value);
+            host = "0.0.0.0"; // default
+        } else {
+            if (!isValidIPv4(value) && !isValidHost(value))
+                throw ConfigParseException("Invalid host in listen directive: " + value);
+            host = value;
+            port = 80; // default
+        }
+    }
+
+    // Deduplicate listeners
+    std::pair<std::string,uint16_t> listenPair(host, static_cast<uint16_t>(port));
+    if (std::find(_configData.listeners.begin(),
+                  _configData.listeners.end(),
+                  listenPair) != _configData.listeners.end()) {
+        throw ConfigParseException("Duplicate listen directive: " + host + ":" + std::to_string(port));
+    }
+
+    _configData.listeners.push_back(listenPair);
 }
-        else if (key == "host" && !tokens.empty()) {
-    if (!isValidHost(tokens[0]))
-      throw ConfigParseException("Invalid host value: " + tokens[0]);
-    _configData.host = tokens[0];
-}
-        else if (key == "port" && !tokens.empty()) {
-    int port = 0;
-    std::istringstream valStream(tokens[0]);
-    std::cout << "Parsing port value: '" << tokens[0] << "'" << std::endl;
-    if (!(valStream >> port) || port < 1 || port > 65535)
-    	throw ConfigParseException("Invalid port value: " + tokens[0]);
-    _configData.port = static_cast<uint16_t>(port);
-}
+
         else if (key == "server_name" && !tokens.empty()) {
             _configData.server_name = tokens[0];
         }
@@ -439,7 +441,7 @@ else if (key == "error_log" && !tokens.empty()) {
         else {
     // List of known directives
     static const char* knownDirectivesArr[] = {
-        "server", "location", "listen", "host", "port", "server_name", "backlog",
+        "server", "location", "listen", "server_name", "backlog",
         "access_log", "error_log", "autoindex", "index", "root",
         "allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
         "upload_enabled", "upload_store", "redirect"
