@@ -67,7 +67,8 @@ bool isValidFile(const std::string& path, int mode) {
 bool isValidPath(const std::string& path, int mode) {
     struct stat sb;
     if (stat(path.c_str(), &sb) != 0) return false;
-    return (sb.st_mode & S_IFDIR) && (access(path.c_str(), mode) == 0);
+    if (!S_ISDIR(sb.st_mode)) return false;
+    return (access(path.c_str(), mode) == 0);
 }
 // Helper to validate HTTP methods
 bool isValidHttpMethod(const std::string& method) {
@@ -215,17 +216,22 @@ void validateConfig(ConfigData& config) {
             loc.client_max_body_size = config.client_max_body_size;
 
         // Validation after fallback
-        if (loc.path.empty())
-            throw ConfigParseException("Missing required location config: path");
-        if (loc.root.empty())
-            throw ConfigParseException("Missing required location config: root");
+        // Check location path (URI)
+if (loc.path.empty() || loc.path[0] != '/')
+    throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
+
+// Check root (filesystem directory)
+if (loc.root.empty())
+    throw ConfigParseException("Missing required location config: root");
+if (!isValidPath(loc.root, R_OK | X_OK))
+    throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
+
         if (loc.index.empty())
             throw ConfigParseException("Missing required location config: index");
         if (loc.allow_methods.empty())
             throw ConfigParseException("Missing required location config: allow_methods");
         if (loc.client_max_body_size <= 0)
             throw ConfigParseException("Missing required location config: client_max_body_size");
-
         // CGI validation
         if (loc.cgi_ext.empty()) loc.cgi_ext = config.cgi_ext;
         if (loc.cgi_path.empty()) loc.cgi_path = config.cgi_path;
@@ -431,8 +437,19 @@ else if (key == "error_log" && !tokens.empty()) {
     assignLogFile(_configData.error_log, tokens[0]);
 }
         else {
-            parseCommonConfigField(_configData, key, tokens);
-        }
+    // List of known directives
+    static const char* knownDirectivesArr[] = {
+        "server", "location", "listen", "host", "port", "server_name", "backlog",
+        "access_log", "error_log", "autoindex", "index", "root",
+        "allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
+        "upload_enabled", "upload_store", "redirect"
+    };
+    static const size_t knownDirectivesCount = sizeof(knownDirectivesArr) / sizeof(knownDirectivesArr[0]);
+    if (std::find(knownDirectivesArr, knownDirectivesArr + knownDirectivesCount, key) == knownDirectivesArr + knownDirectivesCount) {
+        throw ConfigParseException("Unknown directive: " + key);
+    }
+    parseCommonConfigField(_configData, key, tokens);
+}
     }
     validateConfig(_configData);
     return true;
