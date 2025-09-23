@@ -173,16 +173,16 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
     }
 }
 
-void validateConfig(const ConfigData& config) {
-    // Top-level required fields
+void validateConfig(ConfigData& config) {
+    // --- Top-level required fields ---
     if (config.host.empty())
         throw ConfigParseException("Missing required config: host");
     if (config.port == 0)
         throw ConfigParseException("Missing required config: port");
     if (config.root.empty())
         throw ConfigParseException("Missing required config: root");
-    if (config.index.empty())
-        throw ConfigParseException("Missing required config: index");
+    if (config.index.empty() && !config.autoindex)
+        throw ConfigParseException("Missing required config: index (and autoindex is off)");
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
     if (config.access_log.empty())
@@ -192,24 +192,51 @@ void validateConfig(const ConfigData& config) {
     if (config.client_max_body_size <= 0)
         throw ConfigParseException("Missing or invalid required config: client_max_body_size");
 
-    // Each location block
+    if (config.allow_methods.empty()) {
+        config.allow_methods.push_back("GET");
+        std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
+    }
+
+    // --- Each location ---
     for (size_t i = 0; i < config.locations.size(); ++i) {
-        const LocationConfig& loc = config.locations[i];
+        LocationConfig& loc = config.locations[i];
+
+        // Fallbacks
+        if (loc.root.empty()) loc.root = config.root;
+        if (loc.index.empty()) loc.index = config.index;
+        if (loc.allow_methods.empty()) {
+            loc.allow_methods = config.allow_methods;
+            if (loc.allow_methods.empty()) {
+                loc.allow_methods.push_back("GET");
+                std::cout << "Info: No allow_methods specified in location, defaulting to GET" << std::endl;
+            }
+        }
+        if (loc.client_max_body_size <= 0)
+            loc.client_max_body_size = config.client_max_body_size;
+
+        // Validation after fallback
         if (loc.path.empty())
-            throw ConfigParseException("Missing required location config: path (location #" + std::to_string(i) + ")");
+            throw ConfigParseException("Missing required location config: path");
         if (loc.root.empty())
-            throw ConfigParseException("Missing required location config: root (location #" + std::to_string(i) + ")");
+            throw ConfigParseException("Missing required location config: root");
         if (loc.index.empty())
-            throw ConfigParseException("Missing required location config: index (location #" + std::to_string(i) + ")");
+            throw ConfigParseException("Missing required location config: index");
         if (loc.allow_methods.empty())
-            throw ConfigParseException("Missing required location config: allow_methods (location #" + std::to_string(i) + ")");
-        // If CGI is used, require cgi_ext and cgi_path
+            throw ConfigParseException("Missing required location config: allow_methods");
+        if (loc.client_max_body_size <= 0)
+            throw ConfigParseException("Missing required location config: client_max_body_size");
+
+        // CGI validation
+        if (loc.cgi_ext.empty()) loc.cgi_ext = config.cgi_ext;
+        if (loc.cgi_path.empty()) loc.cgi_path = config.cgi_path;
         if (!loc.cgi_ext.empty() && loc.cgi_path.empty())
-            throw ConfigParseException("Missing required location config: cgi_path for CGI (location #" + std::to_string(i) + ")");
+            throw ConfigParseException("Missing required location config: cgi_path for CGI");
         if (!loc.cgi_path.empty() && loc.cgi_ext.empty())
-            throw ConfigParseException("Missing required location config: cgi_ext for CGI (location #" + std::to_string(i) + ")");
+            throw ConfigParseException("Missing required location config: cgi_ext for CGI");
     }
 }
+
+
 
 // Helper to parse common config fields
 template<typename ConfigT>
