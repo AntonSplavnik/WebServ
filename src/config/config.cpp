@@ -217,14 +217,14 @@ void validateConfig(ConfigData& config) {
 
         // Validation after fallback
         // Check location path (URI)
-if (loc.path.empty() || loc.path[0] != '/')
-    throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
+		if (loc.path.empty() || loc.path[0] != '/')
+    		throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
 
-// Check root (filesystem directory)
-if (loc.root.empty())
-    throw ConfigParseException("Missing required location config: root");
-if (!isValidPath(loc.root, R_OK | X_OK))
-    throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
+		// Check root (filesystem directory)
+		if (loc.root.empty())
+    		throw ConfigParseException("Missing required location config: root");
+		if (!isValidPath(loc.root, R_OK | X_OK))
+    		throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
 
         if (loc.index.empty())
             throw ConfigParseException("Missing required location config: index");
