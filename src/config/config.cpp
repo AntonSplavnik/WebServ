@@ -155,21 +155,22 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
       		throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
         config.upload_store = normalizePath(tokens[0]);
     }
-    // In parseLocationConfigField
-else if (key == "redirect" && !tokens.empty()) {
-    if (tokens.size() == 2) {
-        int code = std::atoi(tokens[0].c_str());
-        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
-            config.redirect_code = code;
-            config.redirect = tokens[1];
-        } else
-            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-    } else if (tokens.size() == 1) {
-        throw ConfigParseException("Redirect directive requires both code and target");
-    } else {
-        throw ConfigParseException("Too many arguments for redirect directive");
+    else if (key == "redirect" && !tokens.empty()) {
+        if (tokens.size() >= 2) {
+            int code = std::atoi(tokens[0].c_str());
+            if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
+                config.redirect_code = code;
+                config.redirect = tokens[1];
+            } else
+                throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
+            if (tokens.size() > 2)
+              throw ConfigParseException("Too many arguments for redirect directive");
+        } else {
+            config.redirect = tokens[0];
+            config.redirect_code = 302; // Default to 302 if no status code is provided
+        }
+        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
     }
-}
 }
 
 void validateConfig(ConfigData& config) {

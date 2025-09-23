@@ -52,6 +52,7 @@ class Config {
 
 	private:
 		ConfigData _configData;
+		std::vector<ConfigData> _servers;
 };
 
 #endif
