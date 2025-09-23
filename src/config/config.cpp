@@ -380,48 +380,39 @@ bool Config::parseConfig(const std::string& path)
 }
 else if (key == "listen" && !tokens.empty()) {
     std::string value = tokens[0];
+    size_t colon = value.find(':');
     std::string host = "0.0.0.0";
     int port = 80; // default port
-
-    size_t colon = value.find(':');
     if (colon != std::string::npos) {
-        // Case: host:port
         host = value.substr(0, colon);
         std::string portPart = value.substr(colon + 1);
-
-        if (!isValidIPv4(host) && !isValidHost(host))
+        if (isValidIPv4(host)) {
+            // Valid IPv4
+        } else if (isValidHost(host)) {
+            // Valid hostname
+        } else {
             throw ConfigParseException("Invalid host in listen directive: " + host);
-
+        }
         std::istringstream portStream(portPart);
         if (!(portStream >> port) || port < 1 || port > 65535)
             throw ConfigParseException("Invalid port in listen directive: " + portPart);
+    } else if (isValidIPv4(value)) {
+        host = value;
+        port = 80;
+    } else if (isValidHost(value)) {
+        host = value;
+        port = 80;
+    } else {
+        throw ConfigParseException("Invalid listen directive: " + value);
     }
-    else {
-        // Case: only number (port) or only host
-        std::istringstream portStream(value);
-        if (portStream >> port) {
-            if (port < 1 || port > 65535)
-                throw ConfigParseException("Invalid port in listen directive: " + value);
-            host = "0.0.0.0"; // default
-        } else {
-            if (!isValidIPv4(value) && !isValidHost(value))
-                throw ConfigParseException("Invalid host in listen directive: " + value);
-            host = value;
-            port = 80; // default
-        }
-    }
-
-    // Deduplicate listeners
     std::pair<std::string,uint16_t> listenPair(host, static_cast<uint16_t>(port));
     if (std::find(_configData.listeners.begin(),
                   _configData.listeners.end(),
                   listenPair) != _configData.listeners.end()) {
         throw ConfigParseException("Duplicate listen directive: " + host + ":" + std::to_string(port));
     }
-
-    _configData.listeners.push_back(listenPair);
+    _configData.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
 }
-
         else if (key == "server_name" && !tokens.empty()) {
             _configData.server_name = tokens[0];
         }
