@@ -27,7 +27,7 @@ struct LocationConfig {
 
 struct ConfigData{
 	std::vector<std::pair<std::string, uint16_t> > listeners;
-	std::string server_name;
+	std::vector<std::string> server_names;
 	std::string root;
 	std::string index;
 	int         backlog;

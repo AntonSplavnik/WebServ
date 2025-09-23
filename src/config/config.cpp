@@ -27,7 +27,7 @@ LocationConfig::LocationConfig()
 
 ConfigData::ConfigData()
     :
-      server_name(),
+      server_names(),
       root(),
       index(),
       backlog(),
@@ -45,6 +45,12 @@ ConfigData Config::getConfigData() const {
     return _configData;
 }
 
+// Helper to add unique server names
+void addServerNameUnique(std::vector<std::string>& server_names, const std::string& name) {
+    if (std::find(server_names.begin(), server_names.end(), name) == server_names.end()) {
+        server_names.push_back(name);
+    }
+}
 
 // Helper to normalize paths (resolve ., .., symlinks)
 std::string normalizePath(const std::string& path) {
@@ -249,6 +255,8 @@ void validateConfig(ConfigData& config) {
         // Redirect validation
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
             throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
+        if (!loc.autoindex) loc.autoindex = config.autoindex;
+
     }
 }
 
@@ -387,6 +395,17 @@ bool Config::parseConfig(const std::string& path)
             if (blockEnd) break;
             continue;
         }
+        else {
+    // List of known directives
+   // Inside the location block parsing loop in parseConfig
+static const char* locationDirectivesArr[] = {
+    "autoindex", "root", "index", "allow_methods", "cgi_ext", "cgi_path",
+    "upload_enabled", "upload_store", "redirect", "error_page", "client_max_body_size"
+};
+static const size_t locationDirectivesCount = sizeof(locationDirectivesArr) / sizeof(locationDirectivesArr[0]);
+if (std::find(locationDirectivesArr, locationDirectivesArr + locationDirectivesCount, lkey) == locationDirectivesArr + locationDirectivesCount)
+    throw ConfigParseException("Unknown directive: " + lkey);
+}
         std::vector<std::string> ltokens = readValues(liss);
         parseCommonConfigField(loc, lkey, ltokens);
         parseLocationConfigField(loc, lkey, ltokens);
@@ -431,7 +450,7 @@ else if (key == "listen" && !tokens.empty()) {
     _configData.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
 }
         else if (key == "server_name" && !tokens.empty()) {
-            _configData.server_name = tokens[0];
+            addServerNameUnique(_configData.server_names, tokens[0]);
         }
         else if (key == "backlog" && !tokens.empty()) {
     int backlog = 0;

@@ -31,7 +31,9 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < config.getConfigData().listeners.size(); i++) {
         std::cout << config.getConfigData().listeners[i].first << ":" << config.getConfigData().listeners[i].second << std::endl;
     }
-    std::cout << config.getConfigData().server_name << std::endl;
+    for (size_t i = 0; i < config.getConfigData().server_names.size(); i++) {
+        std::cout << config.getConfigData().server_names[i].c_str() << std::endl;
+    }
     std::cout << config.getConfigData().root << std::endl;
     std::cout << config.getConfigData().index << std::endl;
     std::cout << config.getConfigData().backlog << std::endl;
