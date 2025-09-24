@@ -71,8 +71,7 @@ bool isValidIPv4(const std::string& ip) {
     return count == 4;
 }
 
-// Helper to validate host (simple check for IP or hostname) TODO: make no regex
-// Helper to validate host (simple check for IP or hostname) without regex
+// Helper to validate host (simple check for IP or hostname)
 bool isValidHost(const std::string& host) {
     if (isValidIPv4(host)) return true;
     if (host.empty()) return false;

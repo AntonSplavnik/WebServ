@@ -311,15 +311,11 @@ bool Config::parseConfig(const std::string& path)
         else {
     // List of known directives
    // Inside the location block parsing loop in parseConfig
-static const char* locationDirectivesArr[] = {
-    "autoindex", "root", "index", "allow_methods", "cgi_ext", "cgi_path",
-    "upload_enabled", "upload_store", "redirect", "error_page", "client_max_body_size"
-};
-static const size_t locationDirectivesCount = sizeof(locationDirectivesArr) / sizeof(locationDirectivesArr[0]);
+
 if (inLocationBlock) {
-if (std::find(locationDirectivesArr, locationDirectivesArr + locationDirectivesCount, lkey) == locationDirectivesArr + locationDirectivesCount)
-    throw ConfigParseException("Unknown directive: " + lkey);
-}
+	if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES  +  LOCATION_DIRECTIVES_COUNT , lkey) == LOCATION_DIRECTIVES +  LOCATION_DIRECTIVES_COUNT )
+    	throw ConfigParseException("Unknown directive: " + lkey);
+	}
 }
 
         std::vector<std::string> ltokens = readValues(liss);
@@ -382,17 +378,8 @@ else if (key == "error_log" && !tokens.empty()) {
     assignLogFile(_configData.error_log, tokens[0]);
 }
         else {
-    // List of known directives
-    static const char* knownDirectivesArr[] = {
-        "server", "location", "listen", "server_name", "backlog",
-        "access_log", "error_log", "autoindex", "index", "root",
-        "allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-         "redirect"
-    };
-
-    static const size_t knownDirectivesCount = sizeof(knownDirectivesArr) / sizeof(knownDirectivesArr[0]);
    	if (!inLocationBlock) {
-    if (std::find(knownDirectivesArr, knownDirectivesArr + knownDirectivesCount, key) == knownDirectivesArr + knownDirectivesCount) {
+    if (std::find(SERVER_DIRECTIVES, SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT, key) == SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT) {
         throw ConfigParseException("Unknown directive: " + key);
     }
     }
