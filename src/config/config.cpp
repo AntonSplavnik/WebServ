@@ -364,7 +364,6 @@ std::vector<std::string> readValues(std::istringstream& iss) {
 bool Config::parseConfig(const std::string& path)
 {
 	bool inLocationBlock = false;
-	int braceCount = 0;
     std::ifstream file(path);
     if (!file.is_open())
       throw ConfigParseException("Failed to open config file: " + path);
@@ -389,12 +388,6 @@ bool Config::parseConfig(const std::string& path)
                     << "'" << std::endl;
     }
     std::cout << "Line: '" << line << "'" << std::endl;
-    if (!tokens.empty() && tokens.back() == "{") {
-    braceCount++;
-} else if (!loc.path.empty() && loc.path.back() == '{') {
-    braceCount--;
-    loc.path.pop_back();
-}
 
     std::cout << "Found brace on same line: " << (foundBrace ? "yes" : "no") << std::endl;
     if (!foundBrace) {
@@ -510,8 +503,6 @@ else if (key == "error_log" && !tokens.empty()) {
     parseCommonConfigField(_configData, key, tokens);
 }
     }
-    if (braceCount != 0)
-    	throw ConfigParseException("Unmatched braces in config file");
     validateConfig(_configData);
     return true;
 }
