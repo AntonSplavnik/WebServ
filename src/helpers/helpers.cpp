@@ -1,4 +1,5 @@
 #include "../config/config.hpp"
+#include "helpers.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <regex>
@@ -41,10 +42,11 @@ bool isValidPath(const std::string& path, int mode) {
 
 // Helper to validate HTTP methods
 bool isValidHttpMethod(const std::string& method) {
-    static const char* valid[] = {
-        "GET", "POST", "DELETE"
-    };
-    return std::find(valid, valid + 3, method) != (valid + 3);
+    for (size_t i = 0; i < HTTP_METHODS_COUNT; ++i) {
+        if (method == HTTP_METHODS[i])
+            return true;
+    }
+    return false;
 }
 
 // Helper to validate HTTP status codes
@@ -70,29 +72,36 @@ bool isValidIPv4(const std::string& ip) {
 }
 
 // Helper to validate host (simple check for IP or hostname) TODO: make no regex
+// Helper to validate host (simple check for IP or hostname) without regex
 bool isValidHost(const std::string& host) {
     if (isValidIPv4(host)) return true;
-    static const std::regex hostname("^([a-zA-Z0-9\\-\\.]+)$");
-    if (std::regex_match(host, hostname)) {
-        // Reject all-numeric hostnames
-        if (std::find_if(host.begin(), host.end(), ::isalpha) == host.end())
-            return false;
-        return true;
+    if (host.empty()) return false;
+    for (size_t i = 0; i < host.size(); ++i) {
+        char c = host[i];
+        if (!(isalnum(c) || c == '-' || c == '.')) return false;
     }
-    return false;
+    // Reject all-numeric hostnames
+    if (std::find_if(host.begin(), host.end(), ::isalpha) == host.end())
+        return false;
+    return true;
 }
 
 // Helper to validate CGI extensions
 bool isValidCgiExt(const std::string& ext) {
-    static const char* valid[] = { ".cgi", ".pl", ".py", ".php", ".sh", ".rb", ".js", ".asp", ".exe", ".bat", ".tcl", ".lua" };
-    return std::find(valid, valid + 12, ext) != (valid + 12);
+    for (size_t i = 0; i < VALID_CGI_EXTENSIONS_COUNT; ++i) {
+        if (ext == VALID_CGI_EXTENSIONS[i])
+            return true;
+    }
+    return false;
 }
 
 // Helper to validate autoindex values
 bool isValidAutoindexValue(const std::string& value) {
-    return value == "on" || value == "off" ||
-           value == "true" || value == "false" ||
-           value == "1" || value == "0";
+    for (size_t i = 0; i < AUTOINDEX_VALUES_COUNT; ++i) {
+        if (value == AUTOINDEX_VALUES[i])
+            return true;
+    }
+    return false;
 }
 
 
