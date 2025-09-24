@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .error-container {
+            text-align: center;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 60px 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        .error-message {
+            font-size: 2rem;
+            margin: 20px 0;
+            opacity: 0.9;
+        }
+        .error-description {
+            font-size: 1.2rem;
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        @keyframes glow {
+            from { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+            to { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-message">Page Not Found</h2>
+        <p class="error-description">The page you're looking for doesn't exist.</p>
+    </div>
+</body>
+</html>

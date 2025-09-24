@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   http_requst.cpp                                    :+:      :+:    :+:   */
+/*   http_request.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/22 14:20:31 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/24 13:46:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,4 +132,6 @@ void HttpRequest::parseBody(){
 	*/
 }
 
-std::string HttpRequest::getMethod(){ return _method;}
+std::string HttpRequest::getMethod() const { return _method;}
+std::string HttpRequest::getPath() const {return _path;}
+std::string HttpRequest::getVersion() const {return _version;}

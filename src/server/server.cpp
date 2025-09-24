@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/22 16:31:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/24 16:42:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "config.hpp"
 #include "socket.hpp"
 #include <ctime>
+#include <fstream>
 
 /* - initialize() - Create and configure the listening socket using your
    Socket class
@@ -201,6 +202,8 @@ void Server::handleClientSocket(short fd, short revents){
 			HttpRequest requestParser;
 			requestParser.parseRequest(_clients[fd]);
 
+			updateClientActivity(fd);
+
 			Methods method = stringToMethod(requestParser.getMethod());
 			switch (method) {
 				case GET: handleGET(requestParser, _clients[fd]); break;
@@ -270,7 +273,6 @@ void Server::handleClientSocket(short fd, short revents){
 	}
 }
 
-
 void Server::clientDisconetion(short fd){
 
 	close(fd);
@@ -287,14 +289,35 @@ void Server::clientDisconetion(short fd){
 
 }
 
-void handleGET(const HttpRequest& request, ClientInfo& client){
+std::string Server::mapPath(const HttpRequest& request){
+
+	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ";
+	std::string requestPath = request.getPath();
+	return localPath + requestPath;
+}
+
+
+void Server::handleGET(const HttpRequest& request, ClientInfo& client){
+
+	std::string mappedPath = mapPath(request);
+	std::ifstream file(mappedPath.c_str());
+	if (!file.is_open()){
+		//generate responce with an eror page
+		std::cout << "Error: 404 path is not found" << std::endl;
+		HttpResponse response(404);
+		response.generateResponse();
+	}
+	else{
+		HttpResponse response(200, request.getPath());
+		response.generateResponse();
+	}
 
 	/*
 
 	The GET method finds the directory/file, reads it, and uses HttpResponse methods to
 	properly format the HTTP response with headers, status codes, etc.
 
-	1. Parse the request path → /index.html, /images/logo.png
+	1. Parse the request path → /index.html, /images/logo.png (done in httpRequest)
 	2. Map to file system path → /var/www/html/index.html
 	3. Check if file exists and is readable
 	4. Read file contents (if it exists)
@@ -543,74 +566,3 @@ void Server::checkClientTimeouts(){
 		}
 	}
 }
-
-/*
-For HTTP 1.1 connection timeouts, you need to track keep-alive timeout
-   and implement timer checking.
-
-  Headers to Check:
-
-  1. Keep-Alive Header (from client):
-
-  Connection: keep-alive
-  Keep-Alive: timeout=5, max=100
-
-  2. Server Response Headers:
-
-  Connection: keep-alive
-  Keep-Alive: timeout=15, max=100
-
-  Implementation Strategy:
-
-  1. Add Timeout Tracking to ClientInfo:
-
-  // In server.hpp - ClientInfo structure
-  struct ClientInfo {
-      // ... existing fields ...
-      time_t lastActivity;        // Last time client sent data
-      int keepAliveTimeout;       // Timeout in seconds (default 15)
-      int maxRequests;           // Max requests per connection
-      int requestCount;          // Current request count
-  };
-
-  2. Functions to Add:
-
-  // In Server class
-  void updateClientActivity(int fd);           // Reset timer on
-  activity
-  void checkClientTimeouts();                 // Check all clients for
-  timeout
-  bool isClientTimedOut(int fd);              // Check specific client
-  void parseKeepAliveHeader(const HttpRequest& req, ClientInfo& client);
-
-  3. Timer Check Logic:
-
-  void Server::checkClientTimeouts() {
-      time_t now = time(NULL);
-
-      for (auto it = _clients.begin(); it != _clients.end();) {
-          if (now - it->second.lastActivity >
-  it->second.keepAliveTimeout) {
-              std::cout << "Client FD " << it->first << " timed out" <<
-  std::endl;
-              clientDisconetion(it->first);
-              it = _clients.erase(it);  // Safe erase during iteration
-          } else {
-              ++it;
-          }
-      }
-  }
-
-  4. Where to Call Timer Check:
-
-  - In main poll loop (server.cpp:90-101) - check every poll cycle
-  - After handling all poll events (server.cpp:100)
-
-  5. Update Activity:
-
-  - On recv() (server.cpp:168) - reset lastActivity = time(NULL)
-  - On successful request parsing (server.cpp:184)
-
-  The key is tracking lastActivity timestamp and checking it against
-  keepAliveTimeout in your main event loop.
-*/

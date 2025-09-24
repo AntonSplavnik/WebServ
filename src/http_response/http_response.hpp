@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/18 14:10:34 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 15:44:03 by antonsplavn      ###   ########.fr       */
+/*   Created: Invalid date        by                   #+#    #+#             */
+/*   Updated: 2025/09/24 17:45:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,25 +15,50 @@
 
 #include <iostream>
 #include <string>
+#include <map>
+#include <fstream>
+
+enum fileExtentions{
+	HTML,
+	PDF,
+	JPEG,
+	TXT,
+	PNG
+}
 
 class HttpResponse {
 
 	public:
-		HttpResponse();
+		HttpResponse(int statusCode);
+		HttpResponse(int statusCode, std::string filePath);
 		~HttpResponse();
 
-		void setBody();
-		void serReasonPhrase();
-		void setVersion();
-		void serStatusCode();
-		void setHeader();
+		void generateResponse();
+		void setBody(std::string body);
+		void setReasonPhrase(std::string reasonPhrase);
+		void setVersion(std::string version);
+		void setStatusCode(std::string code);
+		void setHeader(std::string header);
+
+		std::string getBody();
+		std::string getPath();
+		std::string getVersion();
+		std::string getStatusCode();
+		std::string getContentType();
+		char getContentLength();
+		std::string getTimeNow();
+		fileExtentions getFileExtension(std::string filePath);
 
 	private:
-		std::string _body;
-		std::string _reasonPhrase;
-		std::string _version;
-		std::string _statusCode;
-		std::string _setContentType;
+		int _statusCode;
+		std::string	_reasonPhrase;
+		std::string	_date;
+		std::string _serverName;
+		float	_version;
+		std::string _filePath;
+		std::string _contentType;
+		char _contentLength;
+		std::string	_body;
 		std::map<std::string, std::string> _headers;
 };
 

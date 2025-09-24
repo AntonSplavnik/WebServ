@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 14:00:26 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/24 16:46:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,8 +38,9 @@ class HttpRequest{
 		void parseQuery();
 		void parseVersion();
 
-		std::string getMethod();
-
+		std::string getMethod() const;
+		std::string getPath() const;
+		std::string getVersion() const;
 	private:
 
 		std::string _line;

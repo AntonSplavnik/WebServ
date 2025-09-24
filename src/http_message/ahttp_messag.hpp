@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 15:08:46 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/18 15:15:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/22 18:42:04 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,6 @@ class HttpMessage{
 		std::string _body;
 		int 		_contentLength;
 
-		std::string _method;
 		std::string _path;
 		std::string _version;
 		// std::string query;

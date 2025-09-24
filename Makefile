@@ -5,8 +5,8 @@
 #                                                     +:+ +:+         +:+      #
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/09/16 by antonsplavnik           #+#    #+#                 #
-#    Updated: 2025/09/16 by antonsplavnik          ###   ########.fr           #
+#    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
+#    Updated: 2025/09/24 13:41:47 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,7 @@ NAME		= webserv
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config
+INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response -Isrc/http_message
 
 # Directories
 SRC_DIR		= src
@@ -25,12 +25,18 @@ OBJ_DIR		= obj
 SERVER_DIR	= $(SRC_DIR)/server
 SOCKET_DIR	= $(SRC_DIR)/socket
 CONFIG_DIR	= $(SRC_DIR)/config
+HTTP_REQ_DIR	= $(SRC_DIR)/http_request
+HTTP_RES_DIR	= $(SRC_DIR)/http_response
+HTTP_MSG_DIR	= $(SRC_DIR)/http_message
 
 # Source files
 SRC_FILES	= main.cpp \
 			  $(SERVER_DIR)/server.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
-			  $(CONFIG_DIR)/config.cpp
+			  $(CONFIG_DIR)/config.cpp \
+			  $(HTTP_REQ_DIR)/http_request.cpp \
+			  $(HTTP_RES_DIR)/http_response.cpp \
+			  $(HTTP_MSG_DIR)/ahttp_message.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -38,7 +44,10 @@ OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 # Header files for dependencies
 HEADERS		= $(SERVER_DIR)/server.hpp \
 			  $(SOCKET_DIR)/socket.hpp \
-			  $(CONFIG_DIR)/config.hpp
+			  $(CONFIG_DIR)/config.hpp \
+			  $(HTTP_REQ_DIR)/http_request.hpp \
+			  $(HTTP_RES_DIR)/http_response.hpp \
+			  $(HTTP_MSG_DIR)/ahttp_messag.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m
