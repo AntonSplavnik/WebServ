@@ -36,6 +36,10 @@ static const char* SERVER_DIRECTIVES[] = {
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
+// Default error pages
+static const char* DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/40x.html";
+static const char* DEFAULT_ERROR_PAGE_500 = "runtime/www/errors/50x.html";
+static const char* DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/40x.html";
 
 struct LocationConfig {
 	std::string path;
@@ -77,12 +81,16 @@ class Config {
 
 	public:
 	    Config();
-		ConfigData getConfigData() const;
-		bool parseConfig(const std::string& path);
+		ConfigData	getConfigData() const;
+		bool		parseConfig(const std::string& path);
+		bool		parseConfigFile(std::ifstream& file);
+		void		validateConfig(ConfigData& config);
 
 	private:
 		ConfigData _configData;
 		std::vector<ConfigData> _servers;
 };
+
+bool assignLogFile(std::string& logField, const std::string& path);
 
 #endif

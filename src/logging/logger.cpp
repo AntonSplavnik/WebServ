@@ -1,11 +1,25 @@
 // Logger.cpp
 #include "logger.hpp"
-
+#include "../exceptions/config_exceptions.hpp"
+#include "../helpers/helpers.hpp"
+#include <unistd.h>
 //Instructions: Implement a simple logging system that writes access and error logs to specified files.
 //usage:
 //Log with logAccess whenever you successfully handle an HTTP request—record every client request, regardless of outcome (even for 404 or 500 responses).
 //Use logError for server-side issues, misconfigurations, internal errors, or unexpected conditions—anything that is not a normal request, such as failed file access, config errors, or exceptions
 
+// Helper to assign log file paths with validation and creation if needed
+bool assignLogFile(std::string& logField, const std::string& path) {
+    if (!isValidFile(path, W_OK) && !path.empty()) {
+        std::ofstream ofs(path.c_str(), std::ios::app);
+        if (!ofs)
+            throw ConfigParseException("Cannot create or open log file: " + path);
+        else
+            std::cout << "Info: Created log file '" << path << "'." << std::endl;
+    }
+    logField = path;
+    return true;
+}
 
 // Initialize log files
 Logger::Logger(const std::string& accessPath, const std::string& errorPath)

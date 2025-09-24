@@ -1,6 +1,7 @@
 #include "config.hpp"
 #include "../helpers/helpers.hpp"
 #include "../exceptions/config_exceptions.hpp"
+#include "../logging/logger.hpp"
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -44,53 +45,7 @@ ConfigData Config::getConfigData() const {
     return _configData;
 }
 
-// Helper to assign log file paths with validation and creation if needed
-bool assignLogFile(std::string& logField, const std::string& path) {
-    if (!isValidFile(path, W_OK) && !path.empty()) {
-        std::ofstream ofs(path.c_str(), std::ios::app);
-        if (!ofs)
-        	throw ConfigParseException("Cannot create or open log file: " + path);
-		else
-            std::cout << "Info: Created log file '" << path << "'." << std::endl;
-    }
-    logField = path;
-    return true;
-}
-
-// Parsing of the location-specific config fields
-void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
-    if (key == "upload_enabled" && !tokens.empty()) {
-        const std::string& val = tokens[0];
-        if (val == "on" || val == "true" || val == "1") {
-            config.upload_enabled = true;
-        } else if (val == "off" || val == "false" || val == "0") {
-            config.upload_enabled = false;
-        } else {
-            throw ConfigParseException("Invalid upload_enabled value: " + val);
-        }
-    }
-    else if (key == "upload_store" && !tokens.empty()) {
-        if (!isValidPath(tokens[0], W_OK | X_OK))
-            throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
-        config.upload_store = normalizePath(tokens[0]);
-    }
-    else if (key == "redirect" && !tokens.empty()) {
-        if (tokens.size() < 2)
-            throw ConfigParseException("Redirect directive requires status code and target path/URL");
-        int code = std::atoi(tokens[0].c_str());
-        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
-            config.redirect_code = code;
-            config.redirect = tokens[1];
-        } else {
-            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-        }
-        if (tokens.size() > 2)
-            throw ConfigParseException("Too many arguments for redirect directive");
-        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
-    }
-}
-
-void validateConfig(ConfigData& config) {
+void Config::validateConfig(ConfigData& config) {
     // --- Top-level required fields ---
     if (config.root.empty())
         throw ConfigParseException("Missing required config: root");
@@ -112,18 +67,13 @@ void validateConfig(ConfigData& config) {
     if (config.listeners.empty())
     	throw ConfigParseException("Missing required config: at least one listen directive");
     if (config.error_pages.empty()) {
-    	config.error_pages[404] = "runtime/www/errors/40x.html";
-    	config.error_pages[500] = "runtime/www/errors/50x.html";
-    	config.error_pages[403] = "runtime/www/errors/40x.html";
-	}
-
-
-
-
+        config.error_pages[404] = DEFAULT_ERROR_PAGE_404;
+        config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
+        config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
+    }
     // --- Each location ---
     for (size_t i = 0; i < config.locations.size(); ++i) {
         LocationConfig& loc = config.locations[i];
-
         // Fallbacks
         if (loc.root.empty()) loc.root = config.root;
         if (loc.index.empty()) loc.index = config.index;
@@ -180,7 +130,38 @@ void validateConfig(ConfigData& config) {
     }
 }
 
-
+// Parsing of the location-specific config fields
+void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
+    if (key == "upload_enabled" && !tokens.empty()) {
+        const std::string& val = tokens[0];
+        if (val == "on" || val == "true" || val == "1") {
+            config.upload_enabled = true;
+        } else if (val == "off" || val == "false" || val == "0") {
+            config.upload_enabled = false;
+        } else {
+            throw ConfigParseException("Invalid upload_enabled value: " + val);
+        }
+    }
+    else if (key == "upload_store" && !tokens.empty()) {
+        if (!isValidPath(tokens[0], W_OK | X_OK))
+            throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
+        config.upload_store = normalizePath(tokens[0]);
+    }
+    else if (key == "redirect" && !tokens.empty()) {
+        if (tokens.size() < 2)
+            throw ConfigParseException("Redirect directive requires status code and target path/URL");
+        int code = std::atoi(tokens[0].c_str());
+        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
+            config.redirect_code = code;
+            config.redirect = tokens[1];
+        } else {
+            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
+        }
+        if (tokens.size() > 2)
+            throw ConfigParseException("Too many arguments for redirect directive");
+        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
+    }
+}
 
 // Helper to parse common config fields
 template<typename ConfigT>
@@ -211,15 +192,14 @@ void parseCommonConfigField(ConfigT& config, const std::string& key, const std::
     if (size > MAX_CLIENT_BODY_SIZE)
         throw ConfigParseException("client_max_body_size (" + tokens[0] + ") exceeds maximum allowed (" + std::to_string(MAX_CLIENT_BODY_SIZE) + ")");
     config.client_max_body_size = size;
-} else if (key == "allow_methods" && !tokens.empty()) {
+}  else if (key == "allow_methods" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
         if (!isValidHttpMethod(tokens[i]))
-          throw ConfigParseException("Invalid HTTP method in allow_methods: " + tokens[i]);
-        if (std::find(config.allow_methods.begin(), config.allow_methods.end(), tokens[i]) == config.allow_methods.end()) {
-            config.allow_methods.push_back(tokens[i]);
-        }
+            throw ConfigParseException("Invalid HTTP method in allow_methods: " + tokens[i]);
+        addUnique(config.allow_methods, tokens[i]);
     }
-    } else if (key == "error_page" && tokens.size() >= 2) {
+}
+     else if (key == "error_page" && tokens.size() >= 2) {
     std::string path = tokens.back();
     if (!isValidFile(path, R_OK))
       throw ConfigParseException("Invalid or inaccessible error_page file: " + path);
@@ -238,31 +218,26 @@ else if (key == "cgi_ext" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
         if (!isValidCgiExt(tokens[i]))
           throw ConfigParseException("Invalid CGI extension: " + tokens[i]);
-        if (std::find(config.cgi_ext.begin(), config.cgi_ext.end(), tokens[i]) == config.cgi_ext.end()) {
-            config.cgi_ext.push_back(tokens[i]);
+        addUnique(config.cgi_ext, tokens[i]);
         }
     }
-}
+
     else if (key == "cgi_path" && !tokens.empty()) {
     for (size_t i = 0; i < tokens.size(); ++i) {
         if (!isValidPath(tokens[i], X_OK))
           throw ConfigParseException("Invalid CGI path: " + tokens[i]);
-        if (std::find(config.cgi_path.begin(), config.cgi_path.end(), tokens[i]) == config.cgi_path.end()) {
-            config.cgi_path.push_back(tokens[i]);
+        addUnique(config.cgi_path, tokens[i]);
         }
     }
-}
+
 
 }
 
 // Loads configuration data from a file at the given path.
 // Returns true if the file was successfully read and parsed, false otherwise
-bool Config::parseConfig(const std::string& path)
+bool Config::parseConfigFile(std::ifstream& file)
 {
 	bool inLocationBlock = false;
-    std::ifstream file(path);
-    if (!file.is_open())
-      throw ConfigParseException("Failed to open config file: " + path);
 
     std::string line;
     while (std::getline(file, line)) {
@@ -387,5 +362,15 @@ else if (key == "error_log" && !tokens.empty()) {
 }
     }
     validateConfig(_configData);
+    return true;
+}
+
+bool Config::parseConfig(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        throw ConfigParseException("Failed to open config file: " + path);
+
+    parseConfigFile(file);
+
     return true;
 }
