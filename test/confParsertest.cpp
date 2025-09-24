@@ -4,7 +4,9 @@
 #include <string>
 #include "../src/logging/logger.hpp"
 
-// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp
+// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp src/helpers/helpers.cpp
+
+
 
 
 int main(int argc, char* argv[]) {

@@ -1,12 +1,11 @@
 #include "config.hpp"
+#include "../helpers/helpers.hpp"
 #include "../exceptions/config_exceptions.hpp"
 #include <fstream>
-#include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <regex>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <sstream>
 
 Config::Config() : _configData() {}
 
@@ -45,99 +44,6 @@ ConfigData Config::getConfigData() const {
     return _configData;
 }
 
-// Helper to add unique server names
-void addServerNameUnique(std::vector<std::string>& server_names, const std::string& name) {
-    if (std::find(server_names.begin(), server_names.end(), name) == server_names.end()) {
-        server_names.push_back(name);
-    }
-}
-
-// Helper to normalize paths (resolve ., .., symlinks)
-std::string normalizePath(const std::string& path) {
-    char resolved[PATH_MAX];
-    if (realpath(path.c_str(), resolved)) {
-        return std::string(resolved);
-    }
-    return path; // fallback if path does not exist
-}
-
-// Helper to validate if a path is a regular file and has the specified access mode
-bool isValidFile(const std::string& path, int mode) {
-    struct stat sb;
-    if (stat(path.c_str(), &sb) != 0) return false;
-    return S_ISREG(sb.st_mode) && (access(path.c_str(), mode) == 0);
-}
-
-// Helper to validate if a path is a directory and has the specified access mode
-bool isValidPath(const std::string& path, int mode) {
-    struct stat sb;
-    if (stat(path.c_str(), &sb) != 0) return false;
-    if (!S_ISDIR(sb.st_mode)) return false;
-    return (access(path.c_str(), mode) == 0);
-}
-// Helper to validate HTTP methods
-bool isValidHttpMethod(const std::string& method) {
-    static const char* valid[] = {
-        "GET", "POST", "DELETE"
-    };
-    return std::find(valid, valid + 3, method) != (valid + 3);
-}
-
-// Helper to validate HTTP status codes
-bool isValidHttpStatusCode(int code) {
-    return code >= 100 && code <= 599;
-}
-// Helper to validate IPv4 addresses
-bool isValidIPv4(const std::string& ip) {
-    size_t start = 0, end = 0, count = 0;
-    while (end != std::string::npos) {
-        end = ip.find('.', start);
-        std::string part = ip.substr(start, (end == std::string::npos) ? std::string::npos : end - start);
-        if (part.empty() || part.size() > 3) return false;
-        for (size_t i = 0; i < part.size(); ++i)
-            if (!isdigit(part[i])) return false;
-        int num = std::atoi(part.c_str());
-        if (num < 0 || num > 255) return false;
-        start = end + 1;
-        ++count;
-    }
-    return count == 4;
-}
-// Helper to validate CGI extensions
-bool isValidCgiExt(const std::string& ext) {
-    static const char* valid[] = { ".cgi", ".pl", ".py", ".php", ".sh", ".rb", ".js", ".asp", ".exe", ".bat", ".tcl", ".lua" };
-return std::find(valid, valid + 12, ext) != (valid + 12);
-}
-
-// Helper to validate host (simple check for IP or hostname)
-bool isValidHost(const std::string& host) {
-    if (isValidIPv4(host)) return true;
-    static const std::regex hostname("^([a-zA-Z0-9\\-\\.]+)$");
-    if (std::regex_match(host, hostname)) {
-        // Reject all-numeric hostnames
-        if (std::find_if(host.begin(), host.end(), ::isalpha) == host.end())
-            return false;
-        return true;
-    }
-    return false;
-}
-
-// Helper to validate autoindex values
-bool isValidAutoindexValue(const std::string& value) {
-    return value == "on" || value == "off" ||
-           value == "true" || value == "false" ||
-           value == "1" || value == "0";
-}
-// Helper to add unique values from 'src' to 'dest'
-template<typename T>
-void addUnique(std::vector<T>& dest, const std::vector<T>& src) {
-    for (size_t i = 0; i < src.size(); ++i) {
-        if (std::find(dest.begin(), dest.end(), src[i]) == dest.end()) {
-            dest.push_back(src[i]);
-        }
-    }
-}
-
 // Helper to assign log file paths with validation and creation if needed
 bool assignLogFile(std::string& logField, const std::string& path) {
     if (!isValidFile(path, W_OK) && !path.empty()) {
@@ -151,7 +57,7 @@ bool assignLogFile(std::string& logField, const std::string& path) {
     return true;
 }
 
-// Helper to parse location-specific config fields
+// Parsing of the location-specific config fields
 void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "upload_enabled" && !tokens.empty()) {
         const std::string& val = tokens[0];
@@ -349,16 +255,6 @@ else if (key == "cgi_ext" && !tokens.empty()) {
 
 }
 
-// Helper to read all values from iss, stripping trailing semicolons
-std::vector<std::string> readValues(std::istringstream& iss) {
-    std::vector<std::string> values;
-    std::string value;
-    while (iss >> value) {
-    if (!value.empty() && value.back() == ';') value.pop_back();
-    if (!value.empty()) values.push_back(value);
-}
-    return values;
-}
 // Loads configuration data from a file at the given path.
 // Returns true if the file was successfully read and parsed, false otherwise
 bool Config::parseConfig(const std::string& path)
@@ -470,7 +366,7 @@ else if (key == "listen" && !tokens.empty()) {
     _configData.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
 }
         else if (key == "server_name" && !tokens.empty()) {
-            addServerNameUnique(_configData.server_names, tokens[0]);
+            addUnique(_configData.server_names, tokens[0]);
         }
         else if (key == "backlog" && !tokens.empty()) {
     int backlog = 0;
