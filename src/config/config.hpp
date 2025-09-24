@@ -83,14 +83,19 @@ class Config {
 	    Config();
 		ConfigData	getConfigData() const;
 		bool		parseConfig(const std::string& path);
-		bool		parseConfigFile(std::ifstream& file);
-		void		validateConfig(ConfigData& config);
 
 	private:
-		ConfigData _configData;
+		ConfigData	_configData;
 		std::vector<ConfigData> _servers;
+		bool		inLocationBlock;
+		bool		parseConfigFile(std::ifstream& file);
+		void		validateConfig(ConfigData& config);
+		void		parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens);
+		void		parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file);
 };
 
-bool assignLogFile(std::string& logField, const std::string& path);
+
 
 #endif

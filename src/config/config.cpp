@@ -8,7 +8,16 @@
 #include <unistd.h>
 #include <sstream>
 
-Config::Config() : _configData() {}
+//parseConfigFile reads each line, extracts the key and tokens, and calls parseServerConfigField and parseCommonConfigField.
+//parseServerConfigField handles server-level directives. For a location block, it parses its contents, calling both parseCommonConfigField and parseLocationConfigField for each directive inside the block.
+//This ensures that both common and location-specific config fields are parsed appropriately at their respective levels.
+//This structure allows for clear separation and correct handling of server and location configuration directives
+
+
+Config::Config() : _configData()
+{
+    inLocationBlock = false;
+}
 
 LocationConfig::LocationConfig()
     : path(),
@@ -131,7 +140,7 @@ void Config::validateConfig(ConfigData& config) {
 }
 
 // Parsing of the location-specific config fields
-void parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
+void Config::parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "upload_enabled" && !tokens.empty()) {
         const std::string& val = tokens[0];
         if (val == "on" || val == "true" || val == "1") {
@@ -165,7 +174,7 @@ void parseLocationConfigField(LocationConfig& config, const std::string& key, co
 
 // Helper to parse common config fields
 template<typename ConfigT>
-void parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
+void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
     if (key == "autoindex" && !tokens.empty()) {
         if (!isValidAutoindexValue(tokens[0]))
           throw ConfigParseException("Invalid autoindex value: " + tokens[0]);
@@ -233,75 +242,54 @@ else if (key == "cgi_ext" && !tokens.empty()) {
 
 }
 
-// Loads configuration data from a file at the given path.
-// Returns true if the file was successfully read and parsed, false otherwise
-bool Config::parseConfigFile(std::ifstream& file)
-{
-	bool inLocationBlock = false;
-
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        std::string key;
-        if (!(iss >> key)) continue;
-        std::vector<std::string> tokens = readValues(iss);
+// Parsing of the server-specific config fields
+    void Config::parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
+    {
         if (key == "location" && !tokens.empty()) {
-         inLocationBlock = true;
-    	LocationConfig loc;
-    	loc.path = tokens[0];
+            inLocationBlock = true;
+            LocationConfig loc;
+            loc.path = tokens[0];
 
-    // Check for '{' at end of line or next line
-    bool foundBrace = false;
-    std::cout << "Reading location for path: " << loc.path << std::endl;
-    std::cout << "tokens" << std::endl;
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        std::cout << "  Token[" << i << "]: '" << tokens[i]
-                    << "'" << std::endl;
-    }
-    std::cout << "Line: '" << line << "'" << std::endl;
+            // Check for '{' at end of line or next line
+            bool foundBrace = false;
+            if (!tokens.empty() && tokens.back() == "{") {
+                foundBrace = true;
+            }
+            std::string line;
+            if (!foundBrace) {
+                if (!std::getline(file, line)) return;
+                std::istringstream brace_iss(line);
+                std::string maybeBrace;
+                if (!(brace_iss >> maybeBrace) || maybeBrace != "{") return;
+            }
 
-    std::cout << "Found brace on same line: " << (foundBrace ? "yes" : "no") << std::endl;
-    if (!foundBrace) {
-        // Try next line for '{'
-        if (!std::getline(file, line)) continue;
-        std::istringstream brace_iss(line);
-        std::string maybeBrace;
-        if (!(brace_iss >> maybeBrace) || maybeBrace != "{") continue;
-    }
-	std::cout << "Parsing location block for path: " << loc.path << std::endl;
-    // Parse the location block
-    while (std::getline(file, line)) {
-        // Remove possible trailing '}'
-        size_t closePos = line.find('}');
-        bool blockEnd = (closePos != std::string::npos);
-        std::string lineContent = blockEnd ? line.substr(0, closePos) : line;
+            // Parse the location block
+            while (std::getline(file, line)) {
+                size_t closePos = line.find('}');
+                bool blockEnd = (closePos != std::string::npos);
+                std::string lineContent = blockEnd ? line.substr(0, closePos) : line;
 
-        std::istringstream liss(lineContent);
-        std::string lkey;
-        if (!(liss >> lkey)) {
-            if (blockEnd) break;
+                std::istringstream liss(lineContent);
+                std::string lkey;
+                if (!(liss >> lkey)) {
+                    if (blockEnd) break;
+                    continue;
+                }
+                if (inLocationBlock) {
+                    if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT, lkey) == LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT)
+                        throw ConfigParseException("Unknown directive: " + lkey);
+                }
+                std::vector<std::string> ltokens = readValues(liss);
+                parseCommonConfigField(loc, lkey, ltokens);
+                parseLocationConfigField(loc, lkey, ltokens);
+                if (blockEnd) break;
+            }
+            config.locations.push_back(loc);
             inLocationBlock = false;
-            continue;
+            return;
         }
-        else {
-    // List of known directives
-   // Inside the location block parsing loop in parseConfig
 
-if (inLocationBlock) {
-	if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES  +  LOCATION_DIRECTIVES_COUNT , lkey) == LOCATION_DIRECTIVES +  LOCATION_DIRECTIVES_COUNT )
-    	throw ConfigParseException("Unknown directive: " + lkey);
-	}
-}
-
-        std::vector<std::string> ltokens = readValues(liss);
-        parseCommonConfigField(loc, lkey, ltokens);
-        parseLocationConfigField(loc, lkey, ltokens);
-        if (blockEnd) break;
-    }
-    _configData.locations.push_back(loc);
-    continue;
-}
-else if (key == "listen" && !tokens.empty()) {
+ if (key == "listen" && !tokens.empty()) {
     std::string value = tokens[0];
     size_t colon = value.find(':');
     std::string host = "0.0.0.0";
@@ -358,9 +346,22 @@ else if (key == "error_log" && !tokens.empty()) {
         throw ConfigParseException("Unknown directive: " + key);
     }
     }
-    parseCommonConfigField(_configData, key, tokens);
 }
-    }
+}
+
+// Loads configuration data from a file at the given path.
+// Returns true if the file was successfully read and parsed, false otherwise
+bool Config::parseConfigFile(std::ifstream& file)
+{
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string key;
+        if (!(iss >> key)) continue;
+        std::vector<std::string> tokens = readValues(iss);
+        parseServerConfigField(_configData, key, tokens, file);
+        parseCommonConfigField(_configData, key, tokens);
+}
     validateConfig(_configData);
     return true;
 }

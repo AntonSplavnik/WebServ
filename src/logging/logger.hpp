@@ -18,5 +18,7 @@ private:
     std::string getTimestamp() const;
 };
 
+bool assignLogFile(std::string& logField, const std::string& path);
+
 #endif
 
