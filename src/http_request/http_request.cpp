@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/24 13:46:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 15:26:51 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -135,3 +135,10 @@ void HttpRequest::parseBody(){
 std::string HttpRequest::getMethod() const { return _method;}
 std::string HttpRequest::getPath() const {return _path;}
 std::string HttpRequest::getVersion() const {return _version;}
+std::string HttpRequest::getContenType() const {
+	std::map<std::string, std::string>::iterator it = _headers.find("Connection");
+	if (it != _headers.end())
+		return it->second;
+	else
+		return "Keep-alive";
+}

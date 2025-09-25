@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/24 17:49:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 17:36:15 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,16 +57,26 @@
 
   Each line ends with \r\n (carriage return + line feed).
 */
-HttpResponse::HttpResponse(int statusCode)
-	:_statusCode(statusCode), _serverName("WebServ"), _version(1.0f){}
 
-HttpResponse::HttpResponse(int statusCode, std::string filePath)
-	:_statusCode(statusCode), _filePath(filePath), _serverName("WebServ"), _version(1.0f){}
+HttpResponse::HttpResponse(HttpRequest request)
+	:_protocolVer("HTTP/1.1 "), _request(request), _serverName("WebServ"), _serverVersion(1.0f){}
 
 fileExtentions HttpResponse::getFileExtension(std::string filePath){
-	//implementation here
+
+	int dotPos = filePath.find_last_of('.');
+	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
+		return UNKNOWN;
+	}
+	std::string extension = filePath.substr(dotPos + 1);
 	fileExtentions identifyedExtention;
-	return identifyedExtention;
+	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+	if (extension == "html" || extension == "htm") return HTML;
+	else if (extension == "pdf") return PDF;
+	else if (extension == "jpg" || extension == "jpeg") return JPEG;
+	else if (extension == "txt") return TXT;
+	else if (extension == "png") return PNG;
+	else return UNKNOWN;
 }
 
 std::string HttpResponse::getContentType(){
@@ -75,18 +85,37 @@ std::string HttpResponse::getContentType(){
 
 	switch (extention)
 	{
-	case HTML:
-		return "text/html";
-	case PDF:
-		return "application/pdf";
-	case JPEG:
-		return "image/jpeg";
-	case TXT:
-		return "text/plaine";
-	case PNG:
-		return "image/png";
+	case HTML: return "text/html";
+	case PDF: return "application/pdf";
+	case JPEG: return "image/jpeg";
+	case TXT: return "text/plaine";
+	case PNG: return "image/png";
+	default: return "application/octet-stream";
 	}
 }
+
+std::string HttpResponse::getReasonPhrase() {
+	switch (_statusCode) {
+		// Success
+		case 200: return "OK";
+		// Redirection
+		case 301: return "Moved Permanently";
+		case 304: return "Not Modified";
+		// Client Error
+		case 400: return "Bad Request";
+		case 403: return "Forbidden";
+		case 404: return "Not Found";
+		case 405: return "Method Not Allowed";
+		case 413: return "Payload Too Large";
+		case 414: return "URI Too Long";
+		// Server Error
+		case 500: return "Internal Server Error";
+		case 501: return "Not Implemented";
+		case 503: return "Service Unavailable";
+		default: return "Unknown";
+	}
+}
+
 std::string HttpResponse::getTimeNow(){
 	time_t now = time(0);
 	struct tm* gmtTime = gmtime(&now);
@@ -96,27 +125,38 @@ std::string HttpResponse::getTimeNow(){
 	return httpTime;
 }
 
-char HttpResponse::getContentLength(){
-	return (_contentLength = static_cast<char>(_body.length()));
+long long HttpResponse::getContentLength(){
+	return _body.length();
 }
 
-void HttpResponse::generateResponse(){
+void HttpResponse::generateResponse(int statusCode){
 
-	_reasonPhrase = // complete implementation
+	_statusCode = statusCode;
+	_reasonPhrase = getReasonPhrase();
 	_date = getTimeNow();
+	_filePath = _request.getPath();
 	_contentType = getContentType();
 	_contentLength = getContentLength();
 	_body = getBody();
 	_contentLength = getContentLength();
-	// Connection : keep-alive
+	_connectionType = _request.getContenType();
+
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n"
+		<< _body;
+	_response = oss.str();
 }
 
 void HttpResponse::setBody(std::string body){_body = body;}
 void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
-void HttpResponse::setVersion(std::string version){_version = version;}
-void HttpResponse::setStatusCode(std::string statusCode){_statusCode = statusCode;}
-void HttpResponse::setHeader(std::string headerKey, std::string headerValu){}
-
+void HttpResponse::setVersion(float version){_serverVersion = version;}
+void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
 
 std::string HttpResponse::getBody(){
 	std::ifstream file(_filePath, std::ios::binary);
@@ -128,3 +168,25 @@ std::string HttpResponse::getPath(){}
 std::string HttpResponse::getVersion(){}
 std::string HttpResponse::getStatusCode(){}
 std::string HttpResponse::getContentType(){}
+std::string HttpResponse::getResponse() {return _response;}
+
+/*
+  HTTP/1.1 200 OK
+  Date: Tue, 24 Sep 2025 16:00:00 GMT
+  Server: WebServ/1.0
+  Content-Type: text/html
+  Content-Length: 1234
+  Connection: keep-alive
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <title>Example Page</title>
+  </head>
+  <body>
+      <h1>Hello World</h1>
+      <p>This is the response body content.</p>
+  </body>
+  </html>
+
+*/

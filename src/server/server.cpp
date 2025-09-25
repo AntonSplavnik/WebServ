@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/24 16:42:22 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 17:38:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -301,15 +301,17 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 
 	std::string mappedPath = mapPath(request);
 	std::ifstream file(mappedPath.c_str());
+
+	HttpResponse response(request);
 	if (!file.is_open()){
 		//generate responce with an eror page
 		std::cout << "Error: 404 path is not found" << std::endl;
-		HttpResponse response(404);
-		response.generateResponse();
+		response.generateResponse(404);
+		client.responseData = response.getResponse();
 	}
 	else{
-		HttpResponse response(200, request.getPath());
-		response.generateResponse();
+		response.generateResponse(200);
+		client.responseData = response.getResponse();
 	}
 
 	/*
@@ -353,15 +355,7 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 
 	client.responseData = response.toString();
 	}
-
-	*/
-	// Prepare HTTP response
-	client.responseData =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/plain\r\n"
-		"Content-Length: 12\r\n"
-		"\r\n";
-
+*/
 }
 
 void handlePOST(const HttpRequest& request, ClientInfo& client){

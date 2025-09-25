@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/24 16:46:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 15:27:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,6 @@ enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY};
 class HttpRequest{
 
 	public:
-
 		HttpRequest();
 		~HttpRequest();
 
@@ -41,16 +40,20 @@ class HttpRequest{
 		std::string getMethod() const;
 		std::string getPath() const;
 		std::string getVersion() const;
-	private:
+		std::string getContenType() const;
 
+	private:
 		std::string _line;
 		std::string _headers;
 		std::string _body;
-		int 		_contentLength;
+		long long 		_contentLength;
 
+		//reqest line
 		std::string _method;
 		std::string _path;
 		std::string _version;
+
+		//headers
 		// std::string query;
 		std::map<std::string, std::string> _headers;
 		bool _isValid;
