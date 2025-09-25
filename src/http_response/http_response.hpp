@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/09/25 17:31:52 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 18:08:48 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,15 +32,19 @@ enum fileExtentions{
 class HttpResponse {
 
 	public:
-		HttpResponse(HttpRequest request);
+		HttpResponse(HttpRequest request, Methods method);
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
+		void generateGetResponse();
+		void generateDeleteResponse();
+
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
 		void setVersion(float version);
 		void setStatusCode(int code);
 		void setHeader(std::string header);
+
 
 		std::string getBody();
 		std::string getPath();
@@ -55,6 +59,7 @@ class HttpResponse {
 
 	private:
 		HttpRequest _request;
+		Methods		_method;
 
 		//status line
 		std::string		_protocolVer;

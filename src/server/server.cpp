@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/25 17:38:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 18:59:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -302,20 +302,18 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	std::string mappedPath = mapPath(request);
 	std::ifstream file(mappedPath.c_str());
 
-	HttpResponse response(request);
-	if (!file.is_open()){
-		//generate responce with an eror page
+	HttpResponse response(request, GET);
+	if (file.is_open()){
+		response.generateResponse(200);
+		client.responseData = response.getResponse();
+	}
+	else{
 		std::cout << "Error: 404 path is not found" << std::endl;
 		response.generateResponse(404);
 		client.responseData = response.getResponse();
 	}
-	else{
-		response.generateResponse(200);
-		client.responseData = response.getResponse();
-	}
 
 	/*
-
 	The GET method finds the directory/file, reads it, and uses HttpResponse methods to
 	properly format the HTTP response with headers, status codes, etc.
 
@@ -358,7 +356,7 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 */
 }
 
-void handlePOST(const HttpRequest& request, ClientInfo& client){
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 
 /*
 	The POST method receives data from the client, processes it, and uses HttpResponse methods to
@@ -462,9 +460,46 @@ void handlePOST(const HttpRequest& request, ClientInfo& client){
 	dynamically.
 */
 
-void handleDELETE(const HttpRequest& request, ClientInfo& client) {
+bool Server::validatePath(std::string path){
 
-	/*
+	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/Downloads");
+}
+/**
+ * This function only handles files, but not directories.
+ */
+void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
+
+	std::string mappedPath = mapPath(request);
+	HttpResponse response(request, DELETE);
+	if (!validatePath(mappedPath)){
+		response.generateResponse(403);
+		client.responseData = response.getResponse();
+		std::cout << "Error: 403 Forbidden" << std::endl;
+		return;
+	}
+
+	std::ifstream file(mappedPath.c_str());
+	if (file.is_open()){
+		file.close();
+		if(std::remove(mappedPath.c_str()) == 0){
+			response.generateResponse(204);
+			client.responseData = response.getResponse();
+			std::cout << "Ok" << std::endl;
+		}
+		else{
+			response.generateResponse(403);
+			client.responseData = response.getResponse();
+			std::cout << "Error: 403 permission denied" << std::endl;
+		}
+	}
+	else{
+		std::cout << "Error: 404 path is not found" << std::endl;
+		response.generateResponse(404);
+		client.responseData = response.getResponse();
+	}
+
+
+/*
 	DELETE Method Purpose
 
   The DELETE method is used to remove resources from the server.

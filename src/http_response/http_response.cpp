@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/25 17:36:15 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 18:17:41 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,8 +58,8 @@
   Each line ends with \r\n (carriage return + line feed).
 */
 
-HttpResponse::HttpResponse(HttpRequest request)
-	:_protocolVer("HTTP/1.1 "), _request(request), _serverName("WebServ"), _serverVersion(1.0f){}
+HttpResponse::HttpResponse(HttpRequest request, Methods method)
+	:_method(method), _protocolVer("HTTP/1.1 "), _request(request), _serverName("WebServ"), _serverVersion(1.0f){}
 
 fileExtentions HttpResponse::getFileExtension(std::string filePath){
 
@@ -98,6 +98,7 @@ std::string HttpResponse::getReasonPhrase() {
 	switch (_statusCode) {
 		// Success
 		case 200: return "OK";
+		case 204: return "No Content";
 		// Redirection
 		case 301: return "Moved Permanently";
 		case 304: return "Not Modified";
@@ -129,6 +130,32 @@ long long HttpResponse::getContentLength(){
 	return _body.length();
 }
 
+void HttpResponse::generateGetResponse(){
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n"
+		<< _body;
+	_response = oss.str();
+}
+
+void HttpResponse::generateDeleteResponse(){
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n";
+	_response = oss.str();
+}
+
+void	generateErrorResponse(){}
+
 void HttpResponse::generateResponse(int statusCode){
 
 	_statusCode = statusCode;
@@ -141,16 +168,21 @@ void HttpResponse::generateResponse(int statusCode){
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
 
+	switch (_method)
+	{
+	case GET:
+		generateGetResponse();
+		break;
+	case DELETE:
+		generateDeleteResponse();
+		break;
+	default:
+		_statusCode = 405; // Method Not Allowed
+		_reasonPhrase = "Method Not Allowed";
+		generateErrorResponse();
+		break;
+	}
 
-	std::ostringstream oss;
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
-		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
-		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n"
-		<< _body;
-	_response = oss.str();
 }
 
 void HttpResponse::setBody(std::string body){_body = body;}

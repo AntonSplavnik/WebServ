@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/24 13:35:04 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/25 18:31:53 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,6 +97,7 @@ class Server {
 		// size_t getClientCount() const;
 
 		// Utility
+		bool validatePath(std::string path);
 		void clientDisconetion(short fd);
 		std::string Server::mapPath(const HttpRequest& request);
 		bool isClientTimedOut(int fd);  // Check specific client
