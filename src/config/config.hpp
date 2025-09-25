@@ -93,7 +93,29 @@ class Config {
 		void		parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens);
 		template<typename ConfigT>
 		void		parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens);
-		void		parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file);
+		template<typename ConfigT>
+		void		parseCgiPath(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseCgiExt(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseErrorPage(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseAllowMethods(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseClientMaxBodySize(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseIndex(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseAutoindex(ConfigT& config, const std::vector<std::string>& tokens);
+		template<typename ConfigT>
+		void		parseRoot(ConfigT& config, const std::vector<std::string>& tokens);
+		void		parseServerConfigField(const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file);
+		void		parseLocationBlock(std::ifstream& file, const std::vector<std::string>& tokens);
+		void		parseListenDirective(const std::string& value);
+		void		parseBacklogDirective(const std::string& value);
+		void		parseRedirect(LocationConfig& config, const std::vector<std::string>& tokens);
+		void		parseUploadStore(LocationConfig& config, const std::vector<std::string>& tokens);
+		void		parseUploadEnabled(LocationConfig& config, const std::vector<std::string>& tokens);
 };
 
 

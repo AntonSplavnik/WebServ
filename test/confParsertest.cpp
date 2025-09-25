@@ -4,7 +4,9 @@
 #include <string>
 #include "../src/logging/logger.hpp"
 
-// from the root:  c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp src/helpers/helpers.cpp
+// from the root:
+// c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp src/helpers/helpers.cpp src/config/directivesParsers.cpp
+
 
 
 
@@ -24,9 +26,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error parsing config file: " << e.what() << std::endl;
         return 1;
     }
-
-
-
     //debug print config data:
     std::cout << "Config file loaded successfully from: " << configPath << std::endl;
     // Use config.getConfigData() as needed

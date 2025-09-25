@@ -2,6 +2,7 @@
 #include "../helpers/helpers.hpp"
 #include "../exceptions/config_exceptions.hpp"
 #include "../logging/logger.hpp"
+#include "directivesParsers.tpp"
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -141,112 +142,37 @@ void Config::validateConfig(ConfigData& config) {
 
 // Parsing of the location-specific config fields
 void Config::parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
-    if (key == "upload_enabled" && !tokens.empty()) {
-        const std::string& val = tokens[0];
-        if (val == "on" || val == "true" || val == "1") {
-            config.upload_enabled = true;
-        } else if (val == "off" || val == "false" || val == "0") {
-            config.upload_enabled = false;
-        } else {
-            throw ConfigParseException("Invalid upload_enabled value: " + val);
-        }
-    }
-    else if (key == "upload_store" && !tokens.empty()) {
-        if (!isValidPath(tokens[0], W_OK | X_OK))
-            throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
-        config.upload_store = normalizePath(tokens[0]);
-    }
-    else if (key == "redirect" && !tokens.empty()) {
-        if (tokens.size() < 2)
-            throw ConfigParseException("Redirect directive requires status code and target path/URL");
-        int code = std::atoi(tokens[0].c_str());
-        if (isValidHttpStatusCode(code) && (code == 301 || code == 302 || code == 303)) {
-            config.redirect_code = code;
-            config.redirect = tokens[1];
-        } else {
-            throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-        }
-        if (tokens.size() > 2)
-            throw ConfigParseException("Too many arguments for redirect directive");
-        std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
-    }
+ if (key == "upload_enabled" && !tokens.empty())
+    parseUploadEnabled(config, tokens);
+else if (key == "upload_store" && !tokens.empty())
+    parseUploadStore(config, tokens);
+else if (key == "redirect" && !tokens.empty())
+    parseRedirect(config, tokens);
 }
 
 // Helper to parse common config fields
 template<typename ConfigT>
 void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
-    if (key == "autoindex" && !tokens.empty()) {
-        if (!isValidAutoindexValue(tokens[0]))
-          throw ConfigParseException("Invalid autoindex value: " + tokens[0]);
-        config.autoindex = (tokens[0] == "on" || tokens[0] == "true" || tokens[0] == "1");
-    } else if (key == "root" && !tokens.empty()) {
-    if (!config.root.empty())
-        throw ConfigParseException("Duplicate root directive");
-    if (!isValidPath(tokens[0], R_OK | X_OK))
-        throw ConfigParseException("Invalid or inaccessible root path: " + tokens[0]);
-    config.root = normalizePath(tokens[0]);
-} else if (key == "index" && !tokens.empty()) {
-    if (!config.index.empty())
-        throw ConfigParseException("Duplicate index directive");
-    if (!isValidFile(tokens[0], R_OK))
-        throw ConfigParseException("Invalid or inaccessible index file: " + tokens[0]);
-    config.index = tokens[0];
-} else if (key == "client_max_body_size" && !tokens.empty()) {
-    if (config.client_max_body_size > 0)
-        throw ConfigParseException("Duplicate client_max_body_size directive");
-    std::istringstream iss(tokens[0]);
-    int size = 0;
-    if (!(iss >> size))
-        throw ConfigParseException("Invalid client_max_body_size value: " + tokens[0]);
-    if (size > MAX_CLIENT_BODY_SIZE)
-        throw ConfigParseException("client_max_body_size (" + tokens[0] + ") exceeds maximum allowed (" + std::to_string(MAX_CLIENT_BODY_SIZE) + ")");
-    config.client_max_body_size = size;
-}  else if (key == "allow_methods" && !tokens.empty()) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        if (!isValidHttpMethod(tokens[i]))
-            throw ConfigParseException("Invalid HTTP method in allow_methods: " + tokens[i]);
-        addUnique(config.allow_methods, tokens[i]);
-    }
-}
-     else if (key == "error_page" && tokens.size() >= 2) {
-    std::string path = tokens.back();
-    if (!isValidFile(path, R_OK))
-      throw ConfigParseException("Invalid or inaccessible error_page file: " + path);
-    for (size_t i = 0; i < tokens.size() - 1; ++i) {
-    if (tokens[i].empty()) continue; // Skip empty tokens
-    int code = 0;
-    std::istringstream codeStream(tokens[i]);
-    if (codeStream >> code) {
-        if (!isValidHttpStatusCode(code))
-            throw ConfigParseException("Invalid HTTP status code in error_page: " + tokens[i]);
-        config.error_pages[code] = path;
-    }
-}
-}
-else if (key == "cgi_ext" && !tokens.empty()) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        if (!isValidCgiExt(tokens[i]))
-          throw ConfigParseException("Invalid CGI extension: " + tokens[i]);
-        addUnique(config.cgi_ext, tokens[i]);
-        }
-    }
-
-    else if (key == "cgi_path" && !tokens.empty()) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        if (!isValidPath(tokens[i], X_OK))
-          throw ConfigParseException("Invalid CGI path: " + tokens[i]);
-        addUnique(config.cgi_path, tokens[i]);
-        }
-    }
-
-
+    if (key == "autoindex" && !tokens.empty())
+    	parseAutoindex(config, tokens);
+	else if (key == "root" && !tokens.empty())
+    	parseRoot(config, tokens);
+	else if (key == "index" && !tokens.empty())
+    	parseIndex(config, tokens);
+	else if (key == "client_max_body_size" && !tokens.empty())
+    	parseClientMaxBodySize(config, tokens);
+	else if (key == "allow_methods" && !tokens.empty())
+    	parseAllowMethods(config, tokens);
+	else if (key == "error_page" && tokens.size() >= 2)
+    	parseErrorPage(config, tokens);
+	else if (key == "cgi_ext" && !tokens.empty())
+    	parseCgiExt(config, tokens);
+	else if (key == "cgi_path" && !tokens.empty())
+    	parseCgiPath(config, tokens);
 }
 
-// Parsing of the server-specific config fields
-    void Config::parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
-    {
-        if (key == "location" && !tokens.empty()) {
-            inLocationBlock = true;
+void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::string>& tokens) {
+  	inLocationBlock = true;
             LocationConfig loc;
             loc.path = tokens[0];
 
@@ -262,92 +188,52 @@ else if (key == "cgi_ext" && !tokens.empty()) {
                 std::string maybeBrace;
                 if (!(brace_iss >> maybeBrace) || maybeBrace != "{") return;
             }
+    while (std::getline(file, line)) {
+        size_t closePos = line.find('}');
+        bool blockEnd = (closePos != std::string::npos);
+        std::string lineContent = blockEnd ? line.substr(0, closePos) : line;
 
-            // Parse the location block
-            while (std::getline(file, line)) {
-                size_t closePos = line.find('}');
-                bool blockEnd = (closePos != std::string::npos);
-                std::string lineContent = blockEnd ? line.substr(0, closePos) : line;
-
-                std::istringstream liss(lineContent);
-                std::string lkey;
-                if (!(liss >> lkey)) {
-                    if (blockEnd) break;
-                    continue;
-                }
-                if (inLocationBlock) {
-                    if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT, lkey) == LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT)
-                        throw ConfigParseException("Unknown directive: " + lkey);
-                }
-                std::vector<std::string> ltokens = readValues(liss);
-                parseCommonConfigField(loc, lkey, ltokens);
-                parseLocationConfigField(loc, lkey, ltokens);
-                if (blockEnd) break;
-            }
-            config.locations.push_back(loc);
+        std::istringstream liss(lineContent);
+        std::string lkey;
+        if (!(liss >> lkey)) {
+            if (blockEnd) break;
+            continue;
+        }
+        if (inLocationBlock) {
+            if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT, lkey) == LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT)
+                throw ConfigParseException("Unknown directive: " + lkey);
+        }
+        std::vector<std::string> ltokens = readValues(liss);
+        parseCommonConfigField(loc, lkey, ltokens);
+        parseLocationConfigField(loc, lkey, ltokens);
+        if (blockEnd) break;
+    }
+    _configData.locations.push_back(loc);
             inLocationBlock = false;
-            return;
-        }
+}
 
- if (key == "listen" && !tokens.empty()) {
-    std::string value = tokens[0];
-    size_t colon = value.find(':');
-    std::string host = "0.0.0.0";
-    int port = 80; // default port
-    if (colon != std::string::npos) {
-        host = value.substr(0, colon);
-        std::string portPart = value.substr(colon + 1);
-        if (isValidIPv4(host)) {
-            // Valid IPv4
-        } else if (isValidHost(host)) {
-            // Valid hostname
-        } else {
-            throw ConfigParseException("Invalid host in listen directive: " + host);
-        }
-        std::istringstream portStream(portPart);
-        if (!(portStream >> port) || port < 1 || port > 65535)
-            throw ConfigParseException("Invalid port in listen directive: " + portPart);
-    } else if (isValidIPv4(value)) {
-        host = value;
-        port = 80;
-    } else if (isValidHost(value)) {
-        host = value;
-        port = 80;
-    } else {
-        throw ConfigParseException("Invalid listen directive: " + value);
-    }
-    std::pair<std::string,uint16_t> listenPair(host, static_cast<uint16_t>(port));
-    if (std::find(_configData.listeners.begin(),
-                  _configData.listeners.end(),
-                  listenPair) != _configData.listeners.end()) {
-        throw ConfigParseException("Duplicate listen directive: " + host + ":" + std::to_string(port));
-    }
-    _configData.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
-}
-        else if (key == "server_name" && !tokens.empty()) {
+// Parsing of the server-specific config fields
+    void Config::parseServerConfigField( const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
+    {
+        if (key == "location" && !tokens.empty())
+            parseLocationBlock(file, tokens);
+ 		else if (key == "listen" && !tokens.empty())
+            parseListenDirective( tokens[0]);
+        else if (key == "server_name" && !tokens.empty())
             addUnique(_configData.server_names, tokens[0]);
-        }
-        else if (key == "backlog" && !tokens.empty()) {
-    int backlog = 0;
-    std::istringstream valStream(tokens[0]);
-    if (!(valStream >> backlog) || backlog < 1 || backlog > MAX_BACKLOG)
-    	throw ConfigParseException("Invalid backlog value: " + tokens[0]);
-    _configData.backlog = backlog;
-        }
-        else if (key == "access_log" && !tokens.empty()) {
-    assignLogFile(_configData.access_log, tokens[0]);
-}
-else if (key == "error_log" && !tokens.empty()) {
-    assignLogFile(_configData.error_log, tokens[0]);
-}
+        else if (key == "backlog" && !tokens.empty())
+            parseBacklogDirective(tokens[0]);
+		else if (key == "error_log" && !tokens.empty())
+    		assignLogFile(_configData.error_log, tokens[0]);
+        else if (key == "access_log" && !tokens.empty())
+    		assignLogFile(_configData.access_log, tokens[0]);
         else {
-   	if (!inLocationBlock) {
-    if (std::find(SERVER_DIRECTIVES, SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT, key) == SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT) {
-        throw ConfigParseException("Unknown directive: " + key);
-    }
-    }
-}
-}
+   				if (!inLocationBlock) {
+    				if (std::find(SERVER_DIRECTIVES, SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT, key) == SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT)
+        				throw ConfigParseException("Unknown directive: " + key);
+    		}
+		}
+	}
 
 // Loads configuration data from a file at the given path.
 // Returns true if the file was successfully read and parsed, false otherwise
@@ -359,7 +245,7 @@ bool Config::parseConfigFile(std::ifstream& file)
         std::string key;
         if (!(iss >> key)) continue;
         std::vector<std::string> tokens = readValues(iss);
-        parseServerConfigField(_configData, key, tokens, file);
+        parseServerConfigField(key, tokens, file);
         parseCommonConfigField(_configData, key, tokens);
 }
     validateConfig(_configData);
