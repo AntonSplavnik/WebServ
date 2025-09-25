@@ -55,6 +55,8 @@ void Config::parseAllowMethods(ConfigT& config, const std::vector<std::string>& 
 
 template<typename ConfigT>
 void Config::parseErrorPage(ConfigT& config, const std::vector<std::string>& tokens) {
+    if (tokens.size() < 2)
+      throw ConfigParseException("error_page directive requires at least one status code and a file path");
     std::string path = tokens.back();
     if (!isValidFile(path, R_OK))
         throw ConfigParseException("Invalid or inaccessible error_page file: " + path);

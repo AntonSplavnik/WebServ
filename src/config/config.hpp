@@ -41,6 +41,8 @@ static const char* DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/40x.html";
 static const char* DEFAULT_ERROR_PAGE_500 = "runtime/www/errors/50x.html";
 static const char* DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/40x.html";
 
+
+
 struct LocationConfig {
 	std::string path;
 	bool autoindex;
@@ -116,6 +118,7 @@ class Config {
 		void		parseRedirect(LocationConfig& config, const std::vector<std::string>& tokens);
 		void		parseUploadStore(LocationConfig& config, const std::vector<std::string>& tokens);
 		void		parseUploadEnabled(LocationConfig& config, const std::vector<std::string>& tokens);
+		void		validateDirective(const char* const* directives, size_t count, const std::string& key);
 };
 
 

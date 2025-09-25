@@ -55,6 +55,17 @@ ConfigData Config::getConfigData() const {
     return _configData;
 }
 
+// Validates that the given key is in the list of known directives
+void Config::validateDirective(const char* const* directives, size_t count, const std::string& key) {
+    if (std::find(directives, directives + count, key) == directives + count)
+        throw ConfigParseException("Unknown directive: " + key);
+}
+
+// validates both minimum required directives and also applies default values,
+// performs fallbacks, and checks for consistency and correctness of various
+// configuration fields (including location-specific settings, CGI, uploads,
+// and redirects). It ensures not only presence but also validity and proper
+// relationships between directives.
 void Config::validateConfig(ConfigData& config) {
     // --- Top-level required fields ---
     if (config.root.empty())
@@ -96,79 +107,40 @@ void Config::validateConfig(ConfigData& config) {
         }
         if (loc.client_max_body_size <= 0)
             loc.client_max_body_size = config.client_max_body_size;
-
-        // Validation after fallback
-        // Check location path (URI)
 		if (loc.path.empty() || loc.path[0] != '/')
     		throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
-
-		// Check root (filesystem directory)
 		if (loc.root.empty())
     		throw ConfigParseException("Missing required location config: root");
 		if (!isValidPath(loc.root, R_OK | X_OK))
     		throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
-
         if (loc.index.empty() && loc.autoindex == false)
             throw ConfigParseException("Missing index and autoindex is off in location: " + loc.path);
         if (loc.allow_methods.empty())
             throw ConfigParseException("Missing required location config: allow_methods");
         if (loc.client_max_body_size <= 0)
             throw ConfigParseException("Missing required location config: client_max_body_size");
-        // CGI validation
-        if (loc.cgi_ext.empty()) loc.cgi_ext = config.cgi_ext;
-        if (loc.cgi_path.empty()) loc.cgi_path = config.cgi_path;
+        if (loc.cgi_ext.empty())
+          loc.cgi_ext = config.cgi_ext;
+        if (loc.cgi_path.empty())
+          loc.cgi_path = config.cgi_path;
         if (!loc.cgi_ext.empty() && loc.cgi_path.empty())
             throw ConfigParseException("Missing required location config: cgi_path for CGI");
         if (!loc.cgi_path.empty() && loc.cgi_ext.empty())
             throw ConfigParseException("Missing required location config: cgi_ext for CGI");
         if (loc.error_pages.empty())
     		loc.error_pages = config.error_pages;
-
-        // Upload validation
         if (loc.upload_enabled) {
-    if (loc.upload_store.empty())
-        throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
-    if (!isValidPath(loc.upload_store, W_OK | X_OK))
-        throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
-}
-
+    		if (loc.upload_store.empty())
+        		throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
+    	if (!isValidPath(loc.upload_store, W_OK | X_OK))
+       		throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
+		}
         // Redirect validation
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
             throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
         if (!loc.autoindex) loc.autoindex = config.autoindex;
 
     }
-}
-
-// Parsing of the location-specific config fields
-void Config::parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
- if (key == "upload_enabled" && !tokens.empty())
-    parseUploadEnabled(config, tokens);
-else if (key == "upload_store" && !tokens.empty())
-    parseUploadStore(config, tokens);
-else if (key == "redirect" && !tokens.empty())
-    parseRedirect(config, tokens);
-}
-
-// Helper to parse common config fields
-template<typename ConfigT>
-void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
-    if (key == "autoindex" && !tokens.empty())
-    	parseAutoindex(config, tokens);
-	else if (key == "root" && !tokens.empty())
-    	parseRoot(config, tokens);
-	else if (key == "index" && !tokens.empty())
-    	parseIndex(config, tokens);
-	else if (key == "client_max_body_size" && !tokens.empty())
-    	parseClientMaxBodySize(config, tokens);
-	else if (key == "allow_methods" && !tokens.empty())
-    	parseAllowMethods(config, tokens);
-	else if (key == "error_page" && tokens.size() >= 2)
-    	parseErrorPage(config, tokens);
-	else if (key == "cgi_ext" && !tokens.empty())
-    	parseCgiExt(config, tokens);
-	else if (key == "cgi_path" && !tokens.empty())
-    	parseCgiPath(config, tokens);
 }
 
 void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::string>& tokens) {
@@ -199,10 +171,7 @@ void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::stri
             if (blockEnd) break;
             continue;
         }
-        if (inLocationBlock) {
-            if (std::find(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT, lkey) == LOCATION_DIRECTIVES + LOCATION_DIRECTIVES_COUNT)
-                throw ConfigParseException("Unknown directive: " + lkey);
-        }
+    	validateDirective(LOCATION_DIRECTIVES, LOCATION_DIRECTIVES_COUNT, lkey);
         std::vector<std::string> ltokens = readValues(liss);
         parseCommonConfigField(loc, lkey, ltokens);
         parseLocationConfigField(loc, lkey, ltokens);
@@ -212,27 +181,58 @@ void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::stri
             inLocationBlock = false;
 }
 
+// Parsing of the location-specific config fields
+void Config::parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
+if (!tokens.empty()) {
+    if (key == "upload_enabled")
+        parseUploadEnabled(config, tokens);
+    else if (key == "upload_store")
+        parseUploadStore(config, tokens);
+    else if (key == "redirect")
+        parseRedirect(config, tokens);
+}
+}
+
+// Helper to parse common config fields
+template<typename ConfigT>
+void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
+    if (tokens.empty())
+      throw ConfigParseException("Directive " + key + " requires at least one argument");
+    if (key == "autoindex")
+        parseAutoindex(config, tokens);
+    else if (key == "root")
+        parseRoot(config, tokens);
+    else if (key == "index")
+        parseIndex(config, tokens);
+    else if (key == "client_max_body_size")
+        parseClientMaxBodySize(config, tokens);
+    else if (key == "allow_methods")
+        parseAllowMethods(config, tokens);
+    else if (key == "cgi_ext")
+        parseCgiExt(config, tokens);
+    else if (key == "cgi_path")
+        parseCgiPath(config, tokens);
+    else if (key == "error_page")
+        parseErrorPage(config, tokens);
+}
+
 // Parsing of the server-specific config fields
     void Config::parseServerConfigField( const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
     {
-        if (key == "location" && !tokens.empty())
+		if (tokens.empty())
+            throw ConfigParseException("Directive " + key + " requires at least one argument");
+        if (key == "location")
             parseLocationBlock(file, tokens);
- 		else if (key == "listen" && !tokens.empty())
+ 		else if (key == "listen")
             parseListenDirective( tokens[0]);
-        else if (key == "server_name" && !tokens.empty())
+        else if (key == "server_name")
             addUnique(_configData.server_names, tokens[0]);
-        else if (key == "backlog" && !tokens.empty())
+        else if (key == "backlog")
             parseBacklogDirective(tokens[0]);
-		else if (key == "error_log" && !tokens.empty())
+		else if (key == "error_log")
     		assignLogFile(_configData.error_log, tokens[0]);
-        else if (key == "access_log" && !tokens.empty())
+        else if (key == "access_log")
     		assignLogFile(_configData.access_log, tokens[0]);
-        else {
-   				if (!inLocationBlock) {
-    				if (std::find(SERVER_DIRECTIVES, SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT, key) == SERVER_DIRECTIVES + SERVER_DIRECTIVES_COUNT)
-        				throw ConfigParseException("Unknown directive: " + key);
-    		}
-		}
 	}
 
 // Loads configuration data from a file at the given path.
@@ -245,6 +245,8 @@ bool Config::parseConfigFile(std::ifstream& file)
         std::string key;
         if (!(iss >> key)) continue;
         std::vector<std::string> tokens = readValues(iss);
+        if (!inLocationBlock)
+    		validateDirective(SERVER_DIRECTIVES, SERVER_DIRECTIVES_COUNT, key);
         parseServerConfigField(key, tokens, file);
         parseCommonConfigField(_configData, key, tokens);
 }
