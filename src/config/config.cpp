@@ -177,9 +177,16 @@ void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::stri
         parseLocationConfigField(loc, lkey, ltokens);
         if (blockEnd) break;
     }
+    // Check for duplicate location paths
+	for (size_t i = 0; i < _configData.locations.size(); ++i) {
+    if (_configData.locations[i].path == loc.path)
+        throw ConfigParseException("Duplicate location path: " + loc.path);
+    }
+
     _configData.locations.push_back(loc);
             inLocationBlock = false;
 }
+
 
 // Parsing of the location-specific config fields
 void Config::parseLocationConfigField(LocationConfig& config, const std::string& key, const std::vector<std::string>& tokens) {
