@@ -4,15 +4,15 @@
 #include <sstream>
 #include <unistd.h>
 
-void Config::parseBacklogDirective(const std::string& value) {
+void Config::parseBacklogDirective(ConfigData& config, const std::string& value) {
     int backlog = 0;
     std::istringstream valStream(value);
     if (!(valStream >> backlog) || backlog < 1 || backlog > MAX_BACKLOG)
         throw ConfigParseException("Invalid backlog value: " + value);
-    _configData.backlog = backlog;
+    config.backlog = backlog;
 }
 
-void Config::parseListenDirective(const std::string& value) {
+void Config::parseListenDirective(ConfigData& config, const std::string& value) {
     size_t colon = value.find(':');
     std::string host = "0.0.0.0";
     int port = 80; // default port
@@ -39,12 +39,12 @@ void Config::parseListenDirective(const std::string& value) {
         throw ConfigParseException("Invalid listen directive: " + value);
     }
     std::pair<std::string,uint16_t> listenPair(host, static_cast<uint16_t>(port));
-    if (std::find(_configData.listeners.begin(),
-                  _configData.listeners.end(),
-                  listenPair) != _configData.listeners.end()) {
+    if (std::find(config.listeners.begin(),
+                  config.listeners.end(),
+                  listenPair) != config.listeners.end()) {
         throw ConfigParseException("Duplicate listen directive: " + host + ":" + std::to_string(port));
                   }
-    _configData.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
+    config.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
 }
 
 // In a suitable file, e.g., directivesParsers.cpp or config.cpp

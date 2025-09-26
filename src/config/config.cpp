@@ -15,46 +15,45 @@
 //This structure allows for clear separation and correct handling of server and location configuration directives
 
 
-Config::Config() : _configData()
+Config::Config()
 {
     inLocationBlock = false;
 }
 
 LocationConfig::LocationConfig()
-    : path(),
-      autoindex(),
-      index(),
-      root(),
+    : path(""),
+      autoindex(false),
+      index(""),
+      root(""),
       allow_methods(),
       error_pages(),
       cgi_path(),
       cgi_ext(),
-      client_max_body_size(),
-      upload_enabled(),
-      upload_store(),
-      redirect(),
-      redirect_code() {}
+      client_max_body_size(0),
+      upload_enabled(false),
+      upload_store(""),
+      redirect(""),
+      redirect_code(0) {}
 
 ConfigData::ConfigData()
     :
       server_names(),
-      root(),
-      index(),
-      backlog(),
-      access_log(),
-      error_log(),
+      root(""),
+      index(""),
+      backlog(0),
+      access_log(""),
+      error_log(""),
       autoindex(),
       locations(),
       cgi_path(),
       cgi_ext(),
       error_pages(),
       allow_methods(),
-      client_max_body_size() {}
+      client_max_body_size(0) {}
 
-ConfigData Config::getConfigData() const {
-    return _configData;
+std::vector<ConfigData> Config::getServers() const {
+    return _servers;
 }
-
 // Validates that the given key is in the list of known directives
 void Config::validateDirective(const char* const* directives, size_t count, const std::string& key) {
     if (std::find(directives, directives + count, key) == directives + count)
@@ -143,7 +142,7 @@ void Config::validateConfig(ConfigData& config) {
     }
 }
 
-void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::string>& tokens) {
+void Config::parseLocationBlock(ConfigData& config, std::ifstream& file, const std::vector<std::string>& tokens) {
   	inLocationBlock = true;
             LocationConfig loc;
             loc.path = tokens[0];
@@ -178,12 +177,12 @@ void Config::parseLocationBlock(std::ifstream& file, const std::vector<std::stri
         if (blockEnd) break;
     }
     // Check for duplicate location paths
-	for (size_t i = 0; i < _configData.locations.size(); ++i) {
-    if (_configData.locations[i].path == loc.path)
+	for (size_t i = 0; i < config.locations.size(); ++i) {
+    if (config.locations[i].path == loc.path)
         throw ConfigParseException("Duplicate location path: " + loc.path);
     }
 
-    _configData.locations.push_back(loc);
+    config.locations.push_back(loc);
             inLocationBlock = false;
 }
 
@@ -224,22 +223,25 @@ void Config::parseCommonConfigField(ConfigT& config, const std::string& key, con
 }
 
 // Parsing of the server-specific config fields
-    void Config::parseServerConfigField( const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
+    void Config::parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
     {
+      // Validate directive based on context
+      if (!inLocationBlock)
+    		validateDirective(SERVER_DIRECTIVES, SERVER_DIRECTIVES_COUNT, key);
 		if (tokens.empty())
             throw ConfigParseException("Directive " + key + " requires at least one argument");
         if (key == "location")
-            parseLocationBlock(file, tokens);
+            parseLocationBlock(config, file, tokens);
  		else if (key == "listen")
-            parseListenDirective( tokens[0]);
+            parseListenDirective(config, tokens[0]);
         else if (key == "server_name")
-            addUnique(_configData.server_names, tokens[0]);
+            addUnique(config.server_names, tokens[0]);
         else if (key == "backlog")
-            parseBacklogDirective(tokens[0]);
+            parseBacklogDirective(config, tokens[0]);
 		else if (key == "error_log")
-    		assignLogFile(_configData.error_log, tokens[0]);
+    		assignLogFile(config.error_log, tokens[0]);
         else if (key == "access_log")
-    		assignLogFile(_configData.access_log, tokens[0]);
+    		assignLogFile(config.access_log, tokens[0]);
 	}
 
 // Loads configuration data from a file at the given path.
@@ -251,14 +253,37 @@ bool Config::parseConfigFile(std::ifstream& file)
         std::istringstream iss(line);
         std::string key;
         if (!(iss >> key)) continue;
-        std::vector<std::string> tokens = readValues(iss);
-        if (!inLocationBlock)
-    		validateDirective(SERVER_DIRECTIVES, SERVER_DIRECTIVES_COUNT, key);
-        parseServerConfigField(key, tokens, file);
-        parseCommonConfigField(_configData, key, tokens);
+        if (key == "server") {
+            // Expect '{' after 'server'
+            std::string brace;
+            if (!(iss >> brace) || brace != "{") {
+                // Optionally, read next line for '{'
+                if (!(std::getline(file, line))) throw ConfigParseException("Expected '{' after server");
+                if (line.find('{') == std::string::npos) throw ConfigParseException("Expected '{' after server");
+            }
+            ConfigData serverConfig;
+            // Parse server block
+            int braceCount = 1;
+            while (braceCount > 0 && std::getline(file, line)) {
+                std::istringstream blockIss(line);
+                std::string blockKey;
+                if (!(blockIss >> blockKey)) continue;
+                if (blockKey == "{") { braceCount++; continue; }
+                if (blockKey == "}") {
+    				braceCount--;
+    				if (braceCount < 0)
+        				throw ConfigParseException("Unexpected closing brace in config file");
+    				continue;
+				}
+                std::vector<std::string> tokens = readValues(blockIss);
+                parseServerConfigField(serverConfig, blockKey, tokens, file);
+                parseCommonConfigField(serverConfig, blockKey, tokens);
+            }
+            validateConfig(serverConfig);
+            _servers.push_back(serverConfig);
+        }
 }
-    validateConfig(_configData);
-    return true;
+    return !_servers.empty();
 }
 
 bool Config::parseConfig(const std::string& path) {

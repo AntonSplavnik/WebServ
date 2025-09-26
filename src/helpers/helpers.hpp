@@ -20,6 +20,6 @@ bool isValidAutoindexValue(const std::string& value);
 // Vector utility
 template<typename T>
 void addUnique(std::vector<T>& dest, const T& value);
-// Value reader
+// Value reader from a stream
 std::vector<std::string> readValues(std::istringstream& iss);
 
