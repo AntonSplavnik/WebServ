@@ -77,5 +77,4 @@ void Config::parseRedirect(LocationConfig& config, const std::vector<std::string
     }
     config.redirect_code = code;
     config.redirect = tokens[1];
-    std::cout << "Redirect set to: " << config.redirect << " with code: " << config.redirect_code << std::endl;
 }

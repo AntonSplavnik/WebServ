@@ -89,3 +89,26 @@ void Config::parseCgiPath(ConfigT& config, const std::vector<std::string>& token
         addUnique(config.cgi_path, tokens[i]);
     }
 }
+
+// Helper to parse common config fields
+template<typename ConfigT>
+void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
+    if (tokens.empty())
+        throw ConfigParseException("Directive " + key + " requires at least one argument");
+    if (key == "autoindex")
+        parseAutoindex(config, tokens);
+    else if (key == "root")
+        parseRoot(config, tokens);
+    else if (key == "index")
+        parseIndex(config, tokens);
+    else if (key == "client_max_body_size")
+        parseClientMaxBodySize(config, tokens);
+    else if (key == "allow_methods")
+        parseAllowMethods(config, tokens);
+    else if (key == "cgi_ext")
+        parseCgiExt(config, tokens);
+    else if (key == "cgi_path")
+        parseCgiPath(config, tokens);
+    else if (key == "error_page")
+        parseErrorPage(config, tokens);
+}

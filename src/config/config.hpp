@@ -32,7 +32,7 @@ static const char* SERVER_DIRECTIVES[] = {
 	"location", "listen", "server_name", "backlog",
 		"access_log", "error_log", "autoindex", "index", "root",
 		"allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-		 "redirect", "server"
+		 "redirect"
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
@@ -118,6 +118,7 @@ class Config {
 		void					parseUploadStore(LocationConfig& config, const std::vector<std::string>& tokens);
 		void					parseUploadEnabled(LocationConfig& config, const std::vector<std::string>& tokens);
 		void					validateDirective(const char* const* directives, size_t count, const std::string& key);
+		void					strictCheckAfterServerBlock(std::ifstream& file, std::string line);
 };
 
 

@@ -199,29 +199,6 @@ if (!tokens.empty()) {
 }
 }
 
-// Helper to parse common config fields
-template<typename ConfigT>
-void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
-    if (tokens.empty())
-      throw ConfigParseException("Directive " + key + " requires at least one argument");
-    if (key == "autoindex")
-        parseAutoindex(config, tokens);
-    else if (key == "root")
-        parseRoot(config, tokens);
-    else if (key == "index")
-        parseIndex(config, tokens);
-    else if (key == "client_max_body_size")
-        parseClientMaxBodySize(config, tokens);
-    else if (key == "allow_methods")
-        parseAllowMethods(config, tokens);
-    else if (key == "cgi_ext")
-        parseCgiExt(config, tokens);
-    else if (key == "cgi_path")
-        parseCgiPath(config, tokens);
-    else if (key == "error_page")
-        parseErrorPage(config, tokens);
-}
-
 // Parsing of the server-specific config fields
     void Config::parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
     {
@@ -244,46 +221,84 @@ void Config::parseCommonConfigField(ConfigT& config, const std::string& key, con
     		assignLogFile(config.access_log, tokens[0]);
 	}
 
+
+void	Config::strictCheckAfterServerBlock(std::ifstream& file, std::string line)
+        {
+  // --- Strict check for extra braces or invalid tokens ---
+                //so the meaning is that after parsing the server block we
+                // save the current position then parse "server" tocken and
+                // if parsed correctly go back to the position right before
+                // the "server" to parse this block, if not then throw exception
+                std::streampos pos = file.tellg(); // save current position
+                while (std::getline(file, line)) {
+                    std::istringstream checkIss(line);
+                    std::string checkToken;
+                    if (!(checkIss >> checkToken)) continue; // skip empty lines
+                	if (checkToken == "server") {
+                        file.clear(); // clear any EOF or fail flags
+                    	file.seekg(pos); // restores the position for the next server block
+                    	break; // allow next server
+                	}
+                        throw ConfigParseException("Unexpected token after server block: " + checkToken);
+                    }
+                }
+
+
 // Loads configuration data from a file at the given path.
 // Returns true if the file was successfully read and parsed, false otherwise
+
+// src/config/config.cpp
+
 bool Config::parseConfigFile(std::ifstream& file)
 {
     std::string line;
+    int braceCount = 0;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
-        std::string key;
-        if (!(iss >> key)) continue;
-        if (key == "server") {
-            // Expect '{' after 'server'
-            std::string brace;
-            if (!(iss >> brace) || brace != "{") {
-                // Optionally, read next line for '{'
-                if (!(std::getline(file, line))) throw ConfigParseException("Expected '{' after server");
-                if (line.find('{') == std::string::npos) throw ConfigParseException("Expected '{' after server");
+        std::string token;
+        while (iss >> token) {
+            if (token == "server") {
+                // Expect '{' after 'server'
+                std::string nextToken;
+                if (!(iss >> nextToken)) {
+                    if (!std::getline(file, line))
+                        throw ConfigParseException("Expected '{' after server");
+                    std::istringstream braceIss(line);
+                    if (!(braceIss >> nextToken) || nextToken != "{")
+                        throw ConfigParseException("Expected '{' after server");
+                } else if (nextToken != "{") {
+                    throw ConfigParseException("Expected '{' after server");
+                }
+                ConfigData serverConfig;
+                braceCount = 1;
+                // Parse server block
+                while (braceCount > 0 && std::getline(file, line)) {
+                    std::istringstream blockIss(line);
+                    std::string blockToken;
+                    while (blockIss >> blockToken) {
+                        if (blockToken == "{") { braceCount++; continue; }
+                        if (blockToken == "}") {
+                            braceCount--;
+                            if (braceCount < 0)
+                                throw ConfigParseException("Unexpected closing brace in config file");
+                            continue;
+                        }
+                        std::vector<std::string> tokens = readValues(blockIss);
+                        parseServerConfigField(serverConfig, blockToken, tokens, file);
+                        parseCommonConfigField(serverConfig, blockToken, tokens);
+                    }
+                }
+                validateConfig(serverConfig);
+                _servers.push_back(serverConfig);
+                if (braceCount != 0)
+                    throw ConfigParseException("Mismatched braces in config file");
+             strictCheckAfterServerBlock(file, line);
+             }
             }
-            ConfigData serverConfig;
-            // Parse server block
-            int braceCount = 1;
-            while (braceCount > 0 && std::getline(file, line)) {
-                std::istringstream blockIss(line);
-                std::string blockKey;
-                if (!(blockIss >> blockKey)) continue;
-                if (blockKey == "{") { braceCount++; continue; }
-                if (blockKey == "}") {
-    				braceCount--;
-    				if (braceCount < 0)
-        				throw ConfigParseException("Unexpected closing brace in config file");
-    				continue;
-				}
-                std::vector<std::string> tokens = readValues(blockIss);
-                parseServerConfigField(serverConfig, blockKey, tokens, file);
-                parseCommonConfigField(serverConfig, blockKey, tokens);
-            }
-            validateConfig(serverConfig);
-            _servers.push_back(serverConfig);
-        }
+    if (_servers.empty())
+        throw ConfigParseException("No server blocks found in config file");
 }
-    return !_servers.empty();
+return true;
 }
 
 bool Config::parseConfig(const std::string& path) {
