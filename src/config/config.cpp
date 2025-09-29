@@ -106,6 +106,16 @@ void Config::validateConfig(ConfigData& config) {
             }
         }
 		// location validation
+        // Inherit CGI settings from server if not set in location
+        if (loc.client_max_body_size <= 0)
+            loc.client_max_body_size = config.client_max_body_size;
+        if (loc.error_pages.empty())
+    		loc.error_pages = config.error_pages;
+        if (loc.cgi_ext.empty())
+          loc.cgi_ext = config.cgi_ext;
+        if (loc.cgi_path.empty())
+          loc.cgi_path = config.cgi_path;
+        // Validations
 		if (loc.path.empty() || loc.path[0] != '/')
     		throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
 		if (loc.root.empty())
@@ -128,16 +138,6 @@ void Config::validateConfig(ConfigData& config) {
     	if (!isValidPath(loc.upload_store, W_OK | X_OK))
        		throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
 		}
-
-        // Inherit CGI settings from server if not set in location
-        if (loc.client_max_body_size <= 0)
-            loc.client_max_body_size = config.client_max_body_size;
-        if (loc.error_pages.empty())
-    		loc.error_pages = config.error_pages;
-        if (loc.cgi_ext.empty())
-          loc.cgi_ext = config.cgi_ext;
-        if (loc.cgi_path.empty())
-          loc.cgi_path = config.cgi_path;
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
             throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
         if (!loc.autoindex) loc.autoindex = config.autoindex;
@@ -304,12 +304,11 @@ bool Config::parseConfigFile(std::ifstream& file)
 return true;
 }
 
-bool Config::parseConfig(const std::string& path) {
-    std::ifstream file(path);
+bool Config::parseConfig(char **argv){
+  std::string configPath = "conf/" + std::string(argv[1]);
+    std::ifstream file(configPath);
     if (!file.is_open())
-        throw ConfigParseException("Failed to open config file: " + path);
-
+        throw ConfigParseException("Failed to open config file: " + configPath);
     parseConfigFile(file);
-
     return true;
 }

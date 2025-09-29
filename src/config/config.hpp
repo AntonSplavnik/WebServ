@@ -85,7 +85,7 @@ class Config {
 	public:
 	    Config();
 		std::vector<ConfigData> getServers() const;
-		bool					parseConfig(const std::string& path);
+		bool					parseConfig(char **argv);
 
 	private:
 		std::vector<ConfigData> _servers;

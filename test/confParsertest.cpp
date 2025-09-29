@@ -10,16 +10,15 @@ int main(int argc, char* argv[]) {
         std::cout << "Wrong config path" << std::endl;
         return 1;
     }
-    std::string configPath = "conf/" + std::string(argv[1]);
 
     Config config;
     try {
-        config.parseConfig(configPath);
+        config.parseConfig(argv);
     } catch (const ConfigParseException& e) {
         std::cerr << "Error parsing config file: " << e.what() << std::endl;
         return 1;
     }
-    std::cout << "Config file loaded successfully from: " << configPath << std::endl;
+    std::cout << "Config file loaded successfully" << std::endl;
 
     const std::vector<ConfigData>& servers = config.getServers();
     if (servers.empty()) {
