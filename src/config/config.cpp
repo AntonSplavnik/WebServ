@@ -79,17 +79,18 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: error_log");
     if (config.client_max_body_size <= 0)
         throw ConfigParseException("Missing or invalid required config: client_max_body_size");
-
-    if (config.allow_methods.empty()) {
-        config.allow_methods.push_back("GET");
-        std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
-    }
     if (config.listeners.empty())
     	throw ConfigParseException("Missing required config: at least one listen directive");
     if (config.error_pages.empty()) {
         config.error_pages[404] = DEFAULT_ERROR_PAGE_404;
         config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
         config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
+        config.error_pages[413] = DEFAULT_ERROR_PAGE_413;
+        std::cout << "Info: No error_pages specified, applying default error pages" << std::endl;
+    }
+    if (config.allow_methods.empty()) {
+        config.allow_methods.push_back("GET");
+        std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
     }
     // --- Each location ---
     for (size_t i = 0; i < config.locations.size(); ++i) {
@@ -104,8 +105,7 @@ void Config::validateConfig(ConfigData& config) {
                 std::cout << "Info: No allow_methods specified in location, defaulting to GET" << std::endl;
             }
         }
-        if (loc.client_max_body_size <= 0)
-            loc.client_max_body_size = config.client_max_body_size;
+		// location validation
 		if (loc.path.empty() || loc.path[0] != '/')
     		throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
 		if (loc.root.empty())
@@ -118,23 +118,26 @@ void Config::validateConfig(ConfigData& config) {
             throw ConfigParseException("Missing required location config: allow_methods");
         if (loc.client_max_body_size <= 0)
             throw ConfigParseException("Missing required location config: client_max_body_size");
-        if (loc.cgi_ext.empty())
-          loc.cgi_ext = config.cgi_ext;
-        if (loc.cgi_path.empty())
-          loc.cgi_path = config.cgi_path;
         if (!loc.cgi_ext.empty() && loc.cgi_path.empty())
             throw ConfigParseException("Missing required location config: cgi_path for CGI");
         if (!loc.cgi_path.empty() && loc.cgi_ext.empty())
             throw ConfigParseException("Missing required location config: cgi_ext for CGI");
-        if (loc.error_pages.empty())
-    		loc.error_pages = config.error_pages;
         if (loc.upload_enabled) {
     		if (loc.upload_store.empty())
         		throw ConfigParseException("upload_enabled is on but upload_store is not set in location: " + loc.path);
     	if (!isValidPath(loc.upload_store, W_OK | X_OK))
        		throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
 		}
-        // Redirect validation
+
+        // Inherit CGI settings from server if not set in location
+        if (loc.client_max_body_size <= 0)
+            loc.client_max_body_size = config.client_max_body_size;
+        if (loc.error_pages.empty())
+    		loc.error_pages = config.error_pages;
+        if (loc.cgi_ext.empty())
+          loc.cgi_ext = config.cgi_ext;
+        if (loc.cgi_path.empty())
+          loc.cgi_path = config.cgi_path;
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
             throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
         if (!loc.autoindex) loc.autoindex = config.autoindex;
