@@ -11,6 +11,7 @@ The **Config Parser** is responsible for:
 
 On success, the parser returns a list of fully validated servers (`std::vector<ConfigData>`).
 
+
 ---
 
 ## ✅ Supported Directives
