@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/RiderDebugger/RiderRestoreDecompile/RestoreDecompileSetting/@EntryValue" value="false" type="bool" />
+    <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexRemoved" />
+  </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="CMakeLists.txt" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tghnx1&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/AntonSplavnik/WebServ.git&quot;,
+    &quot;accountId&quot;: &quot;bba5bffc-4388-4b54-9371-036d3f66ea88&quot;
+  },
+  &quot;recentNewPullRequestHead&quot;: {
+    &quot;server&quot;: {
+      &quot;useHttp&quot;: false,
+      &quot;host&quot;: &quot;github.com&quot;,
+      &quot;port&quot;: null,
+      &quot;suffix&quot;: null
+    },
+    &quot;owner&quot;: &quot;AntonSplavnik&quot;,
+    &quot;repository&quot;: &quot;WebServ&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/test/confParsertest.cpp" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="31mBvOcOS3RT5uh2Sfgp0VxvA58" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="false" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "C/C++ File.confParsertest.cpp.executor": "Debug",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/tghnx1/Desktop/42/Webserv42/src/runtime/www/errors",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/runtime/www/errors" />
+      <recent name="$PROJECT_DIR$/src/config" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/config" />
+      <recent name="$PROJECT_DIR$/src/commonHelpers" />
+      <recent name="$PROJECT_DIR$/runtime/www" />
+      <recent name="$PROJECT_DIR$/conf" />
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="confParsertest.cpp" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" temporary="true" PROGRAM_PARAMS="test.conf" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://test" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Webserv42" TARGET_NAME="confParsertest.cpp" CONFIG_NAME="confParsertest.cpp">
+      <option name="sourceFile" value="test/confParsertest.cpp" />
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="C/C++ File.confParsertest.cpp" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="" />
+      <created>1756119597575</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1756119597575</updated>
+      <workItem from="1756119599229" duration="1037000" />
+      <workItem from="1756131352105" duration="3680000" />
+      <workItem from="1756135065214" duration="2217000" />
+      <workItem from="1756318649838" duration="5929000" />
+      <workItem from="1756385865358" duration="2143000" />
+      <workItem from="1756821910895" duration="11072000" />
+      <workItem from="1756842664021" duration="1477000" />
+      <workItem from="1756844144849" duration="995000" />
+      <workItem from="1756845152370" duration="831000" />
+      <workItem from="1756902085323" duration="19178000" />
+      <workItem from="1757669803255" duration="284000" />
+      <workItem from="1757679380928" duration="3040000" />
+      <workItem from="1757682459017" duration="146000" />
+      <workItem from="1757936299734" duration="11806000" />
+      <workItem from="1758024124733" duration="286000" />
+      <workItem from="1758208513647" duration="1940000" />
+      <workItem from="1758281192922" duration="6435000" />
+      <workItem from="1758545570043" duration="28547000" />
+      <workItem from="1758721311290" duration="11029000" />
+      <workItem from="1758737945535" duration="1769000" />
+      <workItem from="1758739728994" duration="36000" />
+      <workItem from="1758739788396" duration="5906000" />
+      <workItem from="1758799125816" duration="30012000" />
+      <workItem from="1758909163365" duration="73000" />
+      <workItem from="1759144623436" duration="11090000" />
+      <workItem from="1759236056253" duration="1211000" />
+    </task>
+    <task id="LOCAL-00001" summary="added some headers and the standart config file">
+      <option name="closed" value="true" />
+      <created>1756126783846</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1756126783846</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Implement configuration super basic parsing and update ConfigData structure">
+      <option name="closed" value="true" />
+      <created>1756136329214</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1756136329214</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Enhance configuration parser to support error (support one html page for different errors, for example for 400, 404 the 40x.html error page) pages and improve parsing logic">
+      <option name="closed" value="true" />
+      <created>1756323991407</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1756323991407</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Add autoindex, configuration option and refactor parsing logic optimised">
+      <option name="closed" value="true" />
+      <created>1756387728889</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1756387728889</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Enhance configuration parser to support location blocks and allow methods, and add access and error log options">
+      <option name="closed" value="true" />
+      <created>1756833813829</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1756833813829</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Add client_max_body_size, cgi_path, and cgi_ext options to configuration parser">
+      <option name="closed" value="true" />
+      <created>1756842614865</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1756842614865</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Add client_max_body_size and autoindex to configuration parser with validation">
+      <option name="closed" value="true" />
+      <created>1756845924390</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1756845924390</updated>
+    </task>
+    <task id="LOCAL-00008" summary="TODO: add validation to the other parameters and write the warnings to the log file">
+      <option name="closed" value="true" />
+      <created>1756845976119</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1756845976119</updated>
+    </task>
+    <task id="LOCAL-00009" summary="TODO: add validation to the other parameters and write the warnings to the log file">
+      <option name="closed" value="true" />
+      <created>1756983793916</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1756983793916</updated>
+    </task>
+    <task id="LOCAL-00010" summary="TODO: add validation to the other parameters and write the warnings to the log file">
+      <option name="closed" value="true" />
+      <created>1756984021104</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1756984021104</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Add validation for HTTP methods, autoindex values, and improve error handling in configuration parser">
+      <option name="closed" value="true" />
+      <created>1756991540838</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1756991540838</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Add validation for HTTP status codes, IPv4 addresses, hosts, and CGI extensions in configuration parser">
+      <option name="closed" value="true" />
+      <created>1756994310116</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1756994310116</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Add directory structure, error page HTML files and update configuration paths for logs and error pages">
+      <option name="closed" value="true" />
+      <created>1756996179814</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1756996179814</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Refactor configuration parser: normalize paths, add file and directory validation, and improve error handling for log files. Check the path then checks for the file rights, if error =&gt; creates files in the path">
+      <option name="closed" value="true" />
+      <created>1757000976355</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1757000976355</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Refactor log file assignment: extract logic into helper function for validation and creation">
+      <option name="closed" value="true" />
+      <created>1757001447637</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1757001447637</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Add Logger class for logging access and error messages in configuration parser tests">
+      <option name="closed" value="true" />
+      <created>1757681462496</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1757681462496</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Add upload configuration options: enable uploads, specify upload store path, and set redirect URL">
+      <option name="closed" value="true" />
+      <created>1758109371038</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1758109371038</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Add redirect configuration with optional HTTP status code handling">
+      <option name="closed" value="true" />
+      <created>1758114028608</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1758114028608</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Add UrlStruct for parsing HTTP request information">
+      <option name="closed" value="true" />
+      <created>1758217126927</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1758217126927</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Added instructions for the logging">
+      <option name="closed" value="true" />
+      <created>1758546470154</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1758546470154</updated>
+    </task>
+    <task id="LOCAL-00021" summary="WSERV-17 Added instructions for the logging">
+      <option name="closed" value="true" />
+      <created>1758546534858</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1758546534858</updated>
+    </task>
+    <task id="LOCAL-00022" summary="WSERV-7 Refactor configuration parsing and validation; introduce ConfigParseException for &#10;error handling">
+      <option name="closed" value="true" />
+      <created>1758554729650</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1758554729650</updated>
+    </task>
+    <task id="LOCAL-00023" summary="WSERV-22&#10; Enhance configuration validation; add defaults for allow_methods and improve error messages">
+      <option name="closed" value="true" />
+      <created>1758622133869</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1758622133869</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Enhance configuration validation; enforce path format and check for unknown directives">
+      <option name="closed" value="true" />
+      <created>1758624548410</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1758624548410</updated>
+    </task>
+    <task id="LOCAL-00025" summary="WSERV-22 Enhance configuration validation; enforce path format and check for unknown directives">
+      <option name="closed" value="true" />
+      <created>1758624582664</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1758624582664</updated>
+    </task>
+    <task id="LOCAL-00026" summary="WSERV-21 parse the listen directive from the config file, supporting formats like host:port, port, or host. It validates the host and port, sets defaults if needed, and prevents duplicate listeners by checking if the pair already exists in _configData.listeners. If validation fails or a duplicate is found, it throws a ConfigParseException. Otherwise, it adds the listener to the config. The logic is correct and robust for typical use cases.">
+      <option name="closed" value="true" />
+      <created>1758626978105</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1758626978105</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Refactor listen directive parsing; improve host and port validation, and handle default values more efficiently">
+      <option name="closed" value="true" />
+      <created>1758627576708</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1758627576708</updated>
+    </task>
+    <task id="LOCAL-00028" summary="Refactor redirect directive parsing; enforce argument requirements and improve error handling">
+      <option name="closed" value="true" />
+      <created>1758631073604</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1758631073604</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Refactor redirect directive parsing; allow optional status code and set default to 302">
+      <option name="closed" value="true" />
+      <created>1758631894395</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1758631894395</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block">
+      <option name="closed" value="true" />
+      <created>1758636215664</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1758636215664</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Refactor redirect directive parsing (need to point a redirection with the code)">
+      <option name="closed" value="true" />
+      <created>1758636992327</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1758636992327</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Refactor location config parsing; enhance upload_enabled validation, add default error pages and throw on dublicates of : index, root, client_max_body size">
+      <option name="closed" value="true" />
+      <created>1758638952996</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1758638952996</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Refactor config parsing; improve location block handling, add unmatched brace check, and enhance error page directives">
+      <option name="closed" value="true" />
+      <created>1758640260495</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1758640260495</updated>
+    </task>
+    <task id="LOCAL-00034" summary="moved back when not checking the braces">
+      <option name="closed" value="true" />
+      <created>1758731699376</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1758731699376</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Refactor config parsing; move helper functions to a new helpers module for better organization and readability">
+      <option name="closed" value="true" />
+      <created>1758735006306</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1758735006306</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Refactor helper functions; replace static arrays with dynamic validation for HTTP methods, CGI extensions, and autoindex values">
+      <option name="closed" value="true" />
+      <created>1758738787357</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1758738787357</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Refactor config parsing; replace static directive arrays with constant arrays for improved readability and maintainability">
+      <option name="closed" value="true" />
+      <created>1758739311817</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1758739311817</updated>
+    </task>
+    <task id="LOCAL-00038" summary="Refactor config parsing; move location-specific parsing logic to separate function, add default error page constants, and improve log file assignment">
+      <option name="closed" value="true" />
+      <created>1758741325657</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1758741325657</updated>
+    </task>
+    <task id="LOCAL-00039" summary="Refactor config parsing; enhance structure by integrating location block handling into server config parsing and improving function organization">
+      <option name="closed" value="true" />
+      <created>1758745653072</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1758745653072</updated>
+    </task>
+    <task id="LOCAL-00040" summary="Refactor config parsing; extract parsing logic into dedicated functions for improved readability and maintainability">
+      <option name="closed" value="true" />
+      <created>1758806035569</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1758806035569</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Refactor config validation; introduce directive validation function and enhance error handling for configuration fields">
+      <option name="closed" value="true" />
+      <created>1758817215018</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1758817215018</updated>
+    </task>
+    <task id="LOCAL-00042" summary="WSERV-28&#10; add duplicate location path">
+      <option name="closed" value="true" />
+      <created>1758884512145</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1758884512145</updated>
+    </task>
+    <task id="LOCAL-00043" summary="WSERV-23&#10;Now config parser supports different servers">
+      <option name="closed" value="true" />
+      <created>1758901943244</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1758901943244</updated>
+    </task>
+    <task id="LOCAL-00044" summary="WSRV 24&#10;&#10;implemented a strictCheckAfterServerBlock function that checks that only &quot;server&quot; block can be after the prev server block. So no unexpected tockens and no extra braces">
+      <option name="closed" value="true" />
+      <created>1758908585314</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1758908585314</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Add documentation for Config Parser; outline supported directives, data structures, parsing flow, and error handling">
+      <option name="closed" value="true" />
+      <created>1758909198310</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1758909198310</updated>
+    </task>
+    <task id="LOCAL-00046" summary="readame">
+      <option name="closed" value="true" />
+      <created>1759144872196</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1759144872196</updated>
+    </task>
+    <task id="LOCAL-00047" summary="readame">
+      <option name="closed" value="true" />
+      <created>1759145008462</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1759145008462</updated>
+    </task>
+    <task id="LOCAL-00048" summary="Enhance config parser: add default error page for 413, improve location validation, and update documentation">
+      <option name="closed" value="true" />
+      <created>1759160407237</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1759160407237</updated>
+    </task>
+    <task id="LOCAL-00049" summary="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class">
+      <option name="closed" value="true" />
+      <created>1759161946545</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1759161946545</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Enhance configuration validation; enforce path format and check for unknown directives" />
+    <MESSAGE value="WSERV-22 Enhance configuration validation; enforce path format and check for unknown directives" />
+    <MESSAGE value="WSERV-21 parse the listen directive from the config file, supporting formats like host:port, port, or host. It validates the host and port, sets defaults if needed, and prevents duplicate listeners by checking if the pair already exists in _configData.listeners. If validation fails or a duplicate is found, it throws a ConfigParseException. Otherwise, it adds the listener to the config. The logic is correct and robust for typical use cases." />
+    <MESSAGE value="Refactor listen directive parsing; improve host and port validation, and handle default values more efficiently" />
+    <MESSAGE value="Refactor redirect directive parsing; enforce argument requirements and improve error handling" />
+    <MESSAGE value="Refactor redirect directive parsing; allow optional status code and set default to 302" />
+    <MESSAGE value="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block" />
+    <MESSAGE value="Refactor redirect directive parsing (need to point a redirection with the code)" />
+    <MESSAGE value="Refactor location config parsing; enhance upload_enabled validation, add default error pages and throw on dublicates of : index, root, client_max_body size" />
+    <MESSAGE value="Refactor config parsing; improve location block handling, add unmatched brace check, and enhance error page directives" />
+    <MESSAGE value="moved back when not checking the braces" />
+    <MESSAGE value="Refactor config parsing; move helper functions to a new helpers module for better organization and readability" />
+    <MESSAGE value="Refactor helper functions; replace static arrays with dynamic validation for HTTP methods, CGI extensions, and autoindex values" />
+    <MESSAGE value="Refactor config parsing; replace static directive arrays with constant arrays for improved readability and maintainability" />
+    <MESSAGE value="Refactor config parsing; move location-specific parsing logic to separate function, add default error page constants, and improve log file assignment" />
+    <MESSAGE value="Refactor config parsing; enhance structure by integrating location block handling into server config parsing and improving function organization" />
+    <MESSAGE value="Refactor config parsing; extract parsing logic into dedicated functions for improved readability and maintainability" />
+    <MESSAGE value="Refactor config validation; introduce directive validation function and enhance error handling for configuration fields" />
+    <MESSAGE value="WSERV-28&#10; add duplicate location path" />
+    <MESSAGE value="WSERV-23&#10;Now config parser supports different servers" />
+    <MESSAGE value="WSRV 24&#10;&#10;implemented a strictCheckAfterServerBlock function that checks that only &quot;server&quot; block can be after the prev server block. So no unexpected tockens and no extra braces" />
+    <MESSAGE value="Add documentation for Config Parser; outline supported directives, data structures, parsing flow, and error handling" />
+    <MESSAGE value="readame" />
+    <MESSAGE value="Enhance config parser: add default error page for 413, improve location validation, and update documentation" />
+    <MESSAGE value="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
+    <option name="LAST_COMMIT_MESSAGE" value="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

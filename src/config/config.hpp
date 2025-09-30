@@ -2,24 +2,23 @@
 #define CONFIG_HPP
 
 #include <string>
-#include <cstdint>
 
 struct ConfigData{
-	std::string host;
-	uint16_t    port;
-	std::string server_name;
-	std::string root;
-	std::string index;
-	int         backlog;
 
-	ConfigData();
+	short port;
+	std::string serverName;
+	std::string htmlPath;
+	// Document root
+	// Error pages
+	// CGI settings
+	// Client max body size
+	// Timeouts
 };
 
 class Config {
 
 	public:
-		ConfigData getConfigData() const;
-		bool parseConfig(const std::string& path);
+		ConfigData GetConfigData() const;
 
 	private:
 		ConfigData _configData;
