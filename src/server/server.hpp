@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/30 15:10:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/01 13:50:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ struct ClientInfo {
 	ClientState state;
 	size_t bytesSent;
 	std::string responseData;
-	std::string requstData;
+	std::string requestData;
 	//timeout data
 	time_t lastActivity;        // Last time client sent data
 	int keepAliveTimeout;       // Timeout in seconds (default 15)

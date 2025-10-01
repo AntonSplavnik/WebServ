@@ -1,5 +1,6 @@
 #include "http_request_test.hpp"
 
+
 /*
   TEST(Example, Demo) {
       EXPECT_EQ(1, 2);  // Fails, prints error
@@ -37,14 +38,14 @@ TEST_F(HttpRequestTest, getMethod){
 
 TEST_F(HttpRequestTest ,extractLineHeaderBodyLen){
 
-	request->extractLineHeaderBodyLen(requestData);
-	EXPECT_STREQ("GET /index.html HTTP/1.1\r\n", request->getRequestLine());
+	request->extractLineHeaderBodyLen(*client);
+	EXPECT_STREQ("GET /index.html HTTP/1.1\r\n", request->getRequstLine().c_str());
 	EXPECT_STREQ("Host: localhost:8080\r\n"
 				 "User-Agent: Mozilla/5.0\r\n"
 				 "Accept: text/html\r\n"
 				 "Connection: keep-alive\r\n"
-				"\r\n",
-				request->getRawHeaders());
+				 "\r\n",
+				request->getRawHeaders().c_str());
 }
 
 /*

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/30 17:43:32 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/01 13:34:41 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ The Host header should be checked in the HTTP request parsing
 
 
 HttpRequest::HttpRequest()
-	: _requestLine(), _headers(), _body(), _contentLength(), _method(), _path(), _version(), _isValid(false){
+	: _requestLine(), _body(), _contentLength(), _method(), _path(), _version(), _headers(), _isValid(false){
 }
 
 HttpRequest::~HttpRequest(){}
@@ -147,7 +147,6 @@ unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 void HttpRequest::setRequstLine(std::string requestLine) {_requestLine = requestLine;}
 void HttpRequest::setBody(std::string body) {_body = body;}
 void HttpRequest::setRawHeaders(std::string rawHeaders) {_rawHeaders = rawHeaders;}
-void HttpRequest::setContentLength(unsigned long contentLength) { _contentLength = contentLength;}
 
 std::string HttpRequest::getMethod() const { return _method;}
 std::string HttpRequest::getPath() const {return _path;}

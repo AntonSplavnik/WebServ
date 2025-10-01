@@ -7,6 +7,11 @@
 #include <gtest/gtest.h>
 #include "http_request.hpp"
 
+// Minimal ClientInfo for testing - only the fields needed
+struct ClientInfo {
+	std::string requestData;
+};
+
 class HttpRequestTest : public ::testing::Test {
 	protected:
 		void SetUp() override {
@@ -18,8 +23,12 @@ class HttpRequestTest : public ::testing::Test {
 						"Accept: text/html\r\n"
 						"Connection: keep-alive\r\n"
 						"\r\n";;
+
 			request->setMethod("GET");
-			request->setRequestLine("GET /index.html HTTP/1.1\r\n");
+
+			client = new ClientInfo();
+			client->requestData = requestData;
+			request->setRequstLine("GET /index.html HTTP/1.1\r\n");
 			request->setRawHeaders("Host: localhost:8080\r\n"
 								   "User-Agent: Mozilla/5.0\r\n"
 								   "Accept: text/html\r\n"
@@ -34,6 +43,7 @@ class HttpRequestTest : public ::testing::Test {
 
 		HttpRequest* request;
 		std::string requestData;
+		ClientInfo* client;
 };
 
 #endif
