@@ -154,8 +154,6 @@ void HttpRequest::parseHeaders(){
 
 /*
 	Todo:
-	- Preserves whitespace in header values
-	- Normalized key to lowercase OK
 	- No input validation
 */
 
@@ -170,18 +168,23 @@ void HttpRequest::parseHeaders(){
 
 	while (std::getline(iss, headerLine))
 	{
-		// 1) Skip empty line
+		// Trim \r
+		if (!headerLine.empty() && headerLine.back() == '\r') {
+        headerLine.pop_back();
+        }
+		// Skip empty line
 		if (headerLine.empty()) continue;
-		// 2) Find : ':'
+		// Find : ':'
 		size_t pos = headerLine.find(':');
-		// 3) extract key and value
-        if (pos != std::string::npos) {
-            std::string key = headerLine.substr(0, pos);
-            std::string value = headerLine.substr(pos + 1);
-		// 4) tolower key
+		// extract key and value
+        if (pos != std::string::npos) 
+		{
+			std::string key = headerLine.substr(0, pos);
+			std::string value = headerLine.substr(pos + 1);
+			key = trimKey(key);
+			value = trimValue(value);
 			std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-
-            _headers[key] = value;
+			_headers[key] = value;
 		}
 	}
 }
@@ -220,4 +223,22 @@ std::string HttpRequest::getContenType() {
 		return it->second;
 	else
 		return "Keep-alive";
+}
+
+std::string trimKey(const std::string& str) {
+	std::string result;
+	for (char c : str) {
+		if (c != ' ' && c != '\t') {
+			result += c;
+		}
+	}
+	return result;
+}
+
+std::string trimValue(const std::string& str) {
+	size_t start = str.find_first_not_of(" \t");
+	if (start == std::string::npos) return "";
+    
+	size_t end = str.find_last_not_of(" \t");
+	return str.substr(start, end - start + 1);
 }

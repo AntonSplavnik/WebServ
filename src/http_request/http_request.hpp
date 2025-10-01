@@ -60,6 +60,9 @@ class HttpRequest{
 		void setVersion(std::string version);
 		void setContentType(std::string ContentType);
 
+		std::string trimKey(const std::string& str);
+		std::string trimValue(const std::string& str);
+
 	private:
 		std::string		_requestLine;
 		std::string		_body;
