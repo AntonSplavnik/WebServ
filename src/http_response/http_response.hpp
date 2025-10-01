@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/09/25 18:08:48 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/30 14:58:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ class HttpResponse {
 		std::string getStatusCode();
 		std::string getReasonPhrase();
 		std::string getContentType();
-		long long	getContentLength();
+		unsigned long	getContentLength();
 		std::string getTimeNow();
 		std::string getResponse();
 		fileExtentions getFileExtension(std::string filePath);
@@ -72,7 +72,7 @@ class HttpResponse {
 		float			_serverVersion;
 		std::string		_filePath;
 		std::string		_contentType;
-		long long		_contentLength;
+		unsigned long		_contentLength;
 		std:: string	_connectionType;
 		std::map<std::string, std::string> _headers;
 
@@ -80,7 +80,6 @@ class HttpResponse {
 		std::string	_body;
 
 		std::string _response;
-
 };
 
 #endif

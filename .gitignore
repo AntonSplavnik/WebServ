@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+
+# Build
+a.out
+*.o
+*.out
+obj/
+
+# Logs
+runtime/logs/
+*.log

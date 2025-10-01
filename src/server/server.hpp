@@ -17,7 +17,6 @@
 #include <vector>
 #include <map>
 #include <poll.h>
-#include "../config/config.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 
