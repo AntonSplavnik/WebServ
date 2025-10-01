@@ -74,62 +74,137 @@ HttpRequest::HttpRequest()
 
 HttpRequest::~HttpRequest(){}
 
-void HttpRequest::parseRequest(ClientInfo& requestDate){
+void HttpRequest::parseRequest(const std::string requestData){
 
-
-	extractLineHeaderBodyLen(requestDate);
+/*	
+Critical HTTP parsing test scenarios
+	- Invalid request line structure
+	- Missing mandatory headers (Host for HTTP/1.1)
+	- Payload size exceeding configured limits
+	- URI with forbidden/encoded characters
+	- Query string with multiple parameters
+	- Content-Length header validation failures
+	- Non-implemented HTTP method requests
+*/
+	extractLineHeaderBodyLen(requestData);
 
 	ParseState state = PARSE_REQUEST_LINE;
-	switch (state) {
-	case PARSE_REQUEST_LINE:
-		parseRequestLine();
-		state = PARSE_HEADERS;
-		break;
-	case PARSE_HEADERS:
-		parseHeaders();
-		state = PARSE_BODY;
-		break;
-	case PARSE_BODY:
-		parseBody();
-		break;
+	while(state != PARSE_COMPLETE && _isValid) {
+		switch (state) {
+		case PARSE_REQUEST_LINE:
+			parseRequestLine();
+			state = PARSE_HEADERS;
+			break;
+		case PARSE_HEADERS:
+			parseHeaders();
+			state = PARSE_BODY;
+			break;
+		case PARSE_BODY:
+			parseBody();
+			state = PARSE_COMPLETE;
+			break;
+		}
 	}
 }
 
-
-void HttpRequest::extractLineHeaderBodyLen(ClientInfo& requestDate){
-
-	(void)requestDate;
-	/*
-	extraction logic
-	_line =
-	_heders =
-	_body =
-	_contentLength =
-	*/
+void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
+	
+	//STEP 1 -> Extract request line
+	size_t firstCRLF = rawData.find("\r\n");
+	if (firstCRLF == std::string::npos) {
+		_isValid = false;
+		return;
+	}
+	_requestLine = rawData.substr(0, firstCRLF);
+	
+	//STEP 2 -> extract Header & Body 
+	size_t headerBodySeparator = rawData.find("\r\n\r\n");
+	if (headerBodySeparator == std::string::npos) {
+		_rawHeaders = rawData.substr(firstCRLF + 2); // After request line
+		_body = "";
+		_contentLength = 0;
+	} else {
+		size_t headersStart = firstCRLF + 2; // After "GET /path HTTP/1.1\r\n"
+		size_t headersLength = headerBodySeparator - headersStart;
+		_rawHeaders = rawData.substr(headersStart, headersLength);
+		_body = rawData.substr(headerBodySeparator + 4);
+		_contentLength = _body.length();
+	}
 }
 
 void HttpRequest::parseRequestLine(){
 
-	/*
-	exctraction logic
-	_method =
-	_path =
-	_version =
-	*/
+	if (_requestLine.empty()) {
+		std::cout << " Error: Request line is empty" << std::endl;
+		_isValid = false;
+		return;
+	}
+	
+	std::istringstream iss(_requestLine);
+	
+	iss >> _method;
+	iss >> _path;
+	iss >> _version;
+
+	if (_method.empty() || _path.empty() || _version.empty()) {
+		std::cout << " Error: Invalid request line format" << std::endl;
+		_isValid = false;
+		return;
+	}
+	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+		std::cout << " Error: Unknown HTTP method: " << _method << std::endl;
+		_isValid = false;
+		return;
+	}
+	if (_version != "HTTP/1.1" && _version != "HTTP/1.0") {
+		std::cout << "Error : Unsupported HTTP version: " << _version << std::endl;
+		_isValid = false;
+		return;
+	}
 }
 
 void HttpRequest::parseHeaders(){
+	
+/*
+	Todo: 
+	- Preserves whitespace in header values 
+	- Normalized key to lowercase OK 
+	- No input validation
+*/
 
-	/*
-	_headers = builds header map
-	*/
+	if (_rawHeaders.empty()) {
+		std::cout << "No headers to parse" << std::endl;
+		_isValid = false;
+		return;
+	}
+	
+	std::istringstream iss(_rawHeaders);
+	std::string headerLine;
+
+	while (std::getline(iss, headerLine))
+	{
+		// 1) Skip empty line
+		if (headerLine.empty()) continue;
+		// 2) Find : ':'
+		size_t pos = headerLine.find(':');
+		// 3) extract key and value
+        if (pos != std::string::npos) {
+            std::string key = headerLine.substr(0, pos);
+            std::string value = headerLine.substr(pos + 1);
+		// 4) tolower key
+			std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+            _headers[key] = value;
+		}
+	}
 }
 
 void HttpRequest::parseBody(){
 
-	/*
-	_body =
-	*/
+    if (_body.empty()) {
+        std::cout << "No body to parse" << std::endl;
+        return;
+    }
 }
 
 void HttpRequest::setMethod(std::string method) {_method = method;}

@@ -16,9 +16,11 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <sstream>
+
 struct ClientInfo;
 
-enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY};
+enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY, PARSE_COMPLETE};
 
 class HttpRequest{
 
@@ -26,9 +28,9 @@ class HttpRequest{
 		HttpRequest();
 		~HttpRequest();
 
-		void parseRequest(ClientInfo& requestDate);
+		void parseRequest(std::string requestData);
 
-		void extractLineHeaderBodyLen(ClientInfo& requestDate);
+		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
 		void parseHeaders();
