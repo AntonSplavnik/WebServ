@@ -5,6 +5,8 @@
 #include <string>
 #include "../src/logging/logger.hpp"
 
+// c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp src/config/directivesParsers.cpp src/helpers/helpers.cpp -o confParsertest
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cout << "Wrong config path" << std::endl;

@@ -38,13 +38,15 @@ void Config::parseListenDirective(ConfigData& config, const std::string& value) 
     } else {
         throw ConfigParseException("Invalid listen directive: " + value);
     }
-    std::pair<std::string,uint16_t> listenPair(host, static_cast<uint16_t>(port));
+    std::pair<std::string,unsigned short> listenPair(host, static_cast<unsigned short>(port));
     if (std::find(config.listeners.begin(),
                   config.listeners.end(),
                   listenPair) != config.listeners.end()) {
-        throw ConfigParseException("Duplicate listen directive: " + host + ":" + std::to_string(port));
+        std::ostringstream oss;
+        oss << port;
+        throw ConfigParseException("Duplicate listen directive: " + host + ":" + oss.str());
                   }
-    config.listeners.push_back(std::make_pair(host, static_cast<uint16_t>(port)));
+    config.listeners.push_back(std::make_pair(host, static_cast<unsigned short>(port)));
 }
 
 // In a suitable file, e.g., directivesParsers.cpp or config.cpp

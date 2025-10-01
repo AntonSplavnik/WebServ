@@ -1,9 +1,8 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 #include <string>
-#include <cstdint>
 #include <map>
-
+#include <vector>
 
 const int MAX_BACKLOG = 1024;
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
@@ -62,7 +61,7 @@ struct LocationConfig {
 };
 
 struct ConfigData{
-	std::vector<std::pair<std::string, uint16_t> > listeners;
+	std::vector<std::pair<std::string, unsigned short> > listeners;
 	std::vector<std::string> server_names;
 	std::string root;
 	std::string index;

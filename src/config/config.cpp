@@ -49,7 +49,9 @@ ConfigData::ConfigData()
       cgi_ext(),
       error_pages(),
       allow_methods(),
-      client_max_body_size(0) {}
+      client_max_body_size(0),
+      listeners(),
+      upload_store("") {}
 
 std::vector<ConfigData> Config::getServers() const {
     return _servers;
@@ -139,7 +141,11 @@ void Config::validateConfig(ConfigData& config) {
        		throw ConfigParseException("Inaccessible upload_store path for location " + loc.path + ": " + loc.upload_store);
 		}
         if (!loc.redirect.empty() && (loc.redirect_code < 300 || loc.redirect_code > 399))
-            throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + std::to_string(loc.redirect_code));
+          {
+          	std::ostringstream oss;
+			oss << loc.redirect_code;
+            throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + oss.str());
+          }
         if (!loc.autoindex) loc.autoindex = config.autoindex;
 
     }
@@ -306,7 +312,7 @@ return true;
 
 bool Config::parseConfig(char **argv){
   std::string configPath = "conf/" + std::string(argv[1]);
-    std::ifstream file(configPath);
+    std::ifstream file(configPath.c_str());
     if (!file.is_open())
         throw ConfigParseException("Failed to open config file: " + configPath);
     parseConfigFile(file);
