@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/26 15:08:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/01 14:51:08 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -194,14 +194,14 @@ void Server::handleClientSocket(short fd, short revents){
 			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 			// Full request is received, prepare response
-			_clients[fd].requstData += buffer;
-			if(_clients[fd].requstData.find("\r\n\r\n") == std::string::npos)
+			_clients[fd].requestData += buffer;
+			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
 				return;
-			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requstData << std::endl;
+			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
 
 			HttpRequest requestParser;
-			requestParser.parseRequest(_clients[fd].requstData);
-
+			requestParser.parseRequest(_clients[fd].requestData);
+	
 			updateClientActivity(fd);
 
 			Methods method = stringToMethod(requestParser.getMethod());

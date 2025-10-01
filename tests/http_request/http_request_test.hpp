@@ -16,6 +16,8 @@ class HttpRequestTest : public ::testing::Test {
 	protected:
 		void SetUp() override {
 			// Runs before EACH test
+			client = new ClientInfo();
+
 			request = new HttpRequest();
 			requestData = "GET /index.html HTTP/1.1\r\n"
 						"Host: localhost:8080\r\n"
@@ -24,16 +26,14 @@ class HttpRequestTest : public ::testing::Test {
 						"Connection: keep-alive\r\n"
 						"\r\n";;
 
-			request->setMethod("GET");
 
-			client = new ClientInfo();
-			client->requestData = requestData;
-			request->setRequstLine("GET /index.html HTTP/1.1\r\n");
-			request->setRawHeaders("Host: localhost:8080\r\n"
-								   "User-Agent: Mozilla/5.0\r\n"
-								   "Accept: text/html\r\n"
-								   "Connection: keep-alive\r\n"
-								   "\r\n");
+			// client->requestData = requestData;
+			// request->setRequstLine("GET /index.html HTTP/1.1\r\n");
+			// request->setRawHeaders("Host: localhost:8080\r\n"
+			// 					   "User-Agent: Mozilla/5.0\r\n"
+			// 					   "Accept: text/html\r\n"
+			// 					   "Connection: keep-alive\r\n"
+			// 					   "\r\n");
 		}
 
 		void TearDown() override {

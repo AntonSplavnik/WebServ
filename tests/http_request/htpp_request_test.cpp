@@ -32,21 +32,22 @@
 
 TEST_F(HttpRequestTest, getMethod){
 
-	std::string method = request->getMethod();
-	EXPECT_STREQ("GET", method.c_str());
+	request->parseRequest(requestData);
+
+	EXPECT_STREQ("GET", request->getMethod().c_str());
+	EXPECT_STREQ("index.html", request->getPath().c_str());
+	EXPECT_STREQ("HTTP/1.1", request->getVersion().c_str());
 }
 
 TEST_F(HttpRequestTest ,extractLineHeaderBodyLen){
 
-	request->extractLineHeaderBodyLen(*client);
-	EXPECT_STREQ("GET /index.html HTTP/1.1\r\n", request->getRequstLine().c_str());
-	EXPECT_STREQ("Host: localhost:8080\r\n"
-				 "User-Agent: Mozilla/5.0\r\n"
-				 "Accept: text/html\r\n"
-				 "Connection: keep-alive\r\n"
-				 "\r\n",
+	request->extractLineHeaderBodyLen(requestData);
+
+	EXPECT_STREQ("GET /index.html HTTP/1.1", request->getRequstLine().c_str());
+	EXPECT_STREQ("Host: localhost:8080\r\nUser-Agent: Mozilla/5.0\r\nAccept: text/html\r\nConnection: keep-alive",
 				request->getRawHeaders().c_str());
 }
+
 
 /*
 void HttpRequest::extractLineHeaderBodyLen(ClientInfo& requestDate){
