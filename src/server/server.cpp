@@ -200,7 +200,7 @@ void Server::handleClientSocket(short fd, short revents){
 			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requstData << std::endl;
 
 			HttpRequest requestParser;
-			requestParser.parseRequest(_clients[fd]);
+			requestParser.parseRequest(_clients[fd].requstData);
 
 			updateClientActivity(fd);
 
