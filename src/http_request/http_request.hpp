@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/01 15:08:48 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/01 17:06:08 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,25 +35,29 @@ class HttpRequest{
 		void parseBody();
 		void parseHeaders();
 
+		//parse
 		void parseMethod();
 		void parsePath();
 		void parseQuery();
 		void parseVersion();
 
-		std::string getRequstLine();
-		std::string getBody();
-		std::string getRawHeaders();
-		unsigned long getContentLength();
+		//extract (get, set)
+		std::string getRequstLine() const;
+		std::string getBody() const;
+		std::string getRawHeaders() const;
+		unsigned long getContentLength() const;
 
 		void setRequstLine(std::string requestLine);
 		void setBody(std::string body);
 		void setRawHeaders(std::string rawHeaders);
 		void setContentLength(unsigned long contentLength);
 
-		std::string getMethod();
-		std::string getPath();
-		std::string getVersion();
-		std::string getContenType();
+		//parse (get, set)
+		std::string getMethod() const;
+		std::string getPath() const;
+		std::string getVersion() const;
+		std::string getContenType() const;
+		const std::map<std::string, std::string>& getHeaders() const;
 
 		void setMethod(std::string method);
 		void setPath(std::string path);
@@ -77,3 +81,4 @@ class HttpRequest{
 		bool _isValid;
 };
 #endif
+
