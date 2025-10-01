@@ -1,15 +1,40 @@
-# macOS
+# ────────────────
+# OS-specific
+# ────────────────
 .DS_Store
+Thumbs.db
 
-# IDE
+# ────────────────
+# IDE configs
+# ────────────────
 .idea/
+*.iml
 
-# Build
-a.out
+# ────────────────
+# Build artifacts
+# ────────────────
 *.o
 *.out
+*.exe
+a.out
 obj/
+webserv
 
+# ────────────────
 # Logs
-runtime/logs/
+# ────────────────
 *.log
+runtime/logs/
+
+# ────────────────
+# Debug / Profiling
+# ────────────────
+*.dSYM/
+*.profraw
+*.gcda
+*.gcno
+
+# ────────────────
+# Tests / Coverage
+# ────────────────
+tests/*.tmp
