@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/25 18:17:41 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/30 14:59:00 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,7 +126,7 @@ std::string HttpResponse::getTimeNow(){
 	return httpTime;
 }
 
-long long HttpResponse::getContentLength(){
+unsigned long HttpResponse::getContentLength(){
 	return _body.length();
 }
 
@@ -159,7 +159,7 @@ void	generateErrorResponse(){}
 void HttpResponse::generateResponse(int statusCode){
 
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase();
+	_reasonPhrase = getReasonPhrase(); //change to map
 	_date = getTimeNow();
 	_filePath = _request.getPath();
 	_contentType = getContentType();

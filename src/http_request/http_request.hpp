@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/25 15:27:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/09/30 17:44:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <iostream>
 #include <string>
 #include <map>
-#include "server.hpp"
+struct ClientInfo;
 
 enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY};
 
@@ -28,6 +28,7 @@ class HttpRequest{
 
 		void parseRequest(ClientInfo& requestDate);
 
+		void extractLineHeaderBodyLen(ClientInfo& requestDate);
 		void parseRequestLine();
 		void parseBody();
 		void parseHeaders();
@@ -37,25 +38,39 @@ class HttpRequest{
 		void parseQuery();
 		void parseVersion();
 
+		std::string getRequstLine() const;
+		std::string getBody() const;
+		std::string getRawHeaders() const;
+		unsigned long getContentLength() const;
+
+		void setRequstLine(std::string requestLine);
+		void setBody(std::string body);
+		void setRawHeaders(std::string rawHeaders);
+		void setContentLength(unsigned long contentLength);
+
 		std::string getMethod() const;
 		std::string getPath() const;
 		std::string getVersion() const;
 		std::string getContenType() const;
 
+		void setMethod(std::string method);
+		void setPath(std::string path);
+		void setVersion(std::string version);
+		void setContentType(std::string ContentType);
+
 	private:
-		std::string _line;
-		std::string _headers;
-		std::string _body;
-		long long 		_contentLength;
+		std::string							_requestLine;
+		std::string							_body;
+		std::string							_rawHeaders;
+		unsigned long						_contentLength;
 
 		//reqest line
 		std::string _method;
 		std::string _path;
 		std::string _version;
 
-		//headers
+		std::map<std::string, std::string>	_headers;
 		// std::string query;
-		std::map<std::string, std::string> _headers;
 		bool _isValid;
 };
 #endif
