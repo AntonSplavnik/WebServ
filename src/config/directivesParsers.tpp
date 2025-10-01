@@ -40,17 +40,18 @@ void Config::parseClientMaxBodySize(ConfigT& config, const std::vector<std::stri
     if (!(iss >> size))
         throw ConfigParseException("Invalid client_max_body_size value: " + tokens[0]);
     if (size > MAX_CLIENT_BODY_SIZE)
-      {
+    {
         std::ostringstream oss;
         oss << MAX_CLIENT_BODY_SIZE;
         throw ConfigParseException("client_max_body_size (" + tokens[0] + ") exceeds maximum allowed (" + oss.str() + ")");
-        }
+    }
     config.client_max_body_size = size;
 }
 
 template<typename ConfigT>
 void Config::parseAllowMethods(ConfigT& config, const std::vector<std::string>& tokens) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i)
+  	{
         if (!isValidHttpMethod(tokens[i]))
             throw ConfigParseException("Invalid HTTP method in allow_methods: " + tokens[i]);
         addUnique(config.allow_methods, tokens[i]);
@@ -64,11 +65,13 @@ void Config::parseErrorPage(ConfigT& config, const std::vector<std::string>& tok
     std::string path = tokens.back();
     if (!isValidFile(path, R_OK))
         throw ConfigParseException("Invalid or inaccessible error_page file: " + path);
-    for (size_t i = 0; i < tokens.size() - 1; ++i) {
+    for (size_t i = 0; i < tokens.size() - 1; ++i)
+    {
         if (tokens[i].empty()) continue;
         int code = 0;
         std::istringstream codeStream(tokens[i]);
-        if (codeStream >> code) {
+        if (codeStream >> code)
+        {
             if (!isValidHttpStatusCode(code))
                 throw ConfigParseException("Invalid HTTP status code in error_page: " + tokens[i]);
             config.error_pages[code] = path;
@@ -78,7 +81,8 @@ void Config::parseErrorPage(ConfigT& config, const std::vector<std::string>& tok
 
 template<typename ConfigT>
 void Config::parseCgiExt(ConfigT& config, const std::vector<std::string>& tokens) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i)
+  	{
         if (!isValidCgiExt(tokens[i]))
             throw ConfigParseException("Invalid CGI extension: " + tokens[i]);
         addUnique(config.cgi_ext, tokens[i]);
@@ -87,11 +91,12 @@ void Config::parseCgiExt(ConfigT& config, const std::vector<std::string>& tokens
 
 template<typename ConfigT>
 void Config::parseCgiPath(ConfigT& config, const std::vector<std::string>& tokens) {
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i)
+  {
         if (!isValidPath(tokens[i], X_OK))
             throw ConfigParseException("Invalid CGI path: " + tokens[i]);
         addUnique(config.cgi_path, tokens[i]);
-    }
+  }
 }
 
 // Helper to parse common config fields

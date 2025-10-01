@@ -9,7 +9,8 @@
 std::vector<std::string> readValues(std::istringstream& iss) {
     std::vector<std::string> values;
     std::string value;
-    while (iss >> value) {
+    while (iss >> value)
+    {
         if (!value.empty() && value.back() == ';') value.pop_back();
         if (!value.empty()) values.push_back(value);
     }
@@ -19,9 +20,8 @@ std::vector<std::string> readValues(std::istringstream& iss) {
 // Helper to normalize paths (resolve ., .., symlinks)
 std::string normalizePath(const std::string& path) {
     char resolved[PATH_MAX];
-    if (realpath(path.c_str(), resolved)) {
+    if (realpath(path.c_str(), resolved))
         return std::string(resolved);
-    }
     return path; // fallback if path does not exist
 }
 
@@ -42,7 +42,8 @@ bool isValidPath(const std::string& path, int mode) {
 
 // Helper to validate HTTP methods
 bool isValidHttpMethod(const std::string& method) {
-    for (size_t i = 0; i < HTTP_METHODS_COUNT; ++i) {
+    for (size_t i = 0; i < HTTP_METHODS_COUNT; ++i)
+  	{
         if (method == HTTP_METHODS[i])
             return true;
     }
@@ -57,7 +58,8 @@ bool isValidHttpStatusCode(int code) {
 // Helper to validate IPv4 addresses
 bool isValidIPv4(const std::string& ip) {
     size_t start = 0, end = 0, count = 0;
-    while (end != std::string::npos) {
+    while (end != std::string::npos)
+    {
         end = ip.find('.', start);
         std::string part = ip.substr(start, (end == std::string::npos) ? std::string::npos : end - start);
         if (part.empty() || part.size() > 3) return false;
@@ -75,7 +77,8 @@ bool isValidIPv4(const std::string& ip) {
 bool isValidHost(const std::string& host) {
     if (isValidIPv4(host)) return true;
     if (host.empty()) return false;
-    for (size_t i = 0; i < host.size(); ++i) {
+    for (size_t i = 0; i < host.size(); ++i)
+    {
         char c = host[i];
         if (!(isalnum(c) || c == '-' || c == '.')) return false;
     }
@@ -87,7 +90,8 @@ bool isValidHost(const std::string& host) {
 
 // Helper to validate CGI extensions
 bool isValidCgiExt(const std::string& ext) {
-    for (size_t i = 0; i < VALID_CGI_EXTENSIONS_COUNT; ++i) {
+    for (size_t i = 0; i < VALID_CGI_EXTENSIONS_COUNT; ++i)
+  	{
         if (ext == VALID_CGI_EXTENSIONS[i])
             return true;
     }
@@ -96,7 +100,8 @@ bool isValidCgiExt(const std::string& ext) {
 
 // Helper to validate autoindex values
 bool isValidAutoindexValue(const std::string& value) {
-    for (size_t i = 0; i < AUTOINDEX_VALUES_COUNT; ++i) {
+    for (size_t i = 0; i < AUTOINDEX_VALUES_COUNT; ++i)
+  	{
         if (value == AUTOINDEX_VALUES[i])
             return true;
     }

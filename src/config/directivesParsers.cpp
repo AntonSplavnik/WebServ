@@ -19,25 +19,24 @@ void Config::parseListenDirective(ConfigData& config, const std::string& value) 
     if (colon != std::string::npos) {
         host = value.substr(0, colon);
         std::string portPart = value.substr(colon + 1);
-        if (isValidIPv4(host)) {
-            // Valid IPv4
-        } else if (isValidHost(host)) {
-            // Valid hostname
-        } else {
+        if (!isValidIPv4(host) && !isValidHost(host))
             throw ConfigParseException("Invalid host in listen directive: " + host);
-        }
         std::istringstream portStream(portPart);
         if (!(portStream >> port) || port < 1 || port > 65535)
             throw ConfigParseException("Invalid port in listen directive: " + portPart);
-    } else if (isValidIPv4(value)) {
-        host = value;
-        port = 80;
-    } else if (isValidHost(value)) {
-        host = value;
-        port = 80;
-    } else {
-        throw ConfigParseException("Invalid listen directive: " + value);
     }
+    else if (isValidIPv4(value))
+    {
+        host = value;
+        port = 80;
+    }
+    else if (isValidHost(value))
+    {
+        host = value;
+        port = 80;
+    }
+    else
+        throw ConfigParseException("Invalid listen directive: " + value);
     std::pair<std::string,unsigned short> listenPair(host, static_cast<unsigned short>(port));
     if (std::find(config.listeners.begin(),
                   config.listeners.end(),
@@ -45,7 +44,7 @@ void Config::parseListenDirective(ConfigData& config, const std::string& value) 
         std::ostringstream oss;
         oss << port;
         throw ConfigParseException("Duplicate listen directive: " + host + ":" + oss.str());
-                  }
+    }
     config.listeners.push_back(std::make_pair(host, static_cast<unsigned short>(port)));
 }
 
@@ -63,20 +62,17 @@ void Config::parseUploadEnabled(LocationConfig& config, const std::vector<std::s
 }
 
 void Config::parseUploadStore(LocationConfig& config, const std::vector<std::string>& tokens) {
-    if (!isValidPath(tokens[0], W_OK | X_OK)) {
+    if (!isValidPath(tokens[0], W_OK | X_OK))
         throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
-    }
     config.upload_store = normalizePath(tokens[0]);
 }
 
 void Config::parseRedirect(LocationConfig& config, const std::vector<std::string>& tokens) {
-    if (tokens.size() != 2) {
+    if (tokens.size() != 2)
         throw ConfigParseException("Redirect directive requires exactly 2 arguments: status code and target path/URL");
-    }
     int code = std::atoi(tokens[0].c_str());
-    if (!isValidHttpStatusCode(code) || (code != 301 && code != 302 && code != 303)) {
+    if (!isValidHttpStatusCode(code) || (code != 301 && code != 302 && code != 303))
         throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
-    }
     config.redirect_code = code;
     config.redirect = tokens[1];
 }
