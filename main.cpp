@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "server.hpp"
+#include "src/server/server.hpp"
 
 int main(){
 	Server server;
