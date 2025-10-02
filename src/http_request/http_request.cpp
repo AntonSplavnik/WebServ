@@ -6,20 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/01 18:25:04 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 14:13:07 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "http_request.hpp"
-
-// std::string method;
-// std::string path;
-// std::string query;
-// std::string version;
-// std::map<std::string, std::string> headers;
-// std::string body;
-// bool isValid;
-
 
 /*
 The Host header should be checked in the HTTP request parsing
@@ -235,6 +226,8 @@ std::string HttpRequest::getPath() const {return _path;}
 std::string HttpRequest::getVersion() const {return _version;}
 unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {return _headers;}
+
+bool HttpRequest::getStatus() const {return _isValid;}
 
 //content type
 // void HttpRequest::setContentType(std::string ContentType){}

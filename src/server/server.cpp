@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/01 14:51:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 14:34:01 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,7 +172,7 @@ void Server::handleClientSocket(short fd, short revents){
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
 		std::cout << "Max request count reachead: " << fd << std::endl;
-		clientDisconetion(fd);
+		disconectClient(fd);
 	}
 
 	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
@@ -182,10 +182,9 @@ void Server::handleClientSocket(short fd, short revents){
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
 
 		if (bytes <= 0) {
-
 			// Client disconnected or error
 			std::cout << "Client FD " << fd << " disconnected" << std::endl;
-			clientDisconetion(fd);
+			disconectClient(fd);
 		}
 		else {
 
@@ -193,30 +192,63 @@ void Server::handleClientSocket(short fd, short revents){
 
 			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
-			// Full request is received, prepare response
 			_clients[fd].requestData += buffer;
 			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
 				return;
 			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
 
-			HttpRequest requestParser;
-			requestParser.parseRequest(_clients[fd].requestData);
-	
-			updateClientActivity(fd);
+			/*
+			  updateClientActivity(fd);  // Line 191 - keep this
 
-			Methods method = stringToMethod(requestParser.getMethod());
-			switch (method) {
-				case GET: handleGET(requestParser, _clients[fd]); break;
-				case POST: handlePOST(requestParser, _clients[fd]); break;
-				case DELETE: handleDELETE(requestParser, _clients[fd]); break;
+			_clients[fd].requestData += buffer;
+
+			// Check if headers complete
+			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
+			if(headerEnd == std::string::npos)
+				return;  // Keep receiving headers
+
+			// Parse headers to get Content-Length
+			HttpRequest tempParser;
+			tempParser.parseHeaders(_clients[fd].requestData);  // Parse headers only
+			int contentLength = tempParser.getContentLength();
+
+			// Check if full body received
+			size_t bodyStart = headerEnd + 4;
+			size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
+			if(bodyReceived < contentLength)
+				return;  // Keep receiving body
+
+			// Now full request is received
+			HttpRequest httpRequest;
+			httpRequest.parseRequest(_clients[fd].requestData);
+			*/
+
+			// Full request is received, prepare response
+
+			HttpRequest httpRequest;
+			httpRequest.parseRequest(_clients[fd].requestData);
+			if(!httpRequest.getStatus()){
+				HttpResponse errorResponse(httpRequest);
+				errorResponse.generateResponse(400);
+
+				_clients[fd].bytesSent = 0;
+				_clients[fd].state = SENDING_RESPONSE;
+				_pollFds[fd].events = POLLOUT;
+				_clients[fd].shouldClose = true;
 			}
+			else{
+				Methods method = stringToMethod(httpRequest.getMethod());
+				switch (method) {
+					case GET: handleGET(httpRequest, _clients[fd]); break;
+					case POST: handlePOST(httpRequest, _clients[fd]); break;
+					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
+				}
 
-			_clients[fd].bytesSent = 0;
-			_clients[fd].state = SENDING_RESPONSE;
-
-			// Switch to monitoring for write readiness
-			_pollFds[fd].events = POLLOUT;
-			std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+				_clients[fd].bytesSent = 0;
+				_clients[fd].state = SENDING_RESPONSE;
+				_pollFds[fd].events = POLLOUT;
+				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+			}
 		}
 	}
 	else if (revents & POLLOUT && _clients[fd].state == SENDING_RESPONSE){
@@ -238,7 +270,11 @@ void Server::handleClientSocket(short fd, short revents){
 
 			// Check if entire response was sent
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
-				std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
+
+				if(_clients[fd].shouldClose)
+					std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
+					disconectClient(fd);
+					return;
 
 				// Reset client state for next request
 				_clients[fd].state = READING_REQUEST;
@@ -252,15 +288,15 @@ void Server::handleClientSocket(short fd, short revents){
 						break;
 					}
 				}
-
 			} else {
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;
 			}
+
 		} else {
 
 			// Send failed, close connection
 			std::cout << "Send failed for FD " << fd << ". Closing connection." << std::endl;
-			clientDisconetion(fd);
+			disconectClient(fd);
 		}
 	}
 
@@ -268,12 +304,12 @@ void Server::handleClientSocket(short fd, short revents){
 	if (revents & POLLHUP) {
 
 		std::cout << "Client FD " << fd << " hung up" << std::endl;
-		clientDisconetion(fd);
+		disconectClient(fd);
 		std::cout << "Total FDs: " << _pollFds.size() << std::endl;
 	}
 }
 
-void Server::clientDisconetion(short fd){
+void Server::disconectClient(short fd){
 
 	close(fd);
 
@@ -591,7 +627,7 @@ void Server::checkClientTimeouts(){
 		int currentFd = it->first;
 		if(isClientTimedOut(currentFd)){
 			std::cout << "Client: " << currentFd << " timed out." << std::endl;
-			clientDisconetion(currentFd);
+			disconectClient(currentFd);
 		}
 	}
 }

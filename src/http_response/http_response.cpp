@@ -6,12 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/30 14:59:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 13:50:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "http_response.hpp"
-
 
 /*
 	Here's a typical HTTP response structure:
@@ -58,8 +57,13 @@
   Each line ends with \r\n (carriage return + line feed).
 */
 
+HttpResponse::HttpResponse(HttpRequest request)
+	:_method(), _protocolVer("HTTP/1.1 "), _request(request),
+	_serverName("WebServ"), _serverVersion(1.0f){}
+
 HttpResponse::HttpResponse(HttpRequest request, Methods method)
-	:_method(method), _protocolVer("HTTP/1.1 "), _request(request), _serverName("WebServ"), _serverVersion(1.0f){}
+	:_method(method), _protocolVer("HTTP/1.1 "), _request(request),
+	_serverName("WebServ"), _serverVersion(1.0f){}
 
 fileExtentions HttpResponse::getFileExtension(std::string filePath){
 
@@ -95,6 +99,7 @@ std::string HttpResponse::getContentType(){
 }
 
 std::string HttpResponse::getReasonPhrase() {
+
 	switch (_statusCode) {
 		// Success
 		case 200: return "OK";
@@ -118,6 +123,7 @@ std::string HttpResponse::getReasonPhrase() {
 }
 
 std::string HttpResponse::getTimeNow(){
+
 	time_t now = time(0);
 	struct tm* gmtTime = gmtime(&now);
 	char buffer[100];
@@ -131,6 +137,7 @@ unsigned long HttpResponse::getContentLength(){
 }
 
 void HttpResponse::generateGetResponse(){
+
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
 		<< "Date: " << _date << "\r\n"
@@ -161,28 +168,30 @@ void HttpResponse::generateResponse(int statusCode){
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase(); //change to map
 	_date = getTimeNow();
+
+	if(_statusCode >= 400){
+		generateErrorResponse();
+		return;
+	}
+
 	_filePath = _request.getPath();
-	_contentType = getContentType();
-	_contentLength = getContentLength();
 	_body = getBody();
+	_contentType = getContentType();
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
 
 	switch (_method)
 	{
 	case GET:
-		generateGetResponse();
-		break;
+		generateGetResponse(); break;
 	case DELETE:
-		generateDeleteResponse();
-		break;
+		generateDeleteResponse(); break;
 	default:
-		_statusCode = 405; // Method Not Allowed
+		_statusCode = 405;
 		_reasonPhrase = "Method Not Allowed";
 		generateErrorResponse();
 		break;
 	}
-
 }
 
 void HttpResponse::setBody(std::string body){_body = body;}

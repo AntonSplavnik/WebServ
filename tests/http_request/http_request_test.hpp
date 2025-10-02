@@ -47,6 +47,8 @@ class HttpRequestTestPOST : public ::testing::Test {
 
 			requestData = "POST /api/users HTTP/1.1\r\n"
 						"Host: localhost:8080\r\n"
+						"User-Agent: Mozilla/5.0\r\n"
+						"Connection: keep-alive\r\n"
 						"Content-Type: application/json\r\n"
 						"Content-Length: 24\r\n"
 						"\r\n"

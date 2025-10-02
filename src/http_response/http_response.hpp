@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/09/30 14:58:16 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 13:55:38 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <string>
 #include <map>
 #include "http_request.hpp"
+#include "server.hpp"
 
 enum fileExtentions{
 	HTML,
@@ -32,6 +33,7 @@ enum fileExtentions{
 class HttpResponse {
 
 	public:
+		HttpResponse(HttpRequest request);
 		HttpResponse(HttpRequest request, Methods method);
 		~HttpResponse();
 
@@ -78,7 +80,8 @@ class HttpResponse {
 
 		//body
 		std::string	_body;
-
+		
+		//responce
 		std::string _response;
 };
 

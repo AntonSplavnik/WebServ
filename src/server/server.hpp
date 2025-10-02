@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/01 13:50:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 14:22:59 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,18 +34,19 @@ enum ClientState {
 
 // Structure to track client connection info
 struct ClientInfo {
-	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0) {}
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0) {}
+	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
+	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
 	Socket socket;
 	ClientState state;
 	size_t bytesSent;
-	std::string responseData;
 	std::string requestData;
+	std::string responseData;
 	//timeout data
 	time_t lastActivity;        // Last time client sent data
 	int keepAliveTimeout;       // Timeout in seconds (default 15)
 	int maxRequests;           // Max requests per connection
 	int requestCount;          // Current request count
+	bool shouldClose; //close on error
 
 };
 
@@ -98,7 +99,7 @@ class Server {
 
 		// Utility
 		bool validatePath(std::string path);
-		void clientDisconetion(short fd);
+		void disconectClient(short fd);
 		std::string Server::mapPath(const HttpRequest& request);
 		bool isClientTimedOut(int fd);  // Check specific client
 		void updateClientActivity(int fd);	// Reset timer onactivity

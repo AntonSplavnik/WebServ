@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/01 17:06:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 14:13:11 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,8 @@ class HttpRequest{
 		void setPath(std::string path);
 		void setVersion(std::string version);
 		void setContentType(std::string ContentType);
+
+		bool getStatus() const;
 
 	private:
 		std::string		_requestLine;
