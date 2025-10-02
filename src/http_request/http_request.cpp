@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 14:13:07 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 16:42:57 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,6 +113,13 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 	}
 }
 
+Methods stringToEnum(const std::string& method) {
+	if (method == "GET") return GET;
+	if (method == "POST") return POST;
+	if (method == "DELETE") return DELETE;
+	throw std::invalid_argument("Unknown method");
+}
+
 void HttpRequest::parseRequestLine(){
 
 	if (_requestLine.empty()) {
@@ -125,7 +132,6 @@ void HttpRequest::parseRequestLine(){
 	iss >> _method;
 	iss >> _path;
 	iss >> _version;
-
 	if (_method.empty() || _path.empty() || _version.empty()) {
 		std::cout << " Error: Invalid request line format" << std::endl;
 		_isValid = false;
@@ -141,6 +147,7 @@ void HttpRequest::parseRequestLine(){
 		_isValid = false;
 		return;
 	}
+	_methodEnum = stringToEnum(_method);
 }
 
 void HttpRequest::parseHeaders(){
@@ -222,12 +229,14 @@ void HttpRequest::setVersion(std::string version){_version = version;}
 void HttpRequest::setContentLength(unsigned long contentLength){_contentLength = contentLength;}
 
 std::string HttpRequest::getMethod() const { return _method;}
+Methods HttpRequest::getMethodEnum() const {return _methodEnum;}
 std::string HttpRequest::getPath() const {return _path;}
 std::string HttpRequest::getVersion() const {return _version;}
 unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {return _headers;}
 
 bool HttpRequest::getStatus() const {return _isValid;}
+
 
 //content type
 // void HttpRequest::setContentType(std::string ContentType){}

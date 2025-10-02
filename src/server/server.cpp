@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 14:34:01 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 17:43:45 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,13 +161,6 @@ void Server::handleServerSocket(size_t index){
 	}
 }
 
-Methods stringToMethod(const std::string& method) {
-	if (method == "GET") return GET;
-	if (method == "POST") return POST;
-	if (method == "DELETE") return DELETE;
-	throw std::invalid_argument("Unknown method");
-}
-
 void Server::handleClientSocket(short fd, short revents){
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
@@ -237,7 +230,7 @@ void Server::handleClientSocket(short fd, short revents){
 				_clients[fd].shouldClose = true;
 			}
 			else{
-				Methods method = stringToMethod(httpRequest.getMethod());
+				Methods method = httpRequest.getMethodEnum();
 				switch (method) {
 					case GET: handleGET(httpRequest, _clients[fd]); break;
 					case POST: handlePOST(httpRequest, _clients[fd]); break;
@@ -338,7 +331,7 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	std::string mappedPath = mapPath(request);
 	std::ifstream file(mappedPath.c_str());
 
-	HttpResponse response(request, GET);
+	HttpResponse response(request);
 	if (file.is_open()){
 		response.generateResponse(200);
 		client.responseData = response.getResponse();
@@ -393,6 +386,9 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 }
 
 void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+
+	(void)request;
+	(void)client;
 
 /*
 	The POST method receives data from the client, processes it, and uses HttpResponse methods to
@@ -506,7 +502,7 @@ bool Server::validatePath(std::string path){
 void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 
 	std::string mappedPath = mapPath(request);
-	HttpResponse response(request, DELETE);
+	HttpResponse response(request);
 	if (!validatePath(mappedPath)){
 		response.generateResponse(403);
 		client.responseData = response.getResponse();
@@ -611,8 +607,7 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 bool Server::isClientTimedOut(int fd){
 
 	time_t now = time(NULL);
-	if (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) true;
-	return false;
+	return (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) ;
 }
 
 void Server::updateClientActivity(int fd){

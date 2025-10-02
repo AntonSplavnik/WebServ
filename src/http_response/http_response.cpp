@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 13:50:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 16:59:23 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,21 +58,18 @@
 */
 
 HttpResponse::HttpResponse(HttpRequest request)
-	:_method(), _protocolVer("HTTP/1.1 "), _request(request),
+	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
 	_serverName("WebServ"), _serverVersion(1.0f){}
 
-HttpResponse::HttpResponse(HttpRequest request, Methods method)
-	:_method(method), _protocolVer("HTTP/1.1 "), _request(request),
-	_serverName("WebServ"), _serverVersion(1.0f){}
+HttpResponse::~HttpResponse(){}
 
 fileExtentions HttpResponse::getFileExtension(std::string filePath){
 
-	int dotPos = filePath.find_last_of('.');
+	size_t dotPos = filePath.find_last_of('.');
 	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
 		return UNKNOWN;
 	}
 	std::string extension = filePath.substr(dotPos + 1);
-	fileExtentions identifyedExtention;
 	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
 	if (extension == "html" || extension == "htm") return HTML;
@@ -165,6 +162,7 @@ void	generateErrorResponse(){}
 
 void HttpResponse::generateResponse(int statusCode){
 
+	_method = _request.getMethodEnum();
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase(); //change to map
 	_date = getTimeNow();
@@ -205,10 +203,9 @@ std::string HttpResponse::getBody(){
 	file.close();
 	return content;
 }
-std::string HttpResponse::getPath(){}
-std::string HttpResponse::getVersion(){}
-std::string HttpResponse::getStatusCode(){}
-std::string HttpResponse::getContentType(){}
+std::string HttpResponse::getPath(){return _filePath;}
+float HttpResponse::getVersion(){return _serverVersion;}
+int HttpResponse::getStatusCode(){return _statusCode;}
 std::string HttpResponse::getResponse() {return _response;}
 
 /*

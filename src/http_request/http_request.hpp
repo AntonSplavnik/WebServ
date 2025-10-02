@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 14:13:11 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 16:43:29 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,13 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include "client_info.hpp"
 
-struct ClientInfo;
-
-enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY, PARSE_COMPLETE};
+enum Methods {
+	GET,
+	POST,
+	DELETE
+};
 
 class HttpRequest{
 
@@ -64,6 +67,7 @@ class HttpRequest{
 		void setVersion(std::string version);
 		void setContentType(std::string ContentType);
 
+		Methods getMethodEnum() const;
 		bool getStatus() const;
 
 	private:
@@ -74,6 +78,7 @@ class HttpRequest{
 
 		//reqest line
 		std::string	_method;
+		Methods		_methodEnum;
 		std::string	_path;
 		std::string	_version;
 

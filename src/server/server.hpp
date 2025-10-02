@@ -6,49 +6,20 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 14:22:59 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 17:18:37 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "socket.hpp"
 #include <vector>
 #include <map>
 #include <poll.h>
+#include "socket.hpp"
+#include "client_info.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
-
-enum Methods {
-	GET,
-	POST,
-	DELETE
-};
-
-// Client connection states
-enum ClientState {
-	READING_REQUEST,   // Waiting to read HTTP request
-	SENDING_RESPONSE   // Ready to send HTTP response
-};
-
-// Structure to track client connection info
-struct ClientInfo {
-	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
-	Socket socket;
-	ClientState state;
-	size_t bytesSent;
-	std::string requestData;
-	std::string responseData;
-	//timeout data
-	time_t lastActivity;        // Last time client sent data
-	int keepAliveTimeout;       // Timeout in seconds (default 15)
-	int maxRequests;           // Max requests per connection
-	int requestCount;          // Current request count
-	bool shouldClose; //close on error
-
-};
 
 
 class Server {
@@ -76,7 +47,6 @@ class Server {
 		// void processClientRequest(int client_fd);
 
 		// Methods handeling
-		Methods stringToMethod(const std::string& method);
 		void handleGET(const HttpRequest& request, ClientInfo& client);
 		void handlePOST(const HttpRequest& request, ClientInfo& client);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client);
@@ -100,7 +70,7 @@ class Server {
 		// Utility
 		bool validatePath(std::string path);
 		void disconectClient(short fd);
-		std::string Server::mapPath(const HttpRequest& request);
+		std::string mapPath(const HttpRequest& request);
 		bool isClientTimedOut(int fd);  // Check specific client
 		void updateClientActivity(int fd);	// Reset timer onactivity
 		void checkClientTimeouts();	// Check all clients fortimeout

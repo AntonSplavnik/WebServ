@@ -7,10 +7,6 @@
 #include <gtest/gtest.h>
 #include "http_request.hpp"
 
-// Minimal ClientInfo for testing - only the fields needed
-struct ClientInfo {
-	std::string requestData;
-};
 
 class HttpRequestTestGET : public ::testing::Test {
 	protected:

@@ -16,8 +16,8 @@ TEST_NAME	= run_tests
 # Compiler and flags
 CXX			= c++
 CXXFLAGS	= -std=c++20 -Wall -Wextra -Werror -pedantic
-GTEST_LIB	= $(shell brew --prefix googletest)/lib
-TEST_FLAGS	= -L$(GTEST_LIB) -lgtest -lgtest_main -pthread
+GTEST_LIB  = $(shell brew --prefix googletest)/lib
+TEST_FLAGS = -L$(GTEST_LIB) -lgtest -lgtest_main -pthread
 
 # Directories
 ROOT_DIR	= ..
@@ -27,10 +27,13 @@ OBJ_DIR		= obj
 # Include paths
 GTEST_DIR	= $(shell brew --prefix googletest)
 INCLUDES	=  -I$(SRC_DIR)/http_request \
+			  -I$(SRC_DIR)/server \
+			  -I$(SRC_DIR)/socket \
 			  -I$(GTEST_DIR)/include
 
 # Source files from main project (exclude main.cpp)
 PROJECT_SRC	=  $(SRC_DIR)/http_request/http_request.cpp \
+			  $(SRC_DIR)/socket/socket.cpp
 
 
 # Test source files

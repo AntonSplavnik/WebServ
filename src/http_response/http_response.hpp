@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/10/02 13:55:38 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 16:55:39 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@
 #include <string>
 #include <map>
 #include "http_request.hpp"
-#include "server.hpp"
 
 enum fileExtentions{
 	HTML,
@@ -34,7 +33,6 @@ class HttpResponse {
 
 	public:
 		HttpResponse(HttpRequest request);
-		HttpResponse(HttpRequest request, Methods method);
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
@@ -48,16 +46,16 @@ class HttpResponse {
 		void setHeader(std::string header);
 
 
-		std::string getBody();
-		std::string getPath();
-		std::string getVersion();
-		std::string getStatusCode();
-		std::string getReasonPhrase();
-		std::string getContentType();
+		std::string	getBody();
+		std::string	getPath();
+		float		getVersion();
+		int			getStatusCode();
+		std::string	getReasonPhrase();
+		std::string	getContentType();
 		unsigned long	getContentLength();
-		std::string getTimeNow();
-		std::string getResponse();
-		fileExtentions getFileExtension(std::string filePath);
+		std::string	getTimeNow();
+		std::string	getResponse();
+		fileExtentions	getFileExtension(std::string filePath);
 
 	private:
 		HttpRequest _request;
@@ -74,13 +72,13 @@ class HttpResponse {
 		float			_serverVersion;
 		std::string		_filePath;
 		std::string		_contentType;
-		unsigned long		_contentLength;
+		unsigned long	_contentLength;
 		std:: string	_connectionType;
 		std::map<std::string, std::string> _headers;
 
 		//body
 		std::string	_body;
-		
+
 		//responce
 		std::string _response;
 };

@@ -6,7 +6,7 @@
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
-#    Updated: 2025/09/24 13:41:47 by antonsplavn      ###   ########.fr        #
+#    Updated: 2025/10/02 17:15:06 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -36,7 +36,6 @@ SRC_FILES	= main.cpp \
 			  $(CONFIG_DIR)/config.cpp \
 			  $(HTTP_REQ_DIR)/http_request.cpp \
 			  $(HTTP_RES_DIR)/http_response.cpp \
-			  $(HTTP_MSG_DIR)/ahttp_message.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -47,7 +46,6 @@ HEADERS		= $(SERVER_DIR)/server.hpp \
 			  $(CONFIG_DIR)/config.hpp \
 			  $(HTTP_REQ_DIR)/http_request.hpp \
 			  $(HTTP_RES_DIR)/http_response.hpp \
-			  $(HTTP_MSG_DIR)/ahttp_messag.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m
