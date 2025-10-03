@@ -1,5 +1,6 @@
 #include "http_request_test.hpp"
 
+
 /*
   TEST(Example, Demo) {
       EXPECT_EQ(1, 2);  // Fails, prints error
@@ -29,32 +30,41 @@
   pointer is NULL).
 */
 
-TEST_F(HttpRequestTest, getMethod){
-
-	std::string method = request->getMethod();
-	EXPECT_STREQ("GET", method.c_str());
-}
-
-TEST_F(HttpRequestTest ,extractLineHeaderBodyLen){
+TEST_F(HttpRequestTestGET, extractLineHeaderBodyLen){
 
 	request->extractLineHeaderBodyLen(requestData);
-	EXPECT_STREQ("GET /index.html HTTP/1.1\r\n", request->getRequestLine());
-	EXPECT_STREQ("Host: localhost:8080\r\n"
-				 "User-Agent: Mozilla/5.0\r\n"
-				 "Accept: text/html\r\n"
-				 "Connection: keep-alive\r\n"
-				"\r\n",
-				request->getRawHeaders());
+
+	EXPECT_STREQ("GET /index.html HTTP/1.1", request->getRequstLine().c_str());
+	EXPECT_STREQ("Host: localhost:8080\r\nUser-Agent: Mozilla/5.0\r\nAccept: text/html\r\nConnection: keep-alive",
+				request->getRawHeaders().c_str());
 }
 
-/*
-void HttpRequest::extractLineHeaderBodyLen(ClientInfo& requestDate){
+TEST_F(HttpRequestTestGET, parseRequestLine){
 
-	(void)requestDate;
-	extraction logic
-	_line =
-	_rawHeders =
-	_body =
-	_contentLength =
+	request->parseRequest(requestData);
+
+	EXPECT_STREQ("GET", request->getMethod().c_str());
+	EXPECT_STREQ("/index.html", request->getPath().c_str());
+	EXPECT_STREQ("HTTP/1.1", request->getVersion().c_str());
 }
-*/
+
+TEST_F(HttpRequestTestGET, parseHeaders){
+
+	request->parseRequest(requestData);
+
+	const std::map<std::string, std::string>& headers = request->getHeaders();
+
+	EXPECT_EQ(4u, headers.size());
+	EXPECT_STREQ("localhost:8080", headers.at("host").c_str());
+	EXPECT_STREQ("Mozilla/5.0", headers.at("user-agent").c_str());
+	EXPECT_STREQ("text/html", headers.at("accept").c_str());
+	EXPECT_STREQ("keep-alive", headers.at("connection").c_str());
+}
+
+
+TEST_F(HttpRequestTestPOST, parseBody){
+
+	request->parseRequest(requestData);
+
+	EXPECT_STREQ("{\"name\":\"John\",\"age\":30}", request->getBody().c_str());
+}

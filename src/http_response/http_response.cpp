@@ -6,12 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/30 14:59:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:30:46 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "http_response.hpp"
-
 
 /*
 	Here's a typical HTTP response structure:
@@ -58,17 +57,19 @@
   Each line ends with \r\n (carriage return + line feed).
 */
 
-HttpResponse::HttpResponse(HttpRequest request, Methods method)
-	:_method(method), _protocolVer("HTTP/1.1 "), _request(request), _serverName("WebServ"), _serverVersion(1.0f){}
+HttpResponse::HttpResponse(HttpRequest request)
+	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
+	_serverName("WebServ"), _serverVersion(1.0f){}
 
-fileExtentions HttpResponse::getFileExtension(std::string filePath){
+HttpResponse::~HttpResponse(){}
 
-	int dotPos = filePath.find_last_of('.');
+fileExtentions HttpResponse::extractFileExtension(std::string filePath){
+
+	size_t dotPos = filePath.find_last_of('.');
 	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
 		return UNKNOWN;
 	}
 	std::string extension = filePath.substr(dotPos + 1);
-	fileExtentions identifyedExtention;
 	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
 	if (extension == "html" || extension == "htm") return HTML;
@@ -79,9 +80,9 @@ fileExtentions HttpResponse::getFileExtension(std::string filePath){
 	else return UNKNOWN;
 }
 
-std::string HttpResponse::getContentType(){
+std::string HttpResponse::getContentType() {
 
-	fileExtentions extention = getFileExtension(_filePath);
+	fileExtentions extention = extractFileExtension(_filePath);
 
 	switch (extention)
 	{
@@ -95,6 +96,7 @@ std::string HttpResponse::getContentType(){
 }
 
 std::string HttpResponse::getReasonPhrase() {
+
 	switch (_statusCode) {
 		// Success
 		case 200: return "OK";
@@ -118,6 +120,7 @@ std::string HttpResponse::getReasonPhrase() {
 }
 
 std::string HttpResponse::getTimeNow(){
+
 	time_t now = time(0);
 	struct tm* gmtTime = gmtime(&now);
 	char buffer[100];
@@ -126,11 +129,10 @@ std::string HttpResponse::getTimeNow(){
 	return httpTime;
 }
 
-unsigned long HttpResponse::getContentLength(){
-	return _body.length();
-}
+
 
 void HttpResponse::generateGetResponse(){
+
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
 		<< "Date: " << _date << "\r\n"
@@ -158,49 +160,59 @@ void	generateErrorResponse(){}
 
 void HttpResponse::generateResponse(int statusCode){
 
+	_method = _request.getMethodEnum();
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase(); //change to map
 	_date = getTimeNow();
-	_filePath = _request.getPath();
+
+	if(_statusCode >= 400){
+		generateErrorResponse();
+		return;
+	}
+
+	std::cout << "_path: " << _filePath << std::endl;
+	_body = extractBody();
+	std::cout << "_path: " << _filePath << std::endl;
+
+	std::cout << "_body: " << _body << std::endl;
 	_contentType = getContentType();
-	_contentLength = getContentLength();
-	_body = getBody();
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
 
 	switch (_method)
 	{
 	case GET:
-		generateGetResponse();
-		break;
+		generateGetResponse(); break;
 	case DELETE:
-		generateDeleteResponse();
-		break;
+		generateDeleteResponse(); break;
 	default:
-		_statusCode = 405; // Method Not Allowed
+		_statusCode = 405;
 		_reasonPhrase = "Method Not Allowed";
 		generateErrorResponse();
 		break;
 	}
-
 }
-
-void HttpResponse::setBody(std::string body){_body = body;}
-void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
-void HttpResponse::setVersion(float version){_serverVersion = version;}
-void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
-
-std::string HttpResponse::getBody(){
+std::string HttpResponse::extractBody(){
 	std::ifstream file(_filePath, std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
 	return content;
 }
-std::string HttpResponse::getPath(){}
-std::string HttpResponse::getVersion(){}
-std::string HttpResponse::getStatusCode(){}
-std::string HttpResponse::getContentType(){}
-std::string HttpResponse::getResponse() {return _response;}
+
+
+void HttpResponse::setBody(std::string body){_body = body;}
+void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
+void HttpResponse::setVersion(float version){_serverVersion = version;}
+void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
+void HttpResponse::setPath(std::string path) {_filePath = path;}
+
+
+unsigned long HttpResponse::getContentLength() const {return _body.length();}
+std::string HttpResponse::getBody() const{return _body;}
+std::string HttpResponse::getPath()const{return _filePath;}
+float HttpResponse::getVersion()const{return _serverVersion;}
+int HttpResponse::getStatusCode()const{return _statusCode;}
+std::string HttpResponse::getResponse() const{return _response;}
 
 /*
   HTTP/1.1 200 OK

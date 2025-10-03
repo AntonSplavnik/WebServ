@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/30 17:44:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/02 16:43:29 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,14 @@
 #include <iostream>
 #include <string>
 #include <map>
-struct ClientInfo;
+#include <sstream>
+#include "client_info.hpp"
 
-enum ParseState {PARSE_REQUEST_LINE, PARSE_HEADERS, PARSE_BODY};
+enum Methods {
+	GET,
+	POST,
+	DELETE
+};
 
 class HttpRequest{
 
@@ -26,18 +31,20 @@ class HttpRequest{
 		HttpRequest();
 		~HttpRequest();
 
-		void parseRequest(ClientInfo& requestDate);
+		void parseRequest(std::string requestData);
 
-		void extractLineHeaderBodyLen(ClientInfo& requestDate);
+		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
 		void parseHeaders();
 
+		//parse
 		void parseMethod();
 		void parsePath();
 		void parseQuery();
 		void parseVersion();
 
+		//extract (get, set)
 		std::string getRequstLine() const;
 		std::string getBody() const;
 		std::string getRawHeaders() const;
@@ -48,29 +55,37 @@ class HttpRequest{
 		void setRawHeaders(std::string rawHeaders);
 		void setContentLength(unsigned long contentLength);
 
+		//parse (get, set)
 		std::string getMethod() const;
 		std::string getPath() const;
 		std::string getVersion() const;
 		std::string getContenType() const;
+		const std::map<std::string, std::string>& getHeaders() const;
 
 		void setMethod(std::string method);
 		void setPath(std::string path);
 		void setVersion(std::string version);
 		void setContentType(std::string ContentType);
 
+		Methods getMethodEnum() const;
+		bool getStatus() const;
+
 	private:
-		std::string							_requestLine;
-		std::string							_body;
-		std::string							_rawHeaders;
-		unsigned long						_contentLength;
+		std::string		_requestLine;
+		std::string		_body;
+		std::string		_rawHeaders;
+		unsigned long	_contentLength;
 
 		//reqest line
-		std::string _method;
-		std::string _path;
-		std::string _version;
+		std::string	_method;
+		Methods		_methodEnum;
+		std::string	_path;
+		std::string	_version;
 
+		//headers
 		std::map<std::string, std::string>	_headers;
 		// std::string query;
 		bool _isValid;
 };
 #endif
+

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/26 15:08:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:25:35 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,9 +59,21 @@ void Server::stop(){
 void Server::initialize(){
 
 	_serverSocket.createDefault();
+	if (_serverSocket.getFd() < 0) {
+		throw std::runtime_error("Failed to create socket");
+	}
+
 	_serverSocket.setReuseAddr(true);
 	_serverSocket.binding(_port);
+	if (_serverSocket.getFd() < 0) {
+		throw std::runtime_error("Failed to bind socket (port may be in use)");
+	}
+
 	_serverSocket.listening();
+	if (_serverSocket.getFd() < 0) {
+		throw std::runtime_error("Failed to listen on socket");
+	}
+
 	_serverSocket.setNonBlocking();
 }
 
@@ -112,15 +124,31 @@ void Server::handlePollEvents(){
 
 	for (size_t i = 0; i < _pollFds.size(); i++){
 
+		if (_pollFds[i].revents == 0)
+			continue;
+
+		std::cout << "DEBUG: Handling FD " << _pollFds[i].fd << " at index " << i
+					<< " with revents=" << _pollFds[i].revents << std::endl;
+
 		if(i == 0)
-			handleServerSocket(i);
+			handleServerSocket(i); //connectino
 		else
-			handleClientSocket(_pollFds[i].fd, _pollFds[i].revents);
+			handleClientSocket(_pollFds[i].fd, _pollFds[i].revents); //event loop
 	}
 }
 
 
 void Server::handleServerSocket(size_t index){
+
+	std::cout << "DEBUG: handleServerSocket called, revents=" << _pollFds[index].revents << std::endl;
+
+	// Handle invalid FD
+	if (_pollFds[index].revents & POLLNVAL) {
+		std::cerr << "ERROR: Listening socket FD " << _pollFds[index].fd
+				<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
+		_running = false;
+		return;
+	}
 
 	if (_pollFds.data()->revents & POLLIN){
 		std::cout << "Event detected on listening socket FD " << _pollFds.data()->fd << std::endl;
@@ -139,7 +167,6 @@ void Server::handleServerSocket(size_t index){
 					  << "Timeout: " << _clients[client_fd].keepAliveTimeout
 					  << "Max Max Requests: " << _clients[client_fd].maxRequests
 					  << std::endl;
-
 
 			// Make client socket non-blocking
 			_clients[client_fd].socket.setNonBlocking();
@@ -161,18 +188,11 @@ void Server::handleServerSocket(size_t index){
 	}
 }
 
-Methods stringToMethod(const std::string& method) {
-	if (method == "GET") return GET;
-	if (method == "POST") return POST;
-	if (method == "DELETE") return DELETE;
-	throw std::invalid_argument("Unknown method");
-}
-
 void Server::handleClientSocket(short fd, short revents){
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
 		std::cout << "Max request count reachead: " << fd << std::endl;
-		clientDisconetion(fd);
+		disconectClient(fd);
 	}
 
 	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
@@ -182,10 +202,9 @@ void Server::handleClientSocket(short fd, short revents){
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
 
 		if (bytes <= 0) {
-
 			// Client disconnected or error
 			std::cout << "Client FD " << fd << " disconnected" << std::endl;
-			clientDisconetion(fd);
+			disconectClient(fd);
 		}
 		else {
 
@@ -193,30 +212,73 @@ void Server::handleClientSocket(short fd, short revents){
 
 			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
-			// Full request is received, prepare response
-			_clients[fd].requstData += buffer;
-			if(_clients[fd].requstData.find("\r\n\r\n") == std::string::npos)
+			_clients[fd].requestData += buffer;
+			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
 				return;
-			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requstData << std::endl;
+			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
 
-			HttpRequest requestParser;
-			requestParser.parseRequest(_clients[fd]);
+			/*
+			  updateClientActivity(fd);  // Line 191 - keep this
 
-			updateClientActivity(fd);
+			_clients[fd].requestData += buffer;
 
-			Methods method = stringToMethod(requestParser.getMethod());
-			switch (method) {
-				case GET: handleGET(requestParser, _clients[fd]); break;
-				case POST: handlePOST(requestParser, _clients[fd]); break;
-				case DELETE: handleDELETE(requestParser, _clients[fd]); break;
+			// Check if headers complete
+			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
+			if(headerEnd == std::string::npos)
+				return;  // Keep receiving headers
+
+			// Parse headers to get Content-Length
+			HttpRequest tempParser;
+			tempParser.parseHeaders(_clients[fd].requestData);  // Parse headers only
+			int contentLength = tempParser.getContentLength();
+
+			// Check if full body received
+			size_t bodyStart = headerEnd + 4;
+			size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
+			if(bodyReceived < contentLength)
+				return;  // Keep receiving body
+
+			// Now full request is received
+			HttpRequest httpRequest;
+			httpRequest.parseRequest(_clients[fd].requestData);
+			*/
+
+			// Full request is received, prepare response
+
+			HttpRequest httpRequest;
+			httpRequest.parseRequest(_clients[fd].requestData);
+			if(!httpRequest.getStatus()){
+				HttpResponse errorResponse(httpRequest);
+				errorResponse.generateResponse(400);
+
+				_clients[fd].bytesSent = 0;
+				_clients[fd].state = SENDING_RESPONSE;
+				for (size_t i = 0; i < _pollFds.size(); ++i) {
+					if (_pollFds[i].fd == fd) {
+						_pollFds[i].events = POLLIN;
+						break;
+					}
+				}
+				_clients[fd].shouldClose = true;
 			}
+			else{
+				Methods method = httpRequest.getMethodEnum();
+				switch (method) {
+					case GET: handleGET(httpRequest, _clients[fd]); break;
+					case POST: handlePOST(httpRequest, _clients[fd]); break;
+					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
+				}
 
-			_clients[fd].bytesSent = 0;
-			_clients[fd].state = SENDING_RESPONSE;
-
-			// Switch to monitoring for write readiness
-			_pollFds[fd].events = POLLOUT;
-			std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+				_clients[fd].bytesSent = 0;
+				_clients[fd].state = SENDING_RESPONSE;
+				for (size_t i = 0; i < _pollFds.size(); ++i) {
+					if (_pollFds[i].fd == fd) {
+					_pollFds[i].events = POLLOUT;
+					break;
+					}
+				}
+				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+				}
 		}
 	}
 	else if (revents & POLLOUT && _clients[fd].state == SENDING_RESPONSE){
@@ -237,13 +299,21 @@ void Server::handleClientSocket(short fd, short revents){
 			updateClientActivity(fd);
 
 			// Check if entire response was sent
+			std::cout << "bytes setn: " << _clients[fd].bytesSent
+					<< "responseData length: " << _clients[fd].responseData.length()
+					<< std::endl;
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
-				std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
 
+				if(_clients[fd].shouldClose){
+					std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
+					disconectClient(fd);
+					return;
+				}
 				// Reset client state for next request
 				_clients[fd].state = READING_REQUEST;
 				_clients[fd].bytesSent = 0;
 				_clients[fd].responseData.clear();
+				_clients[fd].requestData.clear();
 
 				// Switch back to reading mode
 				for (size_t i = 0; i < _pollFds.size(); ++i) {
@@ -252,15 +322,16 @@ void Server::handleClientSocket(short fd, short revents){
 						break;
 					}
 				}
-
 			} else {
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;
+				std::cout << "DEBUG: responseData length = " << _clients[fd].responseData.length() << std::endl;
+
 			}
 		} else {
 
 			// Send failed, close connection
 			std::cout << "Send failed for FD " << fd << ". Closing connection." << std::endl;
-			clientDisconetion(fd);
+			disconectClient(fd);
 		}
 	}
 
@@ -268,12 +339,12 @@ void Server::handleClientSocket(short fd, short revents){
 	if (revents & POLLHUP) {
 
 		std::cout << "Client FD " << fd << " hung up" << std::endl;
-		clientDisconetion(fd);
+		disconectClient(fd);
 		std::cout << "Total FDs: " << _pollFds.size() << std::endl;
 	}
 }
 
-void Server::clientDisconetion(short fd){
+void Server::disconectClient(short fd){
 
 	close(fd);
 
@@ -293,6 +364,8 @@ std::string Server::mapPath(const HttpRequest& request){
 
 	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ";
 	std::string requestPath = request.getPath();
+	std::cout << "requestPath: " << requestPath << std::endl;
+
 	return localPath + requestPath;
 }
 
@@ -300,10 +373,13 @@ std::string Server::mapPath(const HttpRequest& request){
 void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 
 	std::string mappedPath = mapPath(request);
+	std::cout << "mappedPath: " << mappedPath << std::endl;
 	std::ifstream file(mappedPath.c_str());
 
-	HttpResponse response(request, GET);
+	HttpResponse response(request);
+	response.setPath(mappedPath);
 	if (file.is_open()){
+
 		response.generateResponse(200);
 		client.responseData = response.getResponse();
 	}
@@ -357,6 +433,9 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 }
 
 void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+
+	(void)request;
+	(void)client;
 
 /*
 	The POST method receives data from the client, processes it, and uses HttpResponse methods to
@@ -462,7 +541,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 
 bool Server::validatePath(std::string path){
 
-	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/Downloads");
+	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/downloads");
 }
 /**
  * This function only handles files, but not directories.
@@ -470,7 +549,7 @@ bool Server::validatePath(std::string path){
 void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 
 	std::string mappedPath = mapPath(request);
-	HttpResponse response(request, DELETE);
+	HttpResponse response(request);
 	if (!validatePath(mappedPath)){
 		response.generateResponse(403);
 		client.responseData = response.getResponse();
@@ -575,8 +654,7 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 bool Server::isClientTimedOut(int fd){
 
 	time_t now = time(NULL);
-	if (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) true;
-	return false;
+	return (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) ;
 }
 
 void Server::updateClientActivity(int fd){
@@ -591,7 +669,7 @@ void Server::checkClientTimeouts(){
 		int currentFd = it->first;
 		if(isClientTimedOut(currentFd)){
 			std::cout << "Client: " << currentFd << " timed out." << std::endl;
-			clientDisconetion(currentFd);
+			disconectClient(currentFd);
 		}
 	}
 }
