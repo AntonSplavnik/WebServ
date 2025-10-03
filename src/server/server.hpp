@@ -19,6 +19,7 @@
 #include <poll.h>
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "../config/config.hpp"
 
 enum Methods {
 	GET,

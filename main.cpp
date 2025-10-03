@@ -11,8 +11,27 @@
 /* ************************************************************************** */
 
 #include "src/server/server.hpp"
+#include "src/config/config.hpp"
+#include "src/exceptions/config_exceptions.hpp"
+#include <iostream>
 
-int main(){
+int main(int argc, char *argv[]){
+	if (argc != 2)
+	{
+		std::cout << "Wrong config path" << std::endl;
+		return 1;
+	}
+	Config config;
+	try
+	{
+		config.parseConfig(argv);
+	}
+	catch (const ConfigParseException &e)
+	{
+		std::cerr << "Error parsing config file: " << e.what() << std::endl;
+		return 1;
+	}
+	std::cout << "Config file loaded successfully" << std::endl;
 	Server server;
 	server.initialize();
 	server.start();
