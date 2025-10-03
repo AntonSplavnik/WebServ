@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 16:42:57 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 13:24:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,6 +97,7 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		return;
 	}
 	_requestLine = rawData.substr(0, firstCRLF);
+	std::cout << "_requestLine: " << _requestLine << std::endl;
 
 	//STEP 2 -> extract Header & Body
 	size_t headerBodySeparator = rawData.find("\r\n\r\n");
@@ -132,6 +133,11 @@ void HttpRequest::parseRequestLine(){
 	iss >> _method;
 	iss >> _path;
 	iss >> _version;
+
+	std::cout << "_method: " << _method << std::endl
+			<< "_path: " << _path << std::endl
+			<< "_version: " << _version << std::endl;
+
 	if (_method.empty() || _path.empty() || _version.empty()) {
 		std::cout << " Error: Invalid request line format" << std::endl;
 		_isValid = false;
