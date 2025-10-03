@@ -1,3 +1,14 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   socket.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/16 17:18:46 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/09/16 17:18:48 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "socket.hpp"
 
@@ -53,7 +64,6 @@ void Socket::listening(){
 		close(_fd);
 	}
 	std::cout << "Socket FD " << _fd << " is now listening (backlog: 10)" << std::endl;
-
 }
 
 int Socket::accepting(){
