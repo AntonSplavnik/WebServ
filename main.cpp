@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 14:23:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/03 15:25:45 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 15:38:24 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ int main(int argc, char *argv[]){
 		std::cout << "Wrong config path" << std::endl;
 		return 1;
 	}
+
 	Config config;
 	try
 	{
@@ -32,6 +33,7 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	std::cout << "Config file loaded successfully" << std::endl;
+
 	try
 	{
 		Server server;

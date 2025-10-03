@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/03 14:25:35 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 15:37:00 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ Server::Server()
 	_port(8080),
 	_running(false),
 	_maxClients(1000){
-
+	
 	_pollFds.clear();
 	_clients.clear();
 	// _pollFds.reserve(_maxClients + 1); (optimisation)
