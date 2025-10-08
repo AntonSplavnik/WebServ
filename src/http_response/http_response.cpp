@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 16:59:23 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:30:46 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ HttpResponse::HttpResponse(HttpRequest request)
 
 HttpResponse::~HttpResponse(){}
 
-fileExtentions HttpResponse::getFileExtension(std::string filePath){
+fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 
 	size_t dotPos = filePath.find_last_of('.');
 	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
@@ -80,9 +80,9 @@ fileExtentions HttpResponse::getFileExtension(std::string filePath){
 	else return UNKNOWN;
 }
 
-std::string HttpResponse::getContentType(){
+std::string HttpResponse::getContentType() {
 
-	fileExtentions extention = getFileExtension(_filePath);
+	fileExtentions extention = extractFileExtension(_filePath);
 
 	switch (extention)
 	{
@@ -129,9 +129,7 @@ std::string HttpResponse::getTimeNow(){
 	return httpTime;
 }
 
-unsigned long HttpResponse::getContentLength(){
-	return _body.length();
-}
+
 
 void HttpResponse::generateGetResponse(){
 
@@ -172,8 +170,11 @@ void HttpResponse::generateResponse(int statusCode){
 		return;
 	}
 
-	_filePath = _request.getPath();
-	_body = getBody();
+	std::cout << "_path: " << _filePath << std::endl;
+	_body = extractBody();
+	std::cout << "_path: " << _filePath << std::endl;
+
+	std::cout << "_body: " << _body << std::endl;
 	_contentType = getContentType();
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
@@ -191,22 +192,27 @@ void HttpResponse::generateResponse(int statusCode){
 		break;
 	}
 }
-
-void HttpResponse::setBody(std::string body){_body = body;}
-void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
-void HttpResponse::setVersion(float version){_serverVersion = version;}
-void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
-
-std::string HttpResponse::getBody(){
+std::string HttpResponse::extractBody(){
 	std::ifstream file(_filePath, std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
 	return content;
 }
-std::string HttpResponse::getPath(){return _filePath;}
-float HttpResponse::getVersion(){return _serverVersion;}
-int HttpResponse::getStatusCode(){return _statusCode;}
-std::string HttpResponse::getResponse() {return _response;}
+
+
+void HttpResponse::setBody(std::string body){_body = body;}
+void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
+void HttpResponse::setVersion(float version){_serverVersion = version;}
+void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
+void HttpResponse::setPath(std::string path) {_filePath = path;}
+
+
+unsigned long HttpResponse::getContentLength() const {return _body.length();}
+std::string HttpResponse::getBody() const{return _body;}
+std::string HttpResponse::getPath()const{return _filePath;}
+float HttpResponse::getVersion()const{return _serverVersion;}
+int HttpResponse::getStatusCode()const{return _statusCode;}
+std::string HttpResponse::getResponse() const{return _response;}
 
 /*
   HTTP/1.1 200 OK

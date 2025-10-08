@@ -51,8 +51,10 @@ void Socket::binding(int port){
  	_address.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(_fd, (sockaddr*)&_address, sizeof(_address)) < 0) {
-		std::cerr << "Bind failed.\n";
-	close(_fd);
+		std::cerr << "Bind failed: " << strerror(errno) << "\n";
+		close(_fd);
+		_fd = -1;
+		return;
 	}
 	std::cout << "Bound socket FD " << _fd << " to port " << PORT << std::endl;
 }
@@ -60,8 +62,10 @@ void Socket::binding(int port){
 void Socket::listening(){
 
 	 if (listen(_fd, MAX_CON_BACKLOG) < 0) {
-		std::cerr << "Listen failed.\n";
+		std::cerr << "Listen failed: " << strerror(errno) << "\n";
 		close(_fd);
+		_fd = -1;
+		return;
 	}
 	std::cout << "Socket FD " << _fd << " is now listening (backlog: 10)" << std::endl;
 }

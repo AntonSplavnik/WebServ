@@ -6,7 +6,7 @@
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
-#    Updated: 2025/10/02 17:15:06 by antonsplavn      ###   ########.fr        #
+#    Updated: 2025/10/03 12:20:11 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,7 +16,7 @@ NAME		= webserv
 # Compiler and flags
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
-DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
+DEBUG_FLAGS	= -g
 INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response -Isrc/http_message
 
 # Directories

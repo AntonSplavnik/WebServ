@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/10/02 16:55:39 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/03 14:26:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,23 +39,26 @@ class HttpResponse {
 		void generateGetResponse();
 		void generateDeleteResponse();
 
+		std::string extractBody();
+		std::string	getTimeNow();
+		fileExtentions	extractFileExtension(std::string filePath);
+		std::string	getReasonPhrase();
+		std::string	getContentType();
+
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
 		void setVersion(float version);
 		void setStatusCode(int code);
 		void setHeader(std::string header);
+		void setPath(std::string path);
 
+		std::string	getBody() const;
+		std::string	getPath() const;
+		float		getVersion() const;
+		int			getStatusCode() const;
+		unsigned long	getContentLength() const;
+		std::string	getResponse() const;
 
-		std::string	getBody();
-		std::string	getPath();
-		float		getVersion();
-		int			getStatusCode();
-		std::string	getReasonPhrase();
-		std::string	getContentType();
-		unsigned long	getContentLength();
-		std::string	getTimeNow();
-		std::string	getResponse();
-		fileExtentions	getFileExtension(std::string filePath);
 
 	private:
 		HttpRequest _request;
