@@ -39,7 +39,9 @@ void Config::parseClientMaxBodySize(ConfigT& config, const std::vector<std::stri
     int size = 0;
     if (!(iss >> size))
         throw ConfigParseException("Invalid client_max_body_size value: " + tokens[0]);
-    if (size > MAX_CLIENT_BODY_SIZE)
+    if (size <= 0)
+        throw ConfigParseException("client_max_body_size must be positive: " + tokens[0]);
+    if (static_cast<size_t>(size) > MAX_CLIENT_BODY_SIZE)
     {
         std::ostringstream oss;
         oss << MAX_CLIENT_BODY_SIZE;

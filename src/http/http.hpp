@@ -16,6 +16,9 @@
 //
 //   password=1234
 //
+#include <string>
+#include <map>
+
 struct UrlStruct {
     // HTTP method (the action the client wants).
     // Example: "GET", "POST", "PUT", "DELETE"

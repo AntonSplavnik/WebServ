@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/03 14:30:46 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/10 17:31:23 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,7 +128,6 @@ std::string HttpResponse::getTimeNow(){
 	std::string httpTime = buffer;
 	return httpTime;
 }
-
 
 
 void HttpResponse::generateGetResponse(){

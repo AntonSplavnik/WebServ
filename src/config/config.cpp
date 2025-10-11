@@ -1,8 +1,9 @@
 #include "config.hpp"
-#include "../helpers/helpers.hpp"
-#include "../exceptions/config_exceptions.hpp"
-#include "../logging/logger.hpp"
-#include "directivesParsers.tpp"
+#include "helpers.hpp"
+#include "config_exceptions.hpp"
+#include "logger.hpp"
+#include "directives_parsers.tpp"
+
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -27,9 +28,9 @@ LocationConfig::LocationConfig()
       root(""),
       allow_methods(),
       error_pages(),
+      client_max_body_size(0),
       cgi_path(),
       cgi_ext(),
-      client_max_body_size(0),
       upload_enabled(false),
       upload_store(""),
       redirect(""),
@@ -37,21 +38,24 @@ LocationConfig::LocationConfig()
 
 ConfigData::ConfigData()
     :
+      listeners(),
       server_names(),
       root(""),
       index(""),
-      backlog(0),
-      access_log(""),
-      error_log(""),
       autoindex(),
-      locations(),
+      backlog(0),
+      max_clients(0),
+      keepalive_timeout(15),
+      keepalive_max_requests(100),
+      allow_methods(),
+      error_pages(),
+      client_max_body_size(0),
       cgi_path(),
       cgi_ext(),
-      error_pages(),
-      allow_methods(),
-      client_max_body_size(0),
-      listeners(),
-      upload_store("") {}
+      upload_store(""),
+      access_log(""),
+      error_log(""),
+      locations() {}
 
 std::vector<ConfigData> Config::getServers() const {
     return _servers;
@@ -75,6 +79,8 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: index (and autoindex is off)");
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
+    if (config.max_clients <= 0)
+        throw ConfigParseException("Missing or invalid required config: max_clients");
     if (config.access_log.empty())
         throw ConfigParseException("Missing required config: access_log");
     if (config.error_log.empty())
@@ -237,6 +243,12 @@ void Config::parseServerConfigField(ConfigData& config, const std::string& key, 
         addUnique(config.server_names, tokens[0]);
     else if (key == "backlog")
         parseBacklogDirective(config, tokens[0]);
+    else if (key == "max_clients")
+        parseMaxClientsDirective(config, tokens[0]);
+    else if (key == "keepalive_timeout")
+        parseKeepaliveTimeoutDirective(config, tokens[0]);
+    else if (key == "keepalive_max_requests")
+        parseKeepaliveRequestsDirective(config, tokens[0]);
 	else if (key == "error_log")
     	assignLogFile(config.error_log, tokens[0]);
     else if (key == "access_log")
@@ -337,8 +349,8 @@ bool Config::parseConfigFile(std::ifstream& file)
 return true;
 }
 
-bool Config::parseConfig(char **argv){
-  std::string configPath = "conf/" + std::string(argv[1]);
+bool Config::parseConfig(char *argv){
+  std::string configPath = "conf/" + std::string(argv);
     std::ifstream file(configPath.c_str());
     if (!file.is_open())
         throw ConfigParseException("Failed to open config file: " + configPath);

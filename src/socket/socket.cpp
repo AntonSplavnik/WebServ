@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:46 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/16 17:18:48 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/11 14:47:06 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,9 +59,9 @@ void Socket::binding(int port){
 	std::cout << "Bound socket FD " << _fd << " to port " << PORT << std::endl;
 }
 
-void Socket::listening(){
+void Socket::listening(int backlog){
 
-	 if (listen(_fd, MAX_CON_BACKLOG) < 0) {
+	 if (listen(_fd, backlog) < 0) {
 		std::cerr << "Listen failed: " << strerror(errno) << "\n";
 		close(_fd);
 		_fd = -1;

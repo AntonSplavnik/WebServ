@@ -12,6 +12,30 @@ void Config::parseBacklogDirective(ConfigData& config, const std::string& value)
     config.backlog = backlog;
 }
 
+void Config::parseMaxClientsDirective(ConfigData& config, const std::string& value) {
+    int max_clients = 0;
+    std::istringstream valStream(value);
+    if (!(valStream >> max_clients) || max_clients < 1 || max_clients > 10000)
+        throw ConfigParseException("Invalid max_clients value: " + value);
+    config.max_clients = max_clients;
+}
+
+void Config::parseKeepaliveTimeoutDirective(ConfigData& config, const std::string& value) {
+    int keepalive_timeout = 0;
+    std::istringstream valStream(value);
+    if (!(valStream >> keepalive_timeout) || keepalive_timeout < 0 || keepalive_timeout > 3600)
+        throw ConfigParseException("Invalid keepalive_timeout value: " + value);
+    config.keepalive_timeout = keepalive_timeout;
+}
+
+void Config::parseKeepaliveRequestsDirective(ConfigData& config, const std::string& value) {
+    int keepalive_max_requests = 0;
+    std::istringstream valStream(value);
+    if (!(valStream >> keepalive_max_requests) || keepalive_max_requests < 1 || keepalive_max_requests > 10000)
+        throw ConfigParseException("Invalid keepalive_max_requests value: " + value);
+    config.keepalive_max_requests = keepalive_max_requests;
+}
+
 void Config::parseListenDirective(ConfigData& config, const std::string& value) {
     size_t colon = value.find(':');
     std::string host = "0.0.0.0";

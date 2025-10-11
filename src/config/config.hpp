@@ -30,10 +30,10 @@ static const size_t LOCATION_DIRECTIVES_COUNT = sizeof(LOCATION_DIRECTIVES) / si
 
 //Valid server directives (used in config.cpp)
 static const char *SERVER_DIRECTIVES[] = {
-	"location", "listen", "server_name", "backlog",
+	"location", "listen", "server_name", "backlog", "max_clients",
 	"access_log", "error_log", "autoindex", "index", "root",
 	"allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-	"redirect"
+	"redirect", "keepalive_timeout", "keepalive_max_requests"
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
@@ -46,42 +46,74 @@ static const char *DEFAULT_ERROR_PAGE_413 = "runtime/www/errors/40x.html";
 
 struct LocationConfig
 {
+	LocationConfig();
+
+	// URL matching
 	std::string path;
+
+	// File serving
 	bool autoindex;
-	std::string index;
-	std::string root;
+	std::string index; // default_index
+	std::string root; // document_root
+
+	// HTTP behavior
 	std::vector<std::string> allow_methods;
 	std::map<int, std::string> error_pages;
-	std::vector<std::string> cgi_path;
-	std::vector<std::string> cgi_ext;
 	int client_max_body_size;
-	bool upload_enabled;
-	std::string upload_store;
-	std::string redirect;
-	int redirect_code;
 
-	LocationConfig();
+	// CGI configuration
+	std::vector<std::string> cgi_path; // cgi_interpreters
+	std::vector<std::string> cgi_ext; // cgi_extensions
+
+
+	// File uploads
+	bool upload_enabled;
+	std::string upload_store; // upload_directory
+
+	// Redirects
+	std::string redirect; // redirect_url
+	int redirect_code; // redirect_status_code
 };
 
 struct ConfigData
 {
-	std::vector<std::pair<std::string, unsigned short> > listeners;
+	ConfigData();
+
+	// Network binding
+	std::vector<std::pair<std::string, unsigned short> > listeners; // listen_addresses
 	std::vector<std::string> server_names;
-	std::string root;
-	std::string index;
-	int backlog;
+
+	// File serving
+	std::string root; // document_root
+	std::string index; // default_index
+	bool autoindex;
+
+	// Network configuration
+	int backlog; // listen_backlog;
+	int max_clients;
+
+	// Keep-Alive configuration
+	int keepalive_timeout; // seconds
+	int keepalive_max_requests; // max requests per connection
+
+	// HTTP behavior
 	std::vector<std::string> allow_methods;
 	std::map<int, std::string> error_pages;
-	std::string access_log;
-	std::string error_log;
-	std::vector<std::string> cgi_path;
-	std::vector<std::string> cgi_ext;
-	bool autoindex;
-	std::vector<LocationConfig> locations;
 	int client_max_body_size;
-	std::string upload_store;
 
-	ConfigData();
+	// CGI configuration
+	std::vector<std::string> cgi_path; // cgi_interpreters
+	std::vector<std::string> cgi_ext; // cgi_extensions;
+
+	// File uploads
+	std::string upload_store; // upload_directory
+
+	// Logging
+	std::string access_log; // access_log_path
+	std::string error_log; // error_log_path
+
+	// Location blocks
+	std::vector<LocationConfig> locations;
 };
 
 class Config
@@ -91,7 +123,7 @@ public:
 
 	std::vector<ConfigData> getServers() const;
 
-	bool parseConfig(char **argv);
+	bool parseConfig(char *argv);
 
 private:
 	std::vector<ConfigData> _servers;
@@ -139,6 +171,12 @@ private:
 	void parseListenDirective(ConfigData &config, const std::string &value);
 
 	void parseBacklogDirective(ConfigData &config, const std::string &value);
+
+	void parseMaxClientsDirective(ConfigData &config, const std::string &value);
+
+	void parseKeepaliveTimeoutDirective(ConfigData &config, const std::string &value);
+
+	void parseKeepaliveRequestsDirective(ConfigData &config, const std::string &value);
 
 	void parseRedirect(LocationConfig &config, const std::vector<std::string> &tokens);
 
