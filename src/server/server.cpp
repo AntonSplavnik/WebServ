@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 15:53:07 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/12 22:58:54 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,8 @@
   - start() - Set up poll array, add listening socket to poll
   - run() - Main event loop with poll()
   - stop() - Cleanup */
-Server::Server(const ConfigData& config)
-	:_configData(config){
+Server::Server(const ConfigData& config, int serverNumber)
+	:_configData(config), _serverNumber(serverNumber){
 
 	_listeningSockets.clear();
 	initializeListeningSockets();
@@ -237,8 +237,8 @@ void Server::handleClientWrite(int fd){
 			updateClientActivity(fd);
 
 			// Check if entire response was sent
-			std::cout << "bytes setn: " << _clients[fd].bytesSent
-					<< "responseData length: " << _clients[fd].responseData.length()
+			std::cout << "Bytes setn: " << _clients[fd].bytesSent
+					<< "    ResponseData length: " << _clients[fd].responseData.length()
 					<< std::endl;
 
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
@@ -297,7 +297,7 @@ void Server::disconectClient(short fd){
 }
 std::string Server::mapPath(const HttpRequest& request){
 
-	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ";
+	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/";
 	std::string requestPath = request.getPath();
 	std::cout << "requestPath: " << requestPath << std::endl;
 
@@ -600,7 +600,7 @@ void Server::shutdown(){
 
 	_clients.clear();
 
-	std::cout << "Server stopped" << std::endl;
+	std::cout << "Server " << _configData.server_names[_serverNumber] <<  " stopped" << std::endl;
 }
 const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
 std::map<int, ClientInfo>& Server::getClients() {return _clients;}

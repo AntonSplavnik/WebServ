@@ -6,11 +6,15 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 17:02:39 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/12 22:56:58 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server_controller.hpp"
+#include <csignal>
+#include <cerrno>
+
+extern volatile sig_atomic_t g_shutdown;
 
 ServerController::ServerController(Config& config)
 	:_configs(config.getServers()), _running(true){}
@@ -126,7 +130,7 @@ void ServerController::addServers(){
 
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
-		Server* server = new Server(_configs[i]);
+		Server* server = new Server(_configs[i], i);
 		_servers.push_back(server);
 	}
 }
@@ -136,29 +140,33 @@ void ServerController::run(){
 	addServers();
 	initListeningSockets();
 
-	while(_running){
+	while(_running && !g_shutdown){
 
 		rebuildPollFds();
 
 		int ret = poll(_pollFds.data(), _pollFds.size(), -1);
-		if (ret < 0) {
+
+		//errno != EINTR check for interrupted poll
+		if (ret < 0 && errno != EINTR) {
 			std::cerr << "Poll failed.\n";
 			break;
 		}
-		std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
 
-		for(size_t i = 0; i < _pollFds.size(); i++){
+		if (ret > 0){
+			std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
+			for(size_t i = 0; i < _pollFds.size(); i++){
 
-			if (_pollFds[i].revents == 0)
-			continue;
+				if (_pollFds[i].revents == 0)
+				continue;
 
-			std::cout << "DEBUG: Handling FD " << _pollFds[i].fd << " at index " << i << " with revents=" << _pollFds[i].revents << std::endl;
+				std::cout << "DEBUG: Handling FD " << _pollFds[i].fd << " at index " << i << " with revents=" << _pollFds[i].revents << std::endl;
 
-			int fd = _pollFds[i].fd;
-			short revent = _pollFds[i].revents;
+				int fd = _pollFds[i].fd;
+				short revent = _pollFds[i].revents;
 
-			Server* srv = findServerForFd(fd);
-			if (srv) srv->handleEvent(fd, revent);
+				Server* srv = findServerForFd(fd);
+				if (srv) srv->handleEvent(fd, revent);
+			}
 		}
 
 		for (size_t i = 0; i < _servers.size(); i++)

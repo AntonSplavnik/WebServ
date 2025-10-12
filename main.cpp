@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 14:23:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 17:38:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/12 22:39:53 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,20 @@
 #include "server_controller.hpp"
 #include <iostream>
 #include <string>
+#include <csignal>
+
+volatile sig_atomic_t g_shutdown = 0;
+
+void signalHandler(int signum){
+	(void)signum;
+	
+	g_shutdown = 1;
+}
 
 int main(int argc, char *argv[]){
 
+	signal(SIGINT, signalHandler);
+	signal(SIGTERM, signalHandler);
 
 	try{
 		if (argc != 2){
