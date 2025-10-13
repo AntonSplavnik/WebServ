@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 13:30:20 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/13 15:44:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@
 class Server {
 
 	public:
-		Server(const ConfigData& config, int serverNumber);
+		Server(const ConfigData& config);
 		~Server();
 
 		void handleEvent(int fd, short revents);
@@ -62,7 +62,6 @@ class Server {
 		std::vector<Socket>			 _listeningSockets;
 		std::map<int, ClientInfo>	_clients;
 		const ConfigData			_configData;
-		int							_serverNumber;
 };
 
 #endif
