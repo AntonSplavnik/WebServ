@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 17:18:37 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/13 15:44:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,20 +20,53 @@
 #include "client_info.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
-
+#include "config.hpp"
 
 class Server {
 
 	public:
-		Server();
-		// Server(Config config);
+		Server(const ConfigData& config);
 		~Server();
 
-		// // Server lifecycle
-		void initialize();
-		void start();
-		void stop();
-		void run();
+		void handleEvent(int fd, short revents);
+		void disconectClient(short fd);
+		void shutdown();
+
+		const std::vector<Socket>& getListeningSockets() const;
+		std::map<int, ClientInfo>& getClients();
+
+	private:
+
+		void initializeListeningSockets();
+
+		int isListeningSocket(int fd) const;
+		void handlePOLLERR(int fd);
+		void handlePOLLHUP(int fd);
+		void handleListenEvent(int fd);
+		void handleClientRead(int indexOfLinstenSocket);
+		void handleClientWrite(int fd);
+
+		void handleGET(const HttpRequest& request, ClientInfo& client);
+		void handlePOST(const HttpRequest& request, ClientInfo& client);
+		void handleDELETE(const HttpRequest& request, ClientInfo& client);
+
+		bool validatePath(std::string path);
+		std::string mapPath(const HttpRequest& request);
+		void updateClientActivity(int fd);	// Reset timer on activity
+
+		// Utility
+		// void logConnection(const Client& client);
+		// void logDisconnection(int client_fd);
+
+		// Config _config;
+		std::vector<Socket>			 _listeningSockets;
+		std::map<int, ClientInfo>	_clients;
+		const ConfigData			_configData;
+};
+
+#endif
+
+		// Server lifecycle
 
 		// Connection management
 		// void acceptNewClient();
@@ -47,14 +80,6 @@ class Server {
 		// void processClientRequest(int client_fd);
 
 		// Methods handeling
-		void handleGET(const HttpRequest& request, ClientInfo& client);
-		void handlePOST(const HttpRequest& request, ClientInfo& client);
-		void handleDELETE(const HttpRequest& request, ClientInfo& client);
-
-		// Event loop
-		void handlePollEvents();
-		void handleServerSocket(size_t index);
-		void handleClientSocket(short fd, short revents);
 
 		// Configuration
 		// void setPort(int port);
@@ -68,25 +93,6 @@ class Server {
 		// size_t getClientCount() const;
 
 		// Utility
-		bool validatePath(std::string path);
-		void disconectClient(short fd);
-		std::string mapPath(const HttpRequest& request);
-		bool isClientTimedOut(int fd);  // Check specific client
-		void updateClientActivity(int fd);	// Reset timer onactivity
-		void checkClientTimeouts();	// Check all clients fortimeout
 		// void cleanup();
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
-
-	private:
-		// Config _config;
-		Socket _serverSocket;
-		std::vector<struct pollfd> _pollFds;
-		std::map<int, ClientInfo> _clients;
-		std::string _host;
-		int _port;
-		bool _running;
-		size_t _maxClients;
-};
-
-#endif

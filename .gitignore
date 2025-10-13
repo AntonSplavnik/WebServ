@@ -1,0 +1,40 @@
+# ────────────────
+# OS-specific
+# ────────────────
+.DS_Store
+Thumbs.db
+
+# ────────────────
+# IDE configs
+# ────────────────
+.idea/
+*.iml
+
+# ────────────────
+# Build artifacts
+# ────────────────
+*.o
+*.out
+*.exe
+a.out
+obj/
+webserv
+
+# ────────────────
+# Logs
+# ────────────────
+*.log
+runtime/logs/
+
+# ────────────────
+# Debug / Profiling
+# ────────────────
+*.dSYM/
+*.profraw
+*.gcda
+*.gcno
+
+# ────────────────
+# Tests / Coverage
+# ────────────────
+tests/*.tmp

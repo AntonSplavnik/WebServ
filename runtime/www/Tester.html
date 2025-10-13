@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 10px 10px 0;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #output {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 15px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .counter {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #48bb78;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card strong {
+            display: block;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Webserv Test Page</h1>
+        <p class="subtitle">HTTP Server Implementation Testing Suite</p>
+
+        <div class="test-section">
+            <h2><span class="status-indicator active"></span>Server Status</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <strong>Protocol</strong>
+                    <span id="protocol">Loading...</span>
+                </div>
+                <div class="info-card">
+                    <strong>Host</strong>
+                    <span id="host">Loading...</span>
+                </div>
+                <div class="info-card">
+                    <strong>Port</strong>
+                    <span id="port">Loading...</span>
+                </div>
+                <div class="info-card">
+                    <strong>User Agent</strong>
+                    <span id="userAgent">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎮 Interactive Tests</h2>
+            <p>Click counter (tests JavaScript execution):</p>
+            <div class="counter" id="counter">0</div>
+            <br>
+            <button onclick="incrementCounter()">Increment</button>
+            <button onclick="resetCounter()">Reset</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📡 Fetch Tests</h2>
+            <p>Test different HTTP scenarios:</p>
+            <button onclick="testCurrentPage()">Fetch This Page</button>
+            <button onclick="testNonExistent()">Test 404</button>
+            <button onclick="testLargeRequest()">Test Headers</button>
+            <div id="output">Console output will appear here...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ Static Content Tests</h2>
+            <p>These elements test if your server correctly serves different file types:</p>
+            <ul style="list-style-position: inside; color: #666;">
+                <li>✓ HTML document (this page)</li>
+                <li>✓ CSS styling (visible layout)</li>
+                <li>✓ JavaScript execution (interactive elements)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let counter = 0;
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function incrementCounter() {
+            counter++;
+            document.getElementById('counter').textContent = counter;
+            log(`Counter incremented to ${counter}`, 'success');
+        }
+
+        function resetCounter() {
+            counter = 0;
+            document.getElementById('counter').textContent = counter;
+            log('Counter reset to 0', 'info');
+        }
+
+        function testCurrentPage() {
+            log('Attempting to fetch current page...');
+            fetch(window.location.href)
+                .then(response => {
+                    log(`Status: ${response.status} ${response.statusText}`, 'success');
+                    log(`Content-Type: ${response.headers.get('content-type')}`);
+                    return response.text();
+                })
+                .then(data => {
+                    log(`Received ${data.length} bytes of data`, 'success');
+                })
+                .catch(error => {
+                    log(`Error: ${error.message}`, 'error');
+                });
+        }
+
+        function testNonExistent() {
+            log('Testing 404 error handling...');
+            fetch('/nonexistent-page.html')
+                .then(response => {
+                    log(`Status: ${response.status} ${response.statusText}`,
+                        response.status === 404 ? 'success' : 'error');
+                })
+                .catch(error => {
+                    log(`Error: ${error.message}`, 'error');
+                });
+        }
+
+        function testLargeRequest() {
+            log('Testing request with headers...');
+            fetch(window.location.href, {
+                headers: {
+                    'X-Test-Header': 'WebservTest',
+                    'X-Custom-Value': '12345'
+                }
+            })
+            .then(response => {
+                log(`Status: ${response.status}`, 'success');
+                log('Headers sent successfully');
+            })
+            .catch(error => {
+                log(`Error: ${error.message}`, 'error');
+            });
+        }
+
+        window.onload = function() {
+            document.getElementById('protocol').textContent = window.location.protocol;
+            document.getElementById('host').textContent = window.location.hostname || 'localhost';
+            document.getElementById('port').textContent = window.location.port || '80';
+            document.getElementById('userAgent').textContent = navigator.userAgent.split(' ')[0];
+
+            log('Page loaded successfully! 🎉', 'success');
+            log('Server is responding correctly', 'success');
+            log('All static resources loaded', 'success');
+        };
+    </script>
+</body>
+</html>

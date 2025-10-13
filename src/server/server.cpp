@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/03 14:25:35 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/13 15:43:25 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,196 +21,138 @@
   - start() - Set up poll array, add listening socket to poll
   - run() - Main event loop with poll()
   - stop() - Cleanup */
+Server::Server(const ConfigData& config)
+	:_configData(config){
 
-Server::Server()
-	:_host("0.0.0.0"),
-	_port(8080),
-	_running(false),
-	_maxClients(1000){
-
-	_pollFds.clear();
+	_listeningSockets.clear();
+	initializeListeningSockets();
 	_clients.clear();
-	// _pollFds.reserve(_maxClients + 1); (optimisation)
 }
-
 Server::~Server(){
-	if (_running)
-		stop();
+	shutdown();
 }
-
-void Server::stop(){
-	_running = false;
-
-	if(_serverSocket.getFd() >= 0){
-		std::cout << "Closing listening soclet FD" << _serverSocket.getFd() << std::endl;
-		_serverSocket.closing(_serverSocket.getFd());
-	}
-
-	// Close all client connections
-	for (std::map<int, ClientInfo>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		close(it->first);
-	}
-	_clients.clear();
-	_pollFds.clear();
-
-	std::cout << "Server stopped" << std::endl;
-}
-
-void Server::initialize(){
-
-	_serverSocket.createDefault();
-	if (_serverSocket.getFd() < 0) {
-		throw std::runtime_error("Failed to create socket");
-	}
-
-	_serverSocket.setReuseAddr(true);
-	_serverSocket.binding(_port);
-	if (_serverSocket.getFd() < 0) {
-		throw std::runtime_error("Failed to bind socket (port may be in use)");
-	}
-
-	_serverSocket.listening();
-	if (_serverSocket.getFd() < 0) {
-		throw std::runtime_error("Failed to listen on socket");
-	}
-
-	_serverSocket.setNonBlocking();
-}
-
-void Server::start(){
-
-	struct pollfd serverPollFd;
-	serverPollFd.fd = _serverSocket.getFd();
-	serverPollFd.events = POLLIN;
-	serverPollFd.revents = 0;
-
-	_pollFds.push_back(serverPollFd);
-
-	std::cout << "Added listening socket FD " <<
-	_serverSocket.getFd() << " to poll vector at index 0" << std::endl;
-}
-
-void Server::run(){
-/*
-1. Set _running = true
-2. Main while loop with poll()
-3. Handle poll events
-4. Check listening socket for new connections
-5. Check client sockets for data
+/**
+ * Initialisatin of listening sockets
  */
-	_running = true;
+void Server::initializeListeningSockets(){
 
-	while(_running){
+	//add logic for incoming listening sockets from the config file.
+	for(size_t i = 0; i < _configData.listeners.size(); i++){
 
-		int ret = poll(_pollFds.data(), _pollFds.size(), -1);
-		if (ret < 0) {
-			std::cerr << "Poll failed.\n";
-				break;
+		Socket listenSocket;
+
+		listenSocket.createDefault();
+
+		if (listenSocket.getFd() < 0) {
+			throw std::runtime_error("Failed to create socket");
 		}
 
-		std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
-		handlePollEvents();
-		checkClientTimeouts();
-	}
-}
-
-/*
-Then implement:
-- handlePollEvents() - Check each fd in _pollFds
-- handleServerSocket() - Accept new connections
-- handleClientSocket() - Process client data
-*/
-void Server::handlePollEvents(){
-
-	for (size_t i = 0; i < _pollFds.size(); i++){
-
-		if (_pollFds[i].revents == 0)
-			continue;
-
-		std::cout << "DEBUG: Handling FD " << _pollFds[i].fd << " at index " << i
-					<< " with revents=" << _pollFds[i].revents << std::endl;
-
-		if(i == 0)
-			handleServerSocket(i); //connectino
-		else
-			handleClientSocket(_pollFds[i].fd, _pollFds[i].revents); //event loop
-	}
-}
-
-
-void Server::handleServerSocket(size_t index){
-
-	std::cout << "DEBUG: handleServerSocket called, revents=" << _pollFds[index].revents << std::endl;
-
-	// Handle invalid FD
-	if (_pollFds[index].revents & POLLNVAL) {
-		std::cerr << "ERROR: Listening socket FD " << _pollFds[index].fd
-				<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
-		_running = false;
-		return;
-	}
-
-	if (_pollFds.data()->revents & POLLIN){
-		std::cout << "Event detected on listening socket FD " << _pollFds.data()->fd << std::endl;
-
-		//Accept the new connection
-		short client_fd = _serverSocket.accepting();
-
-		if (client_fd >= 0 && _clients.size() < _maxClients) {
-
-			_clients[client_fd] = ClientInfo(client_fd);
-			_clients[client_fd].keepAliveTimeout = 15;
-			_clients[client_fd].lastActivity = time(NULL);
-			_clients[client_fd].maxRequests = 100;
-			_clients[client_fd].requestCount = 0;
-			std::cout << "New connection accepted! Client FD: " << client_fd
-					  << "Timeout: " << _clients[client_fd].keepAliveTimeout
-					  << "Max Max Requests: " << _clients[client_fd].maxRequests
-					  << std::endl;
-
-			// Make client socket non-blocking
-			_clients[client_fd].socket.setNonBlocking();
-			std::cout << "Making socket FD " << client_fd << " non-blocking" << std::endl;
-
-			// Add client socket to poll array
-			struct pollfd clientPollFd;
-			clientPollFd.fd = client_fd;
-			clientPollFd.events = POLLIN;
-			clientPollFd.revents = 0;
-			_pollFds.push_back(clientPollFd);
-
-			std::cout << "Added client socket FD " << client_fd << " to poll vector at index " << index << std::endl;
-			std::cout << "New client connected. Total FDs: " << _pollFds.size() << std::endl;
+		listenSocket.setReuseAddr(true);
+		listenSocket.binding(_configData.listeners[i].second);
+		if (listenSocket.getFd() < 0) {
+			throw std::runtime_error("Failed to bind socket (port may be in use)");
 		}
-		else if (client_fd >= 0){
-			close(client_fd);
+
+		listenSocket.listening(_configData.backlog);
+		if (listenSocket.getFd() < 0) {
+			throw std::runtime_error("Failed to listen on socket");
+		}
+
+		listenSocket.setNonBlocking();
+
+		_listeningSockets.push_back(listenSocket);
+
+		std::cout << "Susesfully added listening socket fd: "
+				  << listenSocket.getFd() << " at vector position: "
+				  << i << std::endl;
+	}
+}
+void Server::handlePOLLERR(int fd){
+
+	std::cerr << "ERROR: Listening socket FD " << fd
+			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
+}
+void Server::handlePOLLHUP(int fd){
+
+	std::cout << "Client FD " << fd << " hung up" << std::endl;
+}
+int Server::isListeningSocket(int fd) const {
+
+	for (size_t i = 0; i < _listeningSockets.size(); i++)
+	{
+		if (_listeningSockets[i].getFd() == fd){
+			return  i;
 		}
 	}
+	return -1;
 }
+void Server::handleListenEvent(int indexOfLinstenSocket){
 
-void Server::handleClientSocket(short fd, short revents){
+	std::cout << "Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
+
+	short client_fd = _listeningSockets[indexOfLinstenSocket].accepting();
+
+	if (client_fd >= 0 && _clients.size() < static_cast<size_t>(_configData.max_clients)) {
+
+		_clients[client_fd] = ClientInfo(client_fd);
+		_clients[client_fd].keepAliveTimeout = _configData.keepalive_timeout;
+		_clients[client_fd].lastActivity = time(NULL);
+		_clients[client_fd].maxRequests = _configData.keepalive_max_requests;
+		_clients[client_fd].requestCount = 0;
+
+		std::cout << "New connection accepted! Client FD: " << client_fd
+				  << "Timeout: " << _clients[client_fd].keepAliveTimeout
+				  << "Max Max Requests: " << _clients[client_fd].maxRequests
+				  << std::endl;
+
+		// Make client socket non-blocking
+		_clients[client_fd].socket.setNonBlocking();
+		std::cout << "Making socket FD " << client_fd << " non-blocking" << std::endl;
+
+	}
+	else if (client_fd >= 0){
+		close(client_fd);
+	}
+
+}
+void Server::handleClientRead(int fd){
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
-		std::cout << "Max request count reachead: " << fd << std::endl;
+		std::cout << "Max request count reached: " << fd << std::endl;
+
+		/*
+			1. Graceful Closure: You should finish sending the current
+			response before disconnecting
+			2. Signal to Client: Send Connection: close header in the
+			response before closing
+			3. Not an Error: This is normal behavior, not an error condition
+		*/
 		disconectClient(fd);
 	}
 
-	if(revents & POLLIN && _clients[fd].state == READING_REQUEST){
+	if(_clients[fd].state == READING_REQUEST){
 
 		char buffer[BUFFER_SIZE];
 		std::memset(buffer, 0, BUFFER_SIZE);
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
+		std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 		if (bytes <= 0) {
-			// Client disconnected or error
-			std::cout << "Client FD " << fd << " disconnected" << std::endl;
-			disconectClient(fd);
+			if (bytes == 0) {
+				std::cout << "Client FD " << fd << " disconnected" << std::endl;
+				disconectClient(fd);
+			} else { // bytes < 0
+				if (errno == EAGAIN || errno == EWOULDBLOCK) {
+					// No data available - continue monitoring
+					return;
+				}
+				std::cout << "Error on FD " << fd << ": " << strerror(errno) << std::endl;
+  				disconectClient(fd);
+			}
 		}
 		else {
 
 			updateClientActivity(fd);
-
-			std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 			_clients[fd].requestData += buffer;
 			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
@@ -253,17 +195,12 @@ void Server::handleClientSocket(short fd, short revents){
 
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
-				for (size_t i = 0; i < _pollFds.size(); ++i) {
-					if (_pollFds[i].fd == fd) {
-						_pollFds[i].events = POLLIN;
-						break;
-					}
-				}
 				_clients[fd].shouldClose = true;
-			}
-			else{
+				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+
+			}else{
 				Methods method = httpRequest.getMethodEnum();
-				switch (method) {
+				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd]); break;
 					case POST: handlePOST(httpRequest, _clients[fd]); break;
 					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
@@ -271,17 +208,14 @@ void Server::handleClientSocket(short fd, short revents){
 
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
-				for (size_t i = 0; i < _pollFds.size(); ++i) {
-					if (_pollFds[i].fd == fd) {
-					_pollFds[i].events = POLLOUT;
-					break;
-					}
-				}
 				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
-				}
+			}
 		}
 	}
-	else if (revents & POLLOUT && _clients[fd].state == SENDING_RESPONSE){
+}
+void Server::handleClientWrite(int fd){
+
+	if (_clients[fd].state == SENDING_RESPONSE){
 
 		std::cout << "POLLOUT event on client FD " << fd << " (sending response)" << std::endl;
 
@@ -299,9 +233,10 @@ void Server::handleClientSocket(short fd, short revents){
 			updateClientActivity(fd);
 
 			// Check if entire response was sent
-			std::cout << "bytes setn: " << _clients[fd].bytesSent
-					<< "responseData length: " << _clients[fd].responseData.length()
+			std::cout << "Bytes setn: " << _clients[fd].bytesSent
+					<< "    ResponseData length: " << _clients[fd].responseData.length()
 					<< std::endl;
+
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
 
 				if(_clients[fd].shouldClose){
@@ -309,23 +244,15 @@ void Server::handleClientSocket(short fd, short revents){
 					disconectClient(fd);
 					return;
 				}
+
 				// Reset client state for next request
 				_clients[fd].state = READING_REQUEST;
 				_clients[fd].bytesSent = 0;
 				_clients[fd].responseData.clear();
 				_clients[fd].requestData.clear();
 
-				// Switch back to reading mode
-				for (size_t i = 0; i < _pollFds.size(); ++i) {
-					if (_pollFds[i].fd == fd) {
-						_pollFds[i].events = POLLIN;
-						break;
-					}
-				}
 			} else {
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;
-				std::cout << "DEBUG: responseData length = " << _clients[fd].responseData.length() << std::endl;
-
 			}
 		} else {
 
@@ -334,42 +261,45 @@ void Server::handleClientSocket(short fd, short revents){
 			disconectClient(fd);
 		}
 	}
+}
+void Server::handleEvent(int fd, short revents) {
 
-	// Handle client disconnection
-	if (revents & POLLHUP) {
-
-		std::cout << "Client FD " << fd << " hung up" << std::endl;
-		disconectClient(fd);
-		std::cout << "Total FDs: " << _pollFds.size() << std::endl;
+	int listenFdIndex = isListeningSocket(fd);
+	if (listenFdIndex >= 0) {
+		if (revents & POLLIN) {
+			handleListenEvent(listenFdIndex);
+		}
+	} else {
+		// Client socket
+		if (revents & POLLIN) {
+			handleClientRead(fd);
+		}
+		if (revents & POLLOUT) {
+			handleClientWrite(fd);
+		}
+		if (revents & POLLERR) {
+			handlePOLLERR(fd);
+			disconectClient(fd);
+		}
+		if (revents & POLLHUP) {
+			handlePOLLHUP(fd);
+			disconectClient(fd);
+		}
 	}
 }
-
 void Server::disconectClient(short fd){
 
 	close(fd);
-
-	// Remove from arrays by shifting remaining elements
 	_clients.erase(fd);
-	for (std::vector<struct pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); ++it)
-	{
-		if(it->fd == fd){
-			_pollFds.erase(it);
-			break;
-		}
-	}
-
 }
-
 std::string Server::mapPath(const HttpRequest& request){
 
-	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ";
+	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/";
 	std::string requestPath = request.getPath();
 	std::cout << "requestPath: " << requestPath << std::endl;
 
 	return localPath + requestPath;
 }
-
-
 void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 
 	std::string mappedPath = mapPath(request);
@@ -431,7 +361,6 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	}
 */
 }
-
 void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 
 	(void)request;
@@ -497,7 +426,6 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	}
 */
 }
-
 /*
 	CGI for GET and POST
 
@@ -538,15 +466,14 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	CGI turns your server into a platform that can run any program to generate web pages
 	dynamically.
 */
-
 bool Server::validatePath(std::string path){
 
-	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/downloads");
+	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/uploads");
 }
 /**
  * This function only handles files, but not directories.
  */
-void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
+ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 
 	std::string mappedPath = mapPath(request);
 	HttpResponse response(request);
@@ -650,26 +577,27 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
   HttpResponse class.
   */
 }
-
-bool Server::isClientTimedOut(int fd){
-
-	time_t now = time(NULL);
-	return (now - _clients[fd].lastActivity > _clients[fd].keepAliveTimeout) ;
-}
-
 void Server::updateClientActivity(int fd){
 
 	_clients[fd].lastActivity = time(NULL);
 }
+void Server::shutdown(){
 
-void Server::checkClientTimeouts(){
-
-	for(std::map<int, ClientInfo>::iterator it = _clients.begin(); it != _clients.end(); ++it){
-
-		int currentFd = it->first;
-		if(isClientTimedOut(currentFd)){
-			std::cout << "Client: " << currentFd << " timed out." << std::endl;
-			disconectClient(currentFd);
-		}
+	//Close all of listening sockets
+	for (size_t i = 0; i < _listeningSockets.size(); i++)
+	{
+		std::cout << "Closing listening socket FD: " << _listeningSockets[i].getFd() << std::endl;
+		_listeningSockets[i].closing(_listeningSockets[i].getFd());
 	}
+
+	// Close all client connections
+	for (std::map<int, ClientInfo>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		close(it->first);
+	}
+
+	_clients.clear();
+
+	std::cout << "Server " << _configData.server_names[0] <<  " stopped" << std::endl;
 }
+const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
+std::map<int, ClientInfo>& Server::getClients() {return _clients;}

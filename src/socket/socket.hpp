@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/09/16 17:18:53 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/11 14:47:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ class Socket{
 		void createDefault();
 		void createCustom(int domain, int type, int protocol);
 		void binding(int port);
-		void listening();
+		void listening(int backlog);
 		int accepting();
 		void closing(short fd);
 
