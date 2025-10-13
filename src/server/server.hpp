@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/12 22:58:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/13 13:30:20 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,11 @@ class Server {
 
 		void initializeListeningSockets();
 
-		bool isListeningSocket(int fd) const;
+		int isListeningSocket(int fd) const;
 		void handlePOLLERR(int fd);
 		void handlePOLLHUP(int fd);
 		void handleListenEvent(int fd);
-		void handleClientRead(int fd);
+		void handleClientRead(int indexOfLinstenSocket);
 		void handleClientWrite(int fd);
 
 		void handleGET(const HttpRequest& request, ClientInfo& client);

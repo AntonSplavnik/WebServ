@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/12 22:58:54 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/13 13:42:08 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@ void Server::initializeListeningSockets(){
 		listenSocket.setNonBlocking();
 
 		_listeningSockets.push_back(listenSocket);
+
 		std::cout << "Susesfully added listening socket fd: "
 				  << listenSocket.getFd() << " at vector position: "
 				  << i << std::endl;
@@ -75,26 +76,21 @@ void Server::handlePOLLHUP(int fd){
 
 	std::cout << "Client FD " << fd << " hung up" << std::endl;
 }
-bool Server::isListeningSocket(int fd) const{
+int Server::isListeningSocket(int fd) const {
+
 	for (size_t i = 0; i < _listeningSockets.size(); i++)
 	{
 		if (_listeningSockets[i].getFd() == fd){
-			return  true;
+			return  i;
 		}
 	}
-	return false;
+	return -1;
 }
-void Server::handleListenEvent(int fd){
+void Server::handleListenEvent(int indexOfLinstenSocket){
 
-	std::cout << "Event detected on listening socket FD " << fd << std::endl;
+	std::cout << "Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
 
-	short client_fd;
-
-	//Accept the new connection
-	for(size_t i = 0; i < _listeningSockets.size(); i++){
-		if(_listeningSockets[i].getFd() == fd)
-		client_fd = _listeningSockets[i].accepting();
-	}
+	short client_fd = _listeningSockets[indexOfLinstenSocket].accepting();
 
 	if (client_fd >= 0 && _clients.size() < static_cast<size_t>(_configData.max_clients)) {
 
@@ -204,7 +200,7 @@ void Server::handleClientRead(int fd){
 
 			}else{
 				Methods method = httpRequest.getMethodEnum();
-				switch (method) {
+				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd]); break;
 					case POST: handlePOST(httpRequest, _clients[fd]); break;
 					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
@@ -268,9 +264,10 @@ void Server::handleClientWrite(int fd){
 }
 void Server::handleEvent(int fd, short revents) {
 
-	if (isListeningSocket(fd)) {
+	int listenFdIndex = isListeningSocket(fd);
+	if (listenFdIndex >= 0) {
 		if (revents & POLLIN) {
-			handleListenEvent(fd);
+			handleListenEvent(listenFdIndex);
 		}
 	} else {
 		// Client socket
