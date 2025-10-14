@@ -18,7 +18,9 @@
 #include <cstdlib>
 
 PostHandler::PostHandler(const std::string uploadPath)
-    :_uploadPath(uploadPath){}
+    :_uploadPath(uploadPath){
+    std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
+}
 
 bool PostHandler::saveRawContent(const std::string& filePath, const std::string& content) {
     std::ofstream file(filePath.c_str(), std::ios::binary);
@@ -45,6 +47,7 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
 
     std::string filename = generateFilename(extension);
     std::string filePath = _uploadPath + filename;
+    std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     if (saveRawContent(filePath, request.getBody())) {
         HttpResponse response(request);
@@ -277,6 +280,7 @@ std::string PostHandler::extractContentTypeFromHeader(const std::string& headerL
 void PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts, const HttpRequest& request, ClientInfo& client) {
 
     std::string uploadDir = _uploadPath;
+    std::cout << "[DEBUG] Upload directory: '" << uploadDir << "'" << std::endl;
 
     // Create folder if doesnt existe
     system(("mkdir -p " + uploadDir).c_str());

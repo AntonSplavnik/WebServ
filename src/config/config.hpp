@@ -33,7 +33,7 @@ static const char *SERVER_DIRECTIVES[] = {
 	"location", "listen", "server_name", "backlog", "max_clients",
 	"access_log", "error_log", "autoindex", "index", "root",
 	"allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-	"redirect", "keepalive_timeout", "keepalive_max_requests"
+	"redirect", "keepalive_timeout", "keepalive_max_requests", "upload_store"
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
@@ -181,6 +181,9 @@ private:
 	void parseRedirect(LocationConfig &config, const std::vector<std::string> &tokens);
 
 	void parseUploadStore(LocationConfig &config, const std::vector<std::string> &tokens);
+
+	template<typename ConfigT>
+	void parseUploadStore(ConfigT &config, const std::vector<std::string> &tokens);
 
 	void parseUploadEnabled(LocationConfig &config, const std::vector<std::string> &tokens);
 
