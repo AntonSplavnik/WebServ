@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 15:43:25 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 14:22:52 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,7 @@ void Server::handleClientRead(int fd){
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd]); break;
-					case POST: handlePOST(httpRequest, _clients[fd]); break;
+					case POST: PostHandler::handlePOST(httpRequest, _clients[fd]); break;
 					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
 				}
 
@@ -361,11 +361,6 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	}
 */
 }
-void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
-
-	(void)request;
-	(void)client;
-
 /*
 	The POST method receives data from the client, processes it, and uses HttpResponse methods to
 	send back a result.
@@ -425,7 +420,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 		}
 	}
 */
-}
+
 /*
 	CGI for GET and POST
 
@@ -503,8 +498,6 @@ bool Server::validatePath(std::string path){
 		response.generateResponse(404);
 		client.responseData = response.getResponse();
 	}
-
-
 /*
 	DELETE Method Purpose
 
