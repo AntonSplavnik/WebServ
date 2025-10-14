@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/09 00:00:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 15:31:51 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,29 +32,34 @@ struct MultipartPart {
 };
 
 class PostHandler {
-public:
-    // Main POST handling methods
-    static void handlePOST(const HttpRequest& request, ClientInfo& client);
-    static void handleMultipart(const HttpRequest& request, ClientInfo& client);
+    public:
+        PostHandler(const std::string uploadPath);
 
-    // Multipart parsing methods
-    static std::vector<MultipartPart> parseMultipartData(const std::string& body, const std::string& boundary);
-    static MultipartPart parseMultipartPart(const std::string& partData);
-    static void parseContentDisposition(const std::string& headerLine, std::string& name, std::string& filename);
-    static std::string extractContentTypeFromHeader(const std::string& headerLine);
+        // Main POST handling methods
+        void handlePOST(const HttpRequest& request, ClientInfo& client);
+        void handleMultipart(const HttpRequest& request, ClientInfo& client);
 
-    // Processing and saving methods
-    static void processMultipartParts(const std::vector<MultipartPart>& parts, const HttpRequest& request, ClientInfo& client);
-    static bool saveFileFromMultipart(const std::string& filePath, const std::string& content);
-    static void saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue);
+        // Multipart parsing methods
+        std::vector<MultipartPart> parseMultipartData(const std::string& body, const std::string& boundary);
+        MultipartPart parseMultipartPart(const std::string& partData);
+        void parseContentDisposition(const std::string& headerLine, std::string& name, std::string& filename);
+        std::string extractContentTypeFromHeader(const std::string& headerLine);
 
-    // Utility methods
-    static std::string extractBoundary(const std::string& contentType);
-    static bool isSupportedContentType(const std::string& contentType);
-    static void handleFile(const HttpRequest& request, ClientInfo& client, const std::string& contentType);
-    static std::string getExtensionFromContentType(const std::string& contentType);
-    static std::string generateFilename(const std::string& extension);
-    static bool saveRawContent(const std::string& filePath, const std::string& content);
+        // Processing and saving methods
+        void processMultipartParts(const std::vector<MultipartPart>& parts, const HttpRequest& request, ClientInfo& client);
+        bool saveFileFromMultipart(const std::string& filePath, const std::string& content);
+        void saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue);
+
+        // Utility methods
+        std::string extractBoundary(const std::string& contentType);
+        bool isSupportedContentType(const std::string& contentType);
+        void handleFile(const HttpRequest& request, ClientInfo& client, const std::string& contentType);
+        std::string getExtensionFromContentType(const std::string& contentType);
+        std::string generateFilename(const std::string& extension);
+        bool saveRawContent(const std::string& filePath, const std::string& content);
+
+    private:
+        std::string _uploadPath;
 };
 
 #endif

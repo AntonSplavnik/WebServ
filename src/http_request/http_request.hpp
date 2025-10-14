@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 16:43:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 15:09:49 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ class HttpRequest{
 		Methods		_methodEnum;
 		std::string	_path;
 		std::string	_version;
+		std::string _contentType;
 
 		//headers
 		std::map<std::string, std::string>	_headers;

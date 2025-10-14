@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 14:22:52 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 15:34:35 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -202,7 +202,7 @@ void Server::handleClientRead(int fd){
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd]); break;
-					case POST: PostHandler::handlePOST(httpRequest, _clients[fd]); break;
+					case POST: handlePOST(httpRequest, _clients[fd]); break;
 					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
 				}
 
@@ -294,7 +294,7 @@ void Server::disconectClient(short fd){
 }
 std::string Server::mapPath(const HttpRequest& request){
 
-	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/";
+	std::string localPath = _configData.root;
 	std::string requestPath = request.getPath();
 	std::cout << "requestPath: " << requestPath << std::endl;
 
@@ -420,6 +420,29 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 		}
 	}
 */
+
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+
+	PostHandler post(_configData.upload_store);
+
+	std::string contentType = request.getContenType();
+	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
+	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
+
+	HttpResponse response(request);
+
+	if (contentType.find("multipart/form-data") != std::string::npos) {
+		post.handleMultipart(request, client);
+    }
+	else if (post.isSupportedContentType(contentType)) {
+		post.handleFile(request, client, contentType);
+	}
+	else {
+		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
+		response.generateResponse(415);
+		client.responseData = response.getResponse();
+	}
+}
 
 /*
 	CGI for GET and POST

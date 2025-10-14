@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 14:27:20 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 15:27:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,26 +17,8 @@
 #include <sstream>
 #include <cstdlib>
 
-void PostHandler::handlePOST(const HttpRequest& request, ClientInfo& client){
-
-	std::string contentType = request.getContenType();
-	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
-	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
-
-	HttpResponse response(request);
-
-	if (contentType.find("multipart/form-data") != std::string::npos) {
-		handleMultipart(request, client);
-    }
-	else if (isSupportedContentType(contentType)) {
-		handleFile(request, client, contentType);
-	}
-	else {
-		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
-		response.generateResponse(415);
-		client.responseData = response.getResponse();
-	}
-}
+PostHandler::PostHandler(const std::string uploadPath)
+    :_uploadPath(uploadPath){}
 
 bool PostHandler::saveRawContent(const std::string& filePath, const std::string& content) {
     std::ofstream file(filePath.c_str(), std::ios::binary);
@@ -62,7 +44,7 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
     std::string extension = getExtensionFromContentType(contentType);
 
     std::string filename = generateFilename(extension);
-    std::string filePath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/uploads/" + filename;
+    std::string filePath = _uploadPath + filename;
 
     if (saveRawContent(filePath, request.getBody())) {
         HttpResponse response(request);
@@ -294,7 +276,7 @@ std::string PostHandler::extractContentTypeFromHeader(const std::string& headerL
 
 void PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts, const HttpRequest& request, ClientInfo& client) {
 
-    std::string uploadDir = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/uploads/";
+    std::string uploadDir = _uploadPath;
 
     // Create folder if doesnt existe
     system(("mkdir -p " + uploadDir).c_str());
@@ -339,7 +321,7 @@ bool PostHandler::saveFileFromMultipart(const std::string& filePath, const std::
 }
 
 void PostHandler::saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue) {
-    std::string logFile = "/Users/dam/programation/WebServ-3/www/uploads/form_data.log";
+    std::string logFile = _uploadPath + "form_data.log";
 
     std::ofstream file(logFile.c_str(), std::ios::app);
     if (file.is_open()) {
