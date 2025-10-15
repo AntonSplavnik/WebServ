@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 15:35:47 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 15:16:36 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,12 +60,10 @@ The Host header should be checked in the HTTP request parsing
 
 
 HttpRequest::HttpRequest()
-	: _requestLine(), _body(), _contentLength(), _method(), _path(), _version(), _headers(), _isValid(true){
+	: _requestLine(), _body(), _method(), _path(), _version(), _contentLength(),_headers(), _isValid(true){
 }
 
 HttpRequest::~HttpRequest(){}
-
-void HttpRequest::parseRequest(const std::string requestData){
 
 /*
 Critical HTTP parsing test scenarios
@@ -77,6 +75,7 @@ Critical HTTP parsing test scenarios
 	- Content-Length header validation failures
 	- Non-implemented HTTP method requests
 */
+void HttpRequest::parseRequest(const std::string requestData){
 
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
@@ -85,6 +84,15 @@ Critical HTTP parsing test scenarios
 	parseHeaders();
 	if (!_isValid) return;
 	parseBody();
+	if (!_isValid) return;
+}
+
+void HttpRequest::partialParseRequest(const std::string requestData){
+	extractLineHeaderBodyLen(requestData);
+	if (!_isValid) return;
+	parseRequestLine();
+	if (!_isValid) return;
+	parseHeaders();
 	if (!_isValid) return;
 }
 
@@ -110,7 +118,6 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		size_t headersLength = headerBodySeparator - headersStart;
 		_rawHeaders = rawData.substr(headersStart, headersLength);
 		_body = rawData.substr(headerBodySeparator + 4);
-		_contentLength = _body.length();
 	}
 }
 
@@ -200,6 +207,12 @@ void HttpRequest::parseHeaders(){
 			_headers[key] = value;
 		}
 	}
+	std::map<std::string, std::string>::const_iterator it = _headers.find("content-length");
+	if (it != _headers.end()) {
+		_contentLength = std::strtoul(it->second.c_str(), NULL, 10);
+	} else {
+		_contentLength = 0;  // No Content-Length header
+	}
 }
 
 void HttpRequest::parseBody(){
@@ -227,6 +240,8 @@ void HttpRequest::setRawHeaders(std::string rawHeaders) {_rawHeaders = rawHeader
 std::string HttpRequest::getRequstLine() const {return _requestLine;}
 std::string HttpRequest::getBody() const {return _body;}
 std::string HttpRequest::getRawHeaders() const {return _rawHeaders;}
+unsigned long HttpRequest::getBodyLength() const {return _body.length();}
+
 
 //parse
 void HttpRequest::setMethod(std::string method) {_method = method;}
@@ -245,7 +260,6 @@ bool HttpRequest::getStatus() const {return _isValid;}
 
 
 //content type
-
 // void HttpRequest::setContentType(std::string ContentType){}
 std::string HttpRequest::getContenType() const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find("content-type");

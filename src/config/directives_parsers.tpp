@@ -101,13 +101,6 @@ void Config::parseCgiPath(ConfigT& config, const std::vector<std::string>& token
   }
 }
 
-template<typename ConfigT>
-void Config::parseUploadStore(ConfigT& config, const std::vector<std::string>& tokens) {
-    if (!isValidPath(tokens[0], W_OK | X_OK))
-        throw ConfigParseException("Invalid or inaccessible upload_store path: " + tokens[0]);
-    config.upload_store = normalizePath(tokens[0]);
-}
-
 // Helper to parse common config fields
 template<typename ConfigT>
 void Config::parseCommonConfigField(ConfigT& config, const std::string& key, const std::vector<std::string>& tokens) {
@@ -129,6 +122,4 @@ void Config::parseCommonConfigField(ConfigT& config, const std::string& key, con
         parseCgiPath(config, tokens);
     else if (key == "error_page")
         parseErrorPage(config, tokens);
-    else if (key == "upload_store")
-        parseUploadStore(config, tokens);
 }

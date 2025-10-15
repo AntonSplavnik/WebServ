@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 14:23:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 16:03:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 21:25:02 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,9 +41,7 @@ int main(int argc, char *argv[]){
 		Config config;
 		config.parseConfig(argv[1]);
 		std::cout << "Config file loaded successfully" << std::endl;
-
-		std::cout << config.getServers()[0].upload_store << std::endl;
-
+		
 		ServerController controller(config);
 		controller.run();
 	}

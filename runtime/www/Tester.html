@@ -259,7 +259,7 @@
         function testJsonPost() {
             showSpinner(true);
             log('Sending POST with JSON...');
-            fetch('/post-test', {
+            fetch('/uploads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: "Webserv", time: Date.now() })
@@ -284,7 +284,7 @@
             const formData = new FormData(form);
             log('Uploading file(s)...');
 
-            fetch('/upload', {
+            fetch('/uploads', {
                 method: 'POST',
                 body: formData
             })

@@ -201,7 +201,7 @@ Line breaks and special characters: éàè çù</textarea>
             button.disabled = true;
             button.textContent = 'Sending...';
             try {
-                const response = await fetch('/text-plain', {
+                const response = await fetch('/uploads', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain'
@@ -244,7 +244,7 @@ Line breaks and special characters: éàè çù</textarea>
                         console.log(`${key}: ${value}`);
                     }
                 }
-                const response = await fetch('/upload', {
+                const response = await fetch('/uploads', {
                     method: 'POST',
                     body: formData
                     // Note: Don't set Content-Type header, let browser set it with boundary

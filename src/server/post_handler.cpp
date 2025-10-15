@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 15:27:16 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 17:25:52 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
     std::string extension = getExtensionFromContentType(contentType);
 
     std::string filename = generateFilename(extension);
-    std::string filePath = _uploadPath + filename;
+    std::string filePath = _uploadPath + "/" + filename;
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     if (saveRawContent(filePath, request.getBody())) {
@@ -105,6 +105,9 @@ std::string PostHandler::getExtensionFromContentType(const std::string& contentT
     else if (contentType.find("application/pdf") != std::string::npos) {
         return "pdf";
     }
+    else if (contentType.find("application/json") != std::string::npos) {
+        return "json";
+    }
     else if (contentType.find("application/octet-stream") != std::string::npos) {
         return "bin";
     }
@@ -116,11 +119,12 @@ std::string PostHandler::getExtensionFromContentType(const std::string& contentT
 bool PostHandler::isSupportedContentType(const std::string& contentType)
 {
 		return (contentType.find("text/plain") != std::string::npos ||
+                contentType.find("text/css") != std::string::npos ||
 				contentType.find("image/jpeg") != std::string::npos ||
 				contentType.find("image/png") != std::string::npos ||
 				contentType.find("image/gif") != std::string::npos ||
-				contentType.find("text/css") != std::string::npos ||
 				contentType.find("application/javascript") != std::string::npos ||
+				contentType.find("application/json") != std::string::npos ||
 				contentType.find("application/octet-stream") != std::string::npos);
 }
 
