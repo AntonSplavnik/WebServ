@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 17:52:46 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 18:14:30 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,20 +153,8 @@ void Server::handleClientRead(int fd){
 		else {
 
 			updateClientActivity(fd);
-/*
-			_clients[fd].requestData += buffer;
-			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
-				return;
-			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
- */
-
-			  updateClientActivity(fd);  // Line 191 - keep this
-
-			_clients[fd].requestData += buffer;
-
-			  std::cout << "[DEBUG AFTER +=] requestData length is now: "
-						<< _clients[fd].requestData.length()
-						<< " (added " << bytes << " bytes)" << std::endl;
+			
+			_clients[fd].requestData.append(buffer, bytes);
 
 			// Check if headers complete
 			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
@@ -201,6 +189,8 @@ void Server::handleClientRead(int fd){
 				_clients[fd].state = SENDING_RESPONSE;
 				_clients[fd].shouldClose = true;
 				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+
+			updateClientActivity(fd);
 
 			}else{
 				Methods method = httpRequest.getMethodEnum();
@@ -436,7 +426,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	}
 
 	std::cout << "[DEBUG] UploadPath: " << matchedLocation->upload_store << std::endl;
-	PostHandler post(matchedLocation->upload_store);
+	PostHandler post(matchedLocation->upload_store + '/');
 
 	std::string contentType = request.getContenType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
