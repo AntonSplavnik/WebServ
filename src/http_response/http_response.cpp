@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/03 14:30:46 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/12 13:17:37 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ HttpResponse::HttpResponse(HttpRequest request)
 
 HttpResponse::~HttpResponse(){}
 
+
 fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 
 	size_t dotPos = filePath.find_last_of('.');
@@ -77,6 +78,8 @@ fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 	else if (extension == "jpg" || extension == "jpeg") return JPEG;
 	else if (extension == "txt") return TXT;
 	else if (extension == "png") return PNG;
+	else if (extension == "js") return JS;
+
 	else return UNKNOWN;
 }
 
@@ -84,14 +87,14 @@ std::string HttpResponse::getContentType() {
 
 	fileExtentions extention = extractFileExtension(_filePath);
 
-	switch (extention)
-	{
-	case HTML: return "text/html";
-	case PDF: return "application/pdf";
-	case JPEG: return "image/jpeg";
-	case TXT: return "text/plaine";
-	case PNG: return "image/png";
-	default: return "application/octet-stream";
+	switch (extention) {
+		case JPEG: return "image/jpeg";
+		case HTML: return "text/html";
+		case TXT: return "text/plaine";
+		case JS: return "text/javascript";
+		case PNG: return "image/png";
+		case PDF: return "application/pdf";
+		default: return "application/octet-stream";
 	}
 }
 
@@ -119,7 +122,7 @@ std::string HttpResponse::getReasonPhrase() {
 	}
 }
 
-std::string HttpResponse::getTimeNow(){
+std::string HttpResponse::getTimeNow() {
 
 	time_t now = time(0);
 	struct tm* gmtTime = gmtime(&now);
@@ -130,8 +133,7 @@ std::string HttpResponse::getTimeNow(){
 }
 
 
-
-void HttpResponse::generateGetResponse(){
+void HttpResponse::generateGetResponse() {
 
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
@@ -144,7 +146,7 @@ void HttpResponse::generateGetResponse(){
 	_response = oss.str();
 }
 
-void HttpResponse::generateDeleteResponse(){
+void HttpResponse::generateDeleteResponse() {
 
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
@@ -156,9 +158,9 @@ void HttpResponse::generateDeleteResponse(){
 	_response = oss.str();
 }
 
-void	generateErrorResponse(){}
+void generateErrorResponse() {}
 
-void HttpResponse::generateResponse(int statusCode){
+void HttpResponse::generateResponse(int statusCode) {
 
 	_method = _request.getMethodEnum();
 	_statusCode = statusCode;
@@ -192,7 +194,7 @@ void HttpResponse::generateResponse(int statusCode){
 		break;
 	}
 }
-std::string HttpResponse::extractBody(){
+std::string HttpResponse::extractBody() {
 	std::ifstream file(_filePath, std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
@@ -200,19 +202,19 @@ std::string HttpResponse::extractBody(){
 }
 
 
-void HttpResponse::setBody(std::string body){_body = body;}
+void HttpResponse::setBody(std::string body) {_body = body;}
 void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
-void HttpResponse::setVersion(float version){_serverVersion = version;}
-void HttpResponse::setStatusCode(int statusCode){_statusCode = statusCode;}
+void HttpResponse::setVersion(float version) {_serverVersion = version;}
+void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(std::string path) {_filePath = path;}
 
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
-std::string HttpResponse::getBody() const{return _body;}
-std::string HttpResponse::getPath()const{return _filePath;}
-float HttpResponse::getVersion()const{return _serverVersion;}
-int HttpResponse::getStatusCode()const{return _statusCode;}
-std::string HttpResponse::getResponse() const{return _response;}
+std::string HttpResponse::getBody() const {return _body;}
+std::string HttpResponse::getPath()const {return _filePath;}
+float HttpResponse::getVersion() const {return _serverVersion;}
+int HttpResponse::getStatusCode() const {return _statusCode;}
+std::string HttpResponse::getResponse() const {return _response;}
 
 /*
   HTTP/1.1 200 OK

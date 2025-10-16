@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/10/03 14:26:16 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/12 13:15:21 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ enum fileExtentions{
 	JPEG,
 	TXT,
 	PNG,
+	JS,
 	UNKNOWN
 };
 

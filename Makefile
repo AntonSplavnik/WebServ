@@ -6,7 +6,7 @@
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
-#    Updated: 2025/10/03 12:20:11 by antonsplavn      ###   ########.fr        #
+#    Updated: 2025/10/11 16:19:11 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,8 +16,8 @@ NAME		= webserv
 # Compiler and flags
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
-DEBUG_FLAGS	= -g
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response -Isrc/http_message
+DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
+INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http -Isrc/http_request -Isrc/http_response -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
 
 # Directories
 SRC_DIR		= src
@@ -25,27 +25,42 @@ OBJ_DIR		= obj
 SERVER_DIR	= $(SRC_DIR)/server
 SOCKET_DIR	= $(SRC_DIR)/socket
 CONFIG_DIR	= $(SRC_DIR)/config
+HTTP_DIR	= $(SRC_DIR)/http
+HELPERS_DIR	= $(SRC_DIR)/helpers
 HTTP_REQ_DIR	= $(SRC_DIR)/http_request
 HTTP_RES_DIR	= $(SRC_DIR)/http_response
-HTTP_MSG_DIR	= $(SRC_DIR)/http_message
+SERVER_MGR_DIR	= $(SRC_DIR)/server_controller
+LOGGING_DIR	= $(SRC_DIR)/logging
+EXCEPTIONS_DIR	= $(SRC_DIR)/exceptions
 
 # Source files
 SRC_FILES	= main.cpp \
 			  $(SERVER_DIR)/server.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
 			  $(CONFIG_DIR)/config.cpp \
+			  $(CONFIG_DIR)/directives_parsers.cpp \
 			  $(HTTP_REQ_DIR)/http_request.cpp \
 			  $(HTTP_RES_DIR)/http_response.cpp \
+			  $(SERVER_MGR_DIR)/server_controller.cpp \
+			  $(LOGGING_DIR)/logger.cpp \
+			  $(HELPERS_DIR)/helpers.cpp
+
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
 # Header files for dependencies
 HEADERS		= $(SERVER_DIR)/server.hpp \
+			  $(SERVER_DIR)/client_info.hpp \
 			  $(SOCKET_DIR)/socket.hpp \
 			  $(CONFIG_DIR)/config.hpp \
+			  $(HTTP_DIR)/http.hpp \
 			  $(HTTP_REQ_DIR)/http_request.hpp \
 			  $(HTTP_RES_DIR)/http_response.hpp \
+			  $(SERVER_MGR_DIR)/server_controller.hpp \
+			  $(LOGGING_DIR)/logger.hpp \
+			  $(EXCEPTIONS_DIR)/config_exceptions.hpp \
+			  $(HELPERS_DIR)/helpers.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

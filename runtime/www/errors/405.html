@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 - Forbidden</title>
+    <title>405 - Method Not Allowed</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -15,6 +15,7 @@
             justify-content: center;
             align-items: center;
         }
+
         .error-container {
             text-align: center;
             color: white;
@@ -25,6 +26,7 @@
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
+
         .error-code {
             font-size: 8rem;
             font-weight: bold;
@@ -32,27 +34,34 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             animation: glow 2s ease-in-out infinite alternate;
         }
+
         .error-message {
             font-size: 2rem;
             margin: 20px 0;
             opacity: 0.9;
         }
+
         .error-description {
             font-size: 1.2rem;
             opacity: 0.7;
             margin-bottom: 30px;
         }
+
         @keyframes glow {
-            from { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
-            to { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.3); }
+            from {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="error-container">
-        <h1 class="error-code">403</h1>
-        <h2 class="error-message">Forbidden</h2>
-        <p class="error-description">You don't have permission to access this resource.</p>
-    </div>
+<div class="error-container">
+    <h1 class="error-code">405</h1>
+    <h2 class="error-message">Method Not Allowed</h2>
+    <p class="error-description">The requested method is not supported for this resource.</p>
+</div>
 </body>
 </html>
