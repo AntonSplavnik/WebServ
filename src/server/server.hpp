@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 15:44:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 20:42:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include "client_info.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "post_handler.hpp"
 #include "config.hpp"
 
 class Server {

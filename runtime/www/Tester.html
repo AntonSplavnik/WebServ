@@ -26,8 +26,14 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         h1 {
@@ -75,10 +81,6 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
         #output {
             background: #2d3748;
             color: #48bb78;
@@ -87,10 +89,11 @@
             font-family: 'Courier New', monospace;
             font-size: 14px;
             margin-top: 15px;
-            min-height: 100px;
+            min-height: 120px;
             max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
+            transition: all 0.3s ease-in-out;
         }
 
         .counter {
@@ -104,26 +107,20 @@
             margin: 10px 0;
         }
 
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 4px solid #667eea;
+            border-top: 4px solid transparent;
             border-radius: 50%;
-            margin-right: 8px;
-            animation: pulse 2s infinite;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
         }
 
-        .status-indicator.active {
-            background: #48bb78;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .info-grid {
@@ -154,67 +151,51 @@
         <p class="subtitle">HTTP Server Implementation Testing Suite</p>
 
         <div class="test-section">
-            <h2><span class="status-indicator active"></span>Server Status</h2>
-            <div class="info-grid">
-                <div class="info-card">
-                    <strong>Protocol</strong>
-                    <span id="protocol">Loading...</span>
-                </div>
-                <div class="info-card">
-                    <strong>Host</strong>
-                    <span id="host">Loading...</span>
-                </div>
-                <div class="info-card">
-                    <strong>Port</strong>
-                    <span id="port">Loading...</span>
-                </div>
-                <div class="info-card">
-                    <strong>User Agent</strong>
-                    <span id="userAgent">Loading...</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="test-section">
-            <h2>🎮 Interactive Tests</h2>
-            <p>Click counter (tests JavaScript execution):</p>
-            <div class="counter" id="counter">0</div>
-            <br>
-            <button onclick="incrementCounter()">Increment</button>
-            <button onclick="resetCounter()">Reset</button>
-        </div>
-
-        <div class="test-section">
             <h2>📡 Fetch Tests</h2>
-            <p>Test different HTTP scenarios:</p>
-            <button onclick="testCurrentPage()">Fetch This Page</button>
-            <button onclick="testNonExistent()">Test 404</button>
-            <button onclick="testLargeRequest()">Test Headers</button>
+            <button onclick="testCurrentPage()">GET Current Page</button>
+            <button onclick="testNonExistent()">GET 404</button>
+            <button onclick="testLargeRequest()">GET with Headers</button>
+            <button onclick="testJsonPost()">POST JSON</button>
+            <div class="spinner" id="spinner"></div>
             <div id="output">Console output will appear here...</div>
         </div>
 
         <div class="test-section">
-            <h2>✅ Static Content Tests</h2>
-            <p>These elements test if your server correctly serves different file types:</p>
-            <ul style="list-style-position: inside; color: #666;">
-                <li>✓ HTML document (this page)</li>
-                <li>✓ CSS styling (visible layout)</li>
-                <li>✓ JavaScript execution (interactive elements)</li>
-            </ul>
+            <h2>📂 File Upload Test (POST)</h2>
+            <form id="uploadForm" enctype="multipart/form-data" onsubmit="uploadFiles(event)">
+                <input type="file" id="fileInput" name="file" multiple required>
+                <button type="submit">Upload File(s)</button>
+            </form>
+            <p id="uploadStatus"></p>
+        </div>
+
+        <div class="test-section">
+            <h2>🎮 Interactive Counter</h2>
+            <div class="counter" id="counter">0</div><br>
+            <button onclick="incrementCounter()">Increment</button>
+            <button onclick="resetCounter()">Reset</button>
         </div>
     </div>
 
     <script>
         let counter = 0;
 
+        const spinner = document.getElementById('spinner');
+
+        function showSpinner(show) {
+            spinner.style.display = show ? 'inline-block' : 'none';
+        }
+
         function log(message, type = 'info') {
             const output = document.getElementById('output');
             const timestamp = new Date().toLocaleTimeString();
             const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
-            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            const line = `[${timestamp}] ${prefix} ${message}\n`;
+            output.textContent += line;
             output.scrollTop = output.scrollHeight;
         }
 
+        // Counter demo
         function incrementCounter() {
             counter++;
             document.getElementById('counter').textContent = counter;
@@ -224,64 +205,102 @@
         function resetCounter() {
             counter = 0;
             document.getElementById('counter').textContent = counter;
-            log('Counter reset to 0', 'info');
+            log('Counter reset to 0');
         }
 
+        // GET Tests
         function testCurrentPage() {
-            log('Attempting to fetch current page...');
+            showSpinner(true);
+            log('Fetching current page...');
             fetch(window.location.href)
-                .then(response => {
-                    log(`Status: ${response.status} ${response.statusText}`, 'success');
-                    log(`Content-Type: ${response.headers.get('content-type')}`);
-                    return response.text();
+                .then(r => {
+                    log(`Status: ${r.status} ${r.statusText}`, 'success');
+                    showSpinner(false);
+                    return r.text();
                 })
-                .then(data => {
-                    log(`Received ${data.length} bytes of data`, 'success');
-                })
-                .catch(error => {
-                    log(`Error: ${error.message}`, 'error');
+                .then(data => log(`Received ${data.length} bytes`, 'success'))
+                .catch(e => {
+                    log(e.message, 'error');
+                    showSpinner(false);
                 });
         }
 
         function testNonExistent() {
-            log('Testing 404 error handling...');
+            showSpinner(true);
+            log('Testing 404...');
             fetch('/nonexistent-page.html')
-                .then(response => {
-                    log(`Status: ${response.status} ${response.statusText}`,
-                        response.status === 404 ? 'success' : 'error');
+                .then(r => {
+                    log(`Status: ${r.status}`, r.status === 404 ? 'success' : 'error');
+                    showSpinner(false);
                 })
-                .catch(error => {
-                    log(`Error: ${error.message}`, 'error');
+                .catch(e => {
+                    log(e.message, 'error');
+                    showSpinner(false);
                 });
         }
 
         function testLargeRequest() {
-            log('Testing request with headers...');
+            showSpinner(true);
+            log('Sending GET with headers...');
             fetch(window.location.href, {
-                headers: {
-                    'X-Test-Header': 'WebservTest',
-                    'X-Custom-Value': '12345'
-                }
+                headers: { 'X-Test-Header': 'WebservTest', 'X-Custom': '12345' }
             })
-            .then(response => {
-                log(`Status: ${response.status}`, 'success');
-                log('Headers sent successfully');
+                .then(r => {
+                    log(`Status: ${r.status}`, 'success');
+                    showSpinner(false);
+                })
+                .catch(e => {
+                    log(e.message, 'error');
+                    showSpinner(false);
+                });
+        }
+
+        // POST JSON
+        function testJsonPost() {
+            showSpinner(true);
+            log('Sending POST with JSON...');
+            fetch('/uploads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: "Webserv", time: Date.now() })
             })
-            .catch(error => {
-                log(`Error: ${error.message}`, 'error');
+            .then(r => {
+                log(`Status: ${r.status}`, 'success');
+                showSpinner(false);
+                return r.text();
+            })
+            .then(data => log(`Response: ${data}`, 'info'))
+            .catch(e => {
+                log(e.message, 'error');
+                showSpinner(false);
             });
         }
 
-        window.onload = function() {
-            document.getElementById('protocol').textContent = window.location.protocol;
-            document.getElementById('host').textContent = window.location.hostname || 'localhost';
-            document.getElementById('port').textContent = window.location.port || '80';
-            document.getElementById('userAgent').textContent = navigator.userAgent.split(' ')[0];
+        // Multipart upload
+        function uploadFiles(event) {
+            event.preventDefault();
+            showSpinner(true);
+            const form = document.getElementById('uploadForm');
+            const formData = new FormData(form);
+            log('Uploading file(s)...');
 
-            log('Page loaded successfully! 🎉', 'success');
-            log('Server is responding correctly', 'success');
-            log('All static resources loaded', 'success');
-        };
+            fetch('/uploads', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                log(`Status: ${r.status}`, r.ok ? 'success' : 'error');
+                showSpinner(false);
+                return r.text();
+            })
+            .then(data => log(`Upload response: ${data}`, 'info'))
+            .catch(e => {
+                log(`Upload error: ${e.message}`, 'error');
+                showSpinner(false);
+            });
+        }
+
+        window.onload = () => log('Test page ready! 🎉', 'success');
     </script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 15:43:25 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 18:14:30 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,16 +153,8 @@ void Server::handleClientRead(int fd){
 		else {
 
 			updateClientActivity(fd);
-
-			_clients[fd].requestData += buffer;
-			if(_clients[fd].requestData.find("\r\n\r\n") == std::string::npos)
-				return;
-			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
-
-			/*
-			  updateClientActivity(fd);  // Line 191 - keep this
-
-			_clients[fd].requestData += buffer;
+			
+			_clients[fd].requestData.append(buffer, bytes);
 
 			// Check if headers complete
 			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
@@ -171,22 +163,22 @@ void Server::handleClientRead(int fd){
 
 			// Parse headers to get Content-Length
 			HttpRequest tempParser;
-			tempParser.parseHeaders(_clients[fd].requestData);  // Parse headers only
-			int contentLength = tempParser.getContentLength();
+			tempParser.partialParseRequest(_clients[fd].requestData);
+			size_t contentLength = tempParser.getContentLength();
 
 			// Check if full body received
 			size_t bodyStart = headerEnd + 4;
 			size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
+
+			std::cout << "[DEBUG] Content-Length: " << contentLength
+			<< ", Body received: " << bodyReceived
+			<< ", Total data: " << _clients[fd].requestData.length() << std::endl;
+
 			if(bodyReceived < contentLength)
 				return;  // Keep receiving body
 
-			// Now full request is received
-			HttpRequest httpRequest;
-			httpRequest.parseRequest(_clients[fd].requestData);
-			*/
 
 			// Full request is received, prepare response
-
 			HttpRequest httpRequest;
 			httpRequest.parseRequest(_clients[fd].requestData);
 			if(!httpRequest.getStatus()){
@@ -197,6 +189,8 @@ void Server::handleClientRead(int fd){
 				_clients[fd].state = SENDING_RESPONSE;
 				_clients[fd].shouldClose = true;
 				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+
+			updateClientActivity(fd);
 
 			}else{
 				Methods method = httpRequest.getMethodEnum();
@@ -294,9 +288,9 @@ void Server::disconectClient(short fd){
 }
 std::string Server::mapPath(const HttpRequest& request){
 
-	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/";
+	std::string localPath = _configData.root;
 	std::string requestPath = request.getPath();
-	std::cout << "requestPath: " << requestPath << std::endl;
+	std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
 
 	return localPath + requestPath;
 }
@@ -361,11 +355,6 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	}
 */
 }
-void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
-
-	(void)request;
-	(void)client;
-
 /*
 	The POST method receives data from the client, processes it, and uses HttpResponse methods to
 	send back a result.
@@ -425,6 +414,35 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 		}
 	}
 */
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+
+	HttpResponse response(request);
+	const LocationConfig* matchedLocation = _configData.findMatchingLocation(request.getPath());
+	if(!matchedLocation){
+		std::cout << "[DEBUG] No matching path found. matchedLocation = NULL" << std::endl;
+		response.generateResponse(403); // Forbidden no upload location configured
+		client.responseData = response.getResponse();
+		return;
+	}
+
+	std::cout << "[DEBUG] UploadPath: " << matchedLocation->upload_store << std::endl;
+	PostHandler post(matchedLocation->upload_store + '/');
+
+	std::string contentType = request.getContenType();
+	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
+	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
+
+	if (contentType.find("multipart/form-data") != std::string::npos) {
+		post.handleMultipart(request, client);
+	}
+	else if (post.isSupportedContentType(contentType)) {
+		post.handleFile(request, client, contentType);
+	}
+	else {
+		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
+		response.generateResponse(415);
+		client.responseData = response.getResponse();
+	}
 }
 /*
 	CGI for GET and POST
@@ -503,8 +521,6 @@ bool Server::validatePath(std::string path){
 		response.generateResponse(404);
 		client.responseData = response.getResponse();
 	}
-
-
 /*
 	DELETE Method Purpose
 

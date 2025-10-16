@@ -6,7 +6,7 @@
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
-#    Updated: 2025/10/11 16:19:11 by antonsplavn      ###   ########.fr        #
+#    Updated: 2025/10/14 14:25:16 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -36,6 +36,7 @@ EXCEPTIONS_DIR	= $(SRC_DIR)/exceptions
 # Source files
 SRC_FILES	= main.cpp \
 			  $(SERVER_DIR)/server.cpp \
+			  $(SERVER_DIR)/post_handler.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
 			  $(CONFIG_DIR)/config.cpp \
 			  $(CONFIG_DIR)/directives_parsers.cpp \
@@ -51,6 +52,7 @@ OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
 # Header files for dependencies
 HEADERS		= $(SERVER_DIR)/server.hpp \
+			  $(SERVER_DIR)/post_handler.hpp \
 			  $(SERVER_DIR)/client_info.hpp \
 			  $(SOCKET_DIR)/socket.hpp \
 			  $(CONFIG_DIR)/config.hpp \
