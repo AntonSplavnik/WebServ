@@ -17,7 +17,8 @@ NAME		= webserv
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http -Isrc/http_request -Isrc/http_response -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
+INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response \
+			  -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
 
 # Directories
 SRC_DIR		= src
@@ -25,7 +26,6 @@ OBJ_DIR		= obj
 SERVER_DIR	= $(SRC_DIR)/server
 SOCKET_DIR	= $(SRC_DIR)/socket
 CONFIG_DIR	= $(SRC_DIR)/config
-HTTP_DIR	= $(SRC_DIR)/http
 HELPERS_DIR	= $(SRC_DIR)/helpers
 HTTP_REQ_DIR	= $(SRC_DIR)/http_request
 HTTP_RES_DIR	= $(SRC_DIR)/http_response
@@ -46,7 +46,6 @@ SRC_FILES	= main.cpp \
 			  $(LOGGING_DIR)/logger.cpp \
 			  $(HELPERS_DIR)/helpers.cpp
 
-
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
@@ -56,7 +55,6 @@ HEADERS		= $(SERVER_DIR)/server.hpp \
 			  $(SERVER_DIR)/client_info.hpp \
 			  $(SOCKET_DIR)/socket.hpp \
 			  $(CONFIG_DIR)/config.hpp \
-			  $(HTTP_DIR)/http.hpp \
 			  $(HTTP_REQ_DIR)/http_request.hpp \
 			  $(HTTP_RES_DIR)/http_response.hpp \
 			  $(SERVER_MGR_DIR)/server_controller.hpp \
@@ -71,7 +69,6 @@ YELLOW		= \033[0;33m
 BLUE		= \033[0;34m
 MAGENTA		= \033[0;35m
 CYAN		= \033[0;36m
-WHITE		= \033[0;37m
 RESET		= \033[0m
 
 # Default target
@@ -83,11 +80,15 @@ $(NAME): $(OBJ_FILES)
 	@$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o $(NAME)
 	@echo "$(GREEN)✓ $(NAME) created successfully!$(RESET)"
 
-# Object file compilation
-$(OBJ_DIR)/%.o: %.cpp $(HEADERS)
-	@mkdir -p $(dir $@)
-	@echo "$(YELLOW)Compiling $<...$(RESET)"
-	@$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+# Object file compilation - define explicit rules for each source file
+define compile_rule
+$(OBJ_DIR)/$(1:.cpp=.o): $(1) $(HEADERS)
+	@mkdir -p $$(dir $$@)
+	@echo "$$(YELLOW)Compiling $$<...$$(RESET)"
+	@$$(CXX) $$(CXXFLAGS) $$(INCLUDES) -c $$< -o $$@
+endef
+
+$(foreach src,$(SRC_FILES),$(eval $(call compile_rule,$(src))))
 
 # Debug build
 debug: CXXFLAGS += $(DEBUG_FLAGS)
@@ -133,9 +134,6 @@ help:
 	@echo "  $(GREEN)test$(RESET)     - Run basic functionality test"
 	@echo "  $(GREEN)valgrind$(RESET) - Run with valgrind memory check"
 	@echo "  $(GREEN)help$(RESET)     - Show this help message"
-
-# Force rebuild if Makefile changes
-$(OBJ_FILES): Makefile
 
 # Phony targets
 .PHONY: all clean fclean re debug test valgrind help
