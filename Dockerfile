@@ -12,8 +12,11 @@ COPY . .
 # Build your webserver
 RUN make -j$(nproc)
 
-# Expose the HTTP port
-EXPOSE 8080
+# Create required runtime directories
+RUN mkdir -p runtime/www/uploads runtime/logs runtime/www/admin
+
+# Expose the HTTP ports
+EXPOSE 8080 8081 9090
 
 # Run the webserver
-CMD ["./webserv"]
+CMD ["./webserv", "working.conf"]
