@@ -15,6 +15,8 @@
 
 #include <vector>
 #include <map>
+#include <cstring>
+#include <cerrno>
 #include <poll.h>
 #include "socket.hpp"
 #include "client_info.hpp"

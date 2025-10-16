@@ -1,0 +1,11 @@
+  .git
+  .vscode
+  obj/
+  *.o
+  webserv
+  test*.bin
+  tests/
+  runtime/www/uploads/
+  .DS_Store
+  *.swp
+  *.swo

@@ -18,6 +18,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <algorithm>
 #include "http_request.hpp"
 
 enum fileExtentions{

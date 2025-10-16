@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 15:44:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/16 19:03:09 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ void ServerController::stop(){
 
 	for (size_t i = 0; i < _servers.size(); i++){
 		delete(_servers[i]);
-		_servers[i] = nullptr;
+		_servers[i] = NULL;
 	}
 	_servers.clear();
 	_pollFds.clear();
@@ -78,7 +78,7 @@ Server* ServerController::findServerForFd(int fd){
 			if(it->first == fd) return srv;
 		}
 	}
-	return nullptr;
+	return NULL;
 }
 
 void ServerController::rebuildPollFds(){
