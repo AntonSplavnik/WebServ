@@ -484,10 +484,10 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	CGI turns your server into a platform that can run any program to generate web pages
 	dynamically.
 */
-bool Server::validatePath(std::string path){
-    const LocationConfig* location = _configData.findMatchingLocation("/uploads");
+bool Server::validatePath(std::string path, const HttpRequest& request){
+    const LocationConfig* location = _configData.findMatchingLocation(request.getPath());
 	if (!location || location->upload_store.empty()) {
-		std::cout << "[DEBUG] No upload location found" << std::endl;
+		std::cout << "[DEBUG] No matching location found" << request.getPath() << std::endl;
 		return false;
     }
 	//security check
@@ -516,7 +516,7 @@ bool Server::validatePath(std::string path){
 
 	std::string mappedPath = mapPath(request);
 	HttpResponse response(request);
-	if (!validatePath(mappedPath)){
+	if (!validatePath(mappedPath, request)){
 		response.generateResponse(403);
 		client.responseData = response.getResponse();
 		std::cout << "Error: 403 Forbidden" << std::endl;

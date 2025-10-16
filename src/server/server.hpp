@@ -51,7 +51,7 @@ class Server {
 		void handlePOST(const HttpRequest& request, ClientInfo& client);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client);
 
-		bool validatePath(std::string path);
+		bool validatePath(std::string path, const HttpRequest& request);
 		std::string mapPath(const HttpRequest& request);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
