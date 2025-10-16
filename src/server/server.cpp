@@ -485,8 +485,29 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	dynamically.
 */
 bool Server::validatePath(std::string path){
+    const LocationConfig* location = _configData.findMatchingLocation("/uploads");
+	if (!location || location->upload_store.empty()) {
+		std::cout << "[DEBUG] No upload location found" << std::endl;
+		return false;
+    }
+	//security check
+	if (path.substr(0, location->upload_store.length()) != location->upload_store) {
+		std::cout << "[DEBUG] Path is not in upload directory" << std::endl;
+		return false;
+	}
 
-	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/uploads");
+	bool deleteAllowed = false;
+	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
+		if (location->allow_methods[i] == "DELETE") {
+			deleteAllowed = true;
+			break;
+		}
+	}
+	if (!deleteAllowed) {
+		std::cout << "[DEBUG] DELETE method not allowed for this location" << std::endl;
+		return false;
+    }
+	return true;
 }
 /**
  * This function only handles files, but not directories.
@@ -508,7 +529,7 @@ bool Server::validatePath(std::string path){
 		if(std::remove(mappedPath.c_str()) == 0){
 			response.generateResponse(204);
 			client.responseData = response.getResponse();
-			std::cout << "Ok" << std::endl;
+			std::cout << "Succes: 204 file deleted" << std::endl;
 		}
 		else{
 			response.generateResponse(403);
