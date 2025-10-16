@@ -18,7 +18,7 @@
 #include <fstream>
 #include <string>
 #include <map>
-#include "http_request.hpp"
+#include "../http_request/http_request.hpp"
 
 enum fileExtentions{
 	HTML,
@@ -39,6 +39,7 @@ class HttpResponse {
 		void generateResponse(int statusCode);
 		void generateGetResponse();
 		void generateDeleteResponse();
+		void generateCgiResponse(const std::string &cgiOutput);
 
 		std::string extractBody();
 		std::string	getTimeNow();

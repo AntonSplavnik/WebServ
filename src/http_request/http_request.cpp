@@ -154,6 +154,9 @@ void HttpRequest::parseRequestLine(){
 		return;
 	}
 	_methodEnum = stringToEnum(_method);
+	isCGIRequest();
+	mapPath();
+	extractQueryString();
 }
 
 void HttpRequest::parseHeaders(){
@@ -253,3 +256,36 @@ std::string HttpRequest::getContenType() const {
 	else
 		return "Keep-alive";
 }
+
+void HttpRequest::extractQueryString(){
+	size_t pos = _path.find('?');
+	if (pos != std::string::npos && pos + 1 < _path.length()) {
+		_queryString = _path.substr(pos + 1);
+	}
+	std::cout << "_queryString: " << _queryString << std::endl;
+}
+
+void HttpRequest::isCGIRequest() {
+	_isCgiRequest =  _path.find("/cgi-bin/") == 0;
+}
+
+void HttpRequest::mapPath(){
+
+	std::string localPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www";
+
+	// Remove query parameters from path (everything after '?')
+	size_t queryPos = _path.find('?');
+	if (queryPos != std::string::npos) {
+		_path = _path.substr(0, queryPos);
+	}
+
+	std::cout << "requestPath: " << _path << std::endl;
+
+	if (_path == "/" || _path.empty()) {
+		_path = "/www/index.html";
+	}
+
+	_mappedPath = localPath + _path;
+	std::cout << "_mappedPath: " << _mappedPath << std::endl;
+}
+

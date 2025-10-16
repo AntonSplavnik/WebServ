@@ -13,14 +13,15 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <poll.h>
-#include "socket.hpp"
-#include "client_info.hpp"
-#include "http_request.hpp"
-#include "http_response.hpp"
-#include "config.hpp"
+#include "../socket/socket.hpp"
+#include "../config/config.hpp"
+#include "../http_request/http_request.hpp"
+#include "../http_response/http_response.hpp"
+#include "../cgi/cgi.hpp"
 
 class Server {
 
@@ -34,6 +35,7 @@ class Server {
 
 		const std::vector<Socket>& getListeningSockets() const;
 		std::map<int, ClientInfo>& getClients();
+        std::map<int, Cgi*>& getCgiMap();
 
 	private:
 
@@ -54,6 +56,9 @@ class Server {
 		std::string mapPath(const HttpRequest& request);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
+                // CGI handling
+		void handleCgiCompletion(int fd);
+
 		// Utility
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
@@ -61,6 +66,7 @@ class Server {
 		// Config _config;
 		std::vector<Socket>			 _listeningSockets;
 		std::map<int, ClientInfo>	_clients;
+	    std::map<int, Cgi*>			_cgiMap;
 		const ConfigData			_configData;
 };
 

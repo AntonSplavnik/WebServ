@@ -61,22 +61,21 @@ void ServerController::checkClientTimeouts(Server& server){
 
 Server* ServerController::findServerForFd(int fd){
 
-	for(size_t i = 0; i < _servers.size(); i++){
+	for(size_t si = 0; si < _servers.size(); ++si){
 
-		Server* srv = _servers[i];
-		std::vector<Socket> listeners = srv->getListeningSockets();
+		Server* srv = _servers[si];
+
+		const std::vector<Socket>& listeners = srv->getListeningSockets();
+		for (size_t li = 0; li < listeners.size(); ++li)
+		{
+			if(listeners[li].getFd() == fd) return srv;
+		}
+
 		std::map<int, ClientInfo>& clients = srv->getClients();
+		if (clients.find(fd) != clients.end()) return srv;
 
-		for (size_t i = 0; i < listeners.size(); i++)
-		{
-			if(listeners[i].getFd() == fd) return srv;
-		}
-
-		std::map<int, ClientInfo>::iterator it = clients.begin();
-		for(; it != clients.end(); ++it)
-		{
-			if(it->first == fd) return srv;
-		}
+		std::map<int, Cgi*>& cgis = srv->getCgiMap();
+		if (cgis.find(fd) != cgis.end()) return srv;
 	}
 	return nullptr;
 }
@@ -88,6 +87,7 @@ void ServerController::rebuildPollFds(){
 	for (size_t i = 0; i < _servers.size(); i++){
 
 		std::map<int, ClientInfo>& clients = _servers[i]->getClients();
+
 		std::map<int, ClientInfo>::iterator it = clients.begin();
 		for(; it != clients.end(); ++it)
 		{
@@ -100,7 +100,17 @@ void ServerController::rebuildPollFds(){
 
 			std::cout << "Added client socket FD " << client.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
+		std::map<int, Cgi*>& cgis = _servers[i]->getCgiMap();
+		for (std::map<int, Cgi*>::iterator cit = cgis.begin(); cit != cgis.end(); ++cit) {
+			struct pollfd p;
+			p.fd = cit->first;
+			p.events = POLLIN; // Always monitor for output from CGI
+			p.revents = 0;
+			_pollFds.push_back(p);
+			std::cout << "Added CGI socket FD " << p.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		}
 	}
+
 }
 
 

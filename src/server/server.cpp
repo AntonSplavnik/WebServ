@@ -11,10 +11,13 @@
 /* ************************************************************************** */
 
 #include "server.hpp"
-#include "config.hpp"
-#include "socket.hpp"
+#include "../config/config.hpp"
+#include "../socket/socket.hpp"
+#include "../cgi/cgi.hpp"
+#include <iostream>
 #include <ctime>
 #include <fstream>
+#include <errno.h>
 
 /* - initialize() - Create and configure the listening socket using your
    Socket class
@@ -159,32 +162,6 @@ void Server::handleClientRead(int fd){
 				return;
 			std::cout << "Request is received from FD " << fd << ":\n" << _clients[fd].requestData << std::endl;
 
-			/*
-			  updateClientActivity(fd);  // Line 191 - keep this
-
-			_clients[fd].requestData += buffer;
-
-			// Check if headers complete
-			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
-			if(headerEnd == std::string::npos)
-				return;  // Keep receiving headers
-
-			// Parse headers to get Content-Length
-			HttpRequest tempParser;
-			tempParser.parseHeaders(_clients[fd].requestData);  // Parse headers only
-			int contentLength = tempParser.getContentLength();
-
-			// Check if full body received
-			size_t bodyStart = headerEnd + 4;
-			size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
-			if(bodyReceived < contentLength)
-				return;  // Keep receiving body
-
-			// Now full request is received
-			HttpRequest httpRequest;
-			httpRequest.parseRequest(_clients[fd].requestData);
-			*/
-
 			// Full request is received, prepare response
 
 			HttpRequest httpRequest;
@@ -199,6 +176,31 @@ void Server::handleClientRead(int fd){
 				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
 
 			}else{
+				if (httpRequest.getIsCgiRequest())
+				{
+					std::cout << "CGI handling:" << std::endl;
+					std::string Path = httpRequest.getPath();
+					std::string scriptPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www" + Path; // TODO: take from config and map
+					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd);
+					if (!cgi->start()) {
+						// Failed to start CGI → send 500
+						HttpResponse resp(httpRequest);
+						resp.generateResponse(500);
+						_clients[fd].responseData = resp.getResponse();
+						_clients[fd].state = SENDING_RESPONSE;
+						delete cgi;
+						return;
+					}
+					// Register CGI process
+					_cgiMap[cgi->outFd] = cgi;
+					_clients[fd].lastActivity = time(NULL);
+					_clients[fd].state = WAITING_CGI;
+					std::cout << "Spawned CGI pid=" << cgi->pid
+							  << " outFd=" << cgi->outFd
+							  << " for client FD=" << fd << std::endl;
+					std::cout << "clients state: " << _clients[fd].state       << std::endl;
+					return;
+				}
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd]); break;
@@ -262,6 +264,23 @@ void Server::handleClientWrite(int fd){
 		}
 	}
 }
+
+void Server::handleCgiCompletion(int fd) {
+	Cgi* cgi = _cgiMap[fd];
+	if (!cgi->handleRead()) {
+		std::cout << "[Server] Erasing CGI FD " << fd << " from _cgiMap" << std::endl;
+		int clientFd = cgi->getClientFd();
+		_cgiMap.erase(fd);
+		delete cgi;
+		// Set client state to SENDING_RESPONSE if client still exists
+		if (_clients.find(clientFd) != _clients.end()) {
+			_clients[clientFd].state = SENDING_RESPONSE;
+			std::cout << "[DEBUG] Switched client FD " << clientFd
+					  << " to POLLOUT mode after CGI complete" << std::endl;
+		}
+	}
+}
+
 void Server::handleEvent(int fd, short revents) {
 
 	int listenFdIndex = isListeningSocket(fd);
@@ -271,6 +290,11 @@ void Server::handleEvent(int fd, short revents) {
 		}
 	} else {
 		// Client socket
+        if ((revents & POLLIN) && (_cgiMap.find(fd) != _cgiMap.end())) {
+          std::cout << "CGI output event on FD " << fd << std::endl;
+        	handleCgiCompletion(fd);
+            return;
+        }
 		if (revents & POLLIN) {
 			handleClientRead(fd);
 		}
@@ -294,7 +318,7 @@ void Server::disconectClient(short fd){
 }
 std::string Server::mapPath(const HttpRequest& request){
 
-	std::string localPath = "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/";
+	std::string localPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www";
 	std::string requestPath = request.getPath();
 	std::cout << "requestPath: " << requestPath << std::endl;
 
@@ -468,7 +492,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 */
 bool Server::validatePath(std::string path){
 
-	return (path == "/Users/antonsplavnik/Documents/Programming/42/Core/5/WebServ/runtime/www/uploads");
+	return (path == "/Users/tghnx1/Desktop/42/Webserv42/runtime/www/uploads");
 }
 /**
  * This function only handles files, but not directories.
@@ -601,3 +625,4 @@ void Server::shutdown(){
 }
 const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
 std::map<int, ClientInfo>& Server::getClients() {return _clients;}
+std::map<int, Cgi*>& Server::getCgiMap() { return _cgiMap;}

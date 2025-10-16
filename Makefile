@@ -17,7 +17,7 @@ NAME		= webserv
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http -Isrc/http_request -Isrc/http_response -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
+INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http -Isrc/http_request -Isrc/http_response -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions -Isrc/cgi
 
 # Directories
 SRC_DIR		= src
@@ -32,6 +32,7 @@ HTTP_RES_DIR	= $(SRC_DIR)/http_response
 SERVER_MGR_DIR	= $(SRC_DIR)/server_controller
 LOGGING_DIR	= $(SRC_DIR)/logging
 EXCEPTIONS_DIR	= $(SRC_DIR)/exceptions
+CGI_DIR		= $(SRC_DIR)/cgi
 
 # Source files
 SRC_FILES	= main.cpp \
@@ -43,7 +44,8 @@ SRC_FILES	= main.cpp \
 			  $(HTTP_RES_DIR)/http_response.cpp \
 			  $(SERVER_MGR_DIR)/server_controller.cpp \
 			  $(LOGGING_DIR)/logger.cpp \
-			  $(HELPERS_DIR)/helpers.cpp
+			  $(HELPERS_DIR)/helpers.cpp \
+			  $(CGI_DIR)/cgi.cpp
 
 
 # Object files
@@ -60,7 +62,8 @@ HEADERS		= $(SERVER_DIR)/server.hpp \
 			  $(SERVER_MGR_DIR)/server_controller.hpp \
 			  $(LOGGING_DIR)/logger.hpp \
 			  $(EXCEPTIONS_DIR)/config_exceptions.hpp \
-			  $(HELPERS_DIR)/helpers.hpp
+			  $(HELPERS_DIR)/helpers.hpp \
+			  $(CGI_DIR)/cgi.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

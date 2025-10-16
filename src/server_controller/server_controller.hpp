@@ -13,8 +13,9 @@
 #ifndef SERVER_MANAGER
 #define SERVER_MANAGER
 
-#include "server.hpp"
-#include "config.hpp"
+#include "../server/server.hpp"
+#include "../config/config.hpp"
+#include "../cgi/cgi.hpp"
 
 class ServerController{
 

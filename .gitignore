@@ -38,3 +38,4 @@ runtime/logs/
 # Tests / Coverage
 # ────────────────
 tests/*.tmp
+*.xml

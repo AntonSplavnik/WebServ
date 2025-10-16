@@ -160,6 +160,50 @@ void HttpResponse::generateDeleteResponse() {
 
 void generateErrorResponse() {}
 
+void HttpResponse::generateCgiResponse(const std::string &cgiOutput)
+{
+	// --- find header/body separator ---
+	size_t headerEnd = cgiOutput.find("\r\n\r\n");
+	size_t separatorLength = 4;
+	if (headerEnd == std::string::npos) {
+		headerEnd = cgiOutput.find("\n\n");
+		separatorLength = 2;
+	}
+
+	std::string headers = cgiOutput.substr(0, headerEnd);
+	std::string body = cgiOutput.substr(headerEnd + separatorLength);
+
+
+	// --- parse Content-Type from CGI headers ---
+	std::string contentType = "text/html"; // default
+	std::string connection = "keep-alive"; // todo: parse from headers
+	size_t pos = headers.find("Content-Type:");
+	if (pos != std::string::npos) {
+		size_t start = headers.find_first_not_of(" \t", pos + 13);
+		size_t end = headers.find("\n", start);
+		contentType = headers.substr(start, end - start);
+		if (!contentType.empty() && contentType.back() == '\r')
+			contentType.pop_back();
+	}
+
+	// --- compute content length ---
+	std::ostringstream lengthStream;
+	lengthStream << body.size();
+
+	// --- now build final HTTP response ---
+	std::ostringstream oss;
+	oss << "HTTP/1.1 200 OK\r\n";
+	oss << "Date: " << getTimeNow() << "\r\n";
+	oss << "Server: WebServ/1.0\r\n";
+	oss << "Content-Type: " << contentType << "\r\n";
+	oss << "Content-Length: " << body.size() << "\r\n";
+	oss << "Connection: " << connection << "\r\n\r\n";
+
+	oss << body;
+
+	_response = oss.str();
+}
+
 void HttpResponse::generateResponse(int statusCode) {
 
 	_method = _request.getMethodEnum();
@@ -180,7 +224,6 @@ void HttpResponse::generateResponse(int statusCode) {
 	_contentType = getContentType();
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
-
 	switch (_method)
 	{
 	case GET:

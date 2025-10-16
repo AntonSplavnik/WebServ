@@ -17,7 +17,6 @@
 #include <string>
 #include <map>
 #include <sstream>
-#include "client_info.hpp"
 
 enum Methods {
 	GET,
@@ -61,6 +60,10 @@ class HttpRequest{
 		std::string getVersion() const;
 		std::string getContenType() const;
 		const std::map<std::string, std::string>& getHeaders() const;
+        bool getIsCgiRequest() const { return _isCgiRequest; }
+        std::string getNormalizedPath() const { return _normalizedPath; }
+        std::string getMappedPath() const { return _mappedPath; }
+        std::string getQueryString() const { return _queryString; }
 
 		void setMethod(std::string method);
 		void setPath(std::string path);
@@ -77,15 +80,26 @@ class HttpRequest{
 		unsigned long	_contentLength;
 
 		//reqest line
-		std::string	_method;
-		Methods		_methodEnum;
-		std::string	_path;
-		std::string	_version;
+		std::string	_method; // "GET"
+
+		Methods		_methodEnum; //  GET
+		std::string	_path; //  /api/v1/resource?id=123
+        std::string _normalizedPath;     // /api/v1/resource
+        std::string	_mappedPath; // /var/www/html/api/v1/resource
+        std::string _queryString; // id=123
+		std::string	_version; // HTTP/1.1
 
 		//headers
 		std::map<std::string, std::string>	_headers;
-		// std::string query;
+				//"Host": "example.com",
+				//"Content-Type": "application/json",
+				//"User-Agent": "curl/7.68.0"
 		bool _isValid;
+        bool _isCgiRequest;
+
+        void isCGIRequest();
+		void mapPath();
+		void extractQueryString();
 };
 #endif
 
