@@ -28,19 +28,19 @@ class ServerController{
 
 	private:
 
-		void stop();
+		void 	stop();
 		Server* findServerForFd(int fd);
-		void initListeningSockets();
-		void rebuildPollFds();
-		void checkClientTimeouts(Server& server);
-		bool isClientTimedOut(std::map<int, ClientInfo>& clients, int fd);
+		void 	initListeningSockets();
+		void 	rebuildPollFds();
+		void 	checkClientTimeouts(Server& server);
+		bool 	isClientTimedOut(std::map<int, ClientInfo>& clients, int fd);
 
-		std::vector<Server*> _servers;
-		std::vector<struct pollfd> _pollFds;
-		std::vector<ConfigData> _configs;
+		std::vector<Server*> 		_servers;
+		std::vector<struct pollfd>	_pollFds;
+		std::vector<ConfigData>		_configs;
 
-		size_t _listeningSocketCount;
-		bool _running;
+		size_t						_listeningSocketCount;
+		bool						_running;
 };
 
 #endif
