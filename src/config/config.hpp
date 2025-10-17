@@ -38,7 +38,6 @@ static const char *SERVER_DIRECTIVES[] = {
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
 // Default error pages
-<<<<<<< HEAD
 static const char *DEFAULT_ERROR_PAGE_400 = "runtime/www/errors/400.html";
 static const char *DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/403.html";
 static const char *DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/404.html";
@@ -47,16 +46,6 @@ static const char *DEFAULT_ERROR_PAGE_500 = "runtime/www/errors/500.html";
 static const char *DEFAULT_ERROR_PAGE_502 = "runtime/www/errors/502.html";
 static const char *DEFAULT_ERROR_PAGE_503 = "runtime/www/errors/503.html";
 static const char *DEFAULT_ERROR_PAGE_DEFAULT = "runtime/www/errors/default.html";
-
-
-
-
-=======
-#define DEFAULT_ERROR_PAGE_404 "runtime/www/errors/404.html"
-#define DEFAULT_ERROR_PAGE_500 "runtime/www/errors/500.html"
-#define DEFAULT_ERROR_PAGE_403 "runtime/www/errors/403.html"
-#define DEFAULT_ERROR_PAGE_413 "runtime/www/errors/400.html"
->>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 
 struct LocationConfig

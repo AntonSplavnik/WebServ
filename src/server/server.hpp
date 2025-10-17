@@ -19,20 +19,10 @@
 #include <cstring>
 #include <cerrno>
 #include <poll.h>
-<<<<<<< HEAD
 #include "../socket/socket.hpp"
 #include "../config/config.hpp"
-#include "../http_request/http_request.hpp"
 #include "../http_response/http_response.hpp"
 #include "../cgi/cgi.hpp"
-=======
-#include "socket.hpp"
-#include "client_info.hpp"
-#include "http_request.hpp"
-#include "http_response.hpp"
-#include "post_handler.hpp"
-#include "config.hpp"
->>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 class Server {
 
@@ -59,9 +49,9 @@ class Server {
 		void handleClientRead(int indexOfLinstenSocket);
 		void handleClientWrite(int fd);
 
-		void handleGET(const HttpRequest& request, ClientInfo& client);
-		void handlePOST(const HttpRequest& request, ClientInfo& client);
-		void handleDELETE(const HttpRequest& request, ClientInfo& client);
+		void handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
+		void handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
+		void handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 
 		bool validatePath(std::string path);
 		std::string mapPath(const HttpRequest& request);

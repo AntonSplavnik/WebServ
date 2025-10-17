@@ -13,6 +13,8 @@
 #include "server.hpp"
 #include "../config/config.hpp"
 #include "../socket/socket.hpp"
+#include "../server/post_handler.hpp"
+#include "../http_response/http_response.hpp"
 #include "../cgi/cgi.hpp"
 #include <iostream>
 #include <ctime>
@@ -196,11 +198,52 @@ void Server::handleClientRead(int fd){
 			updateClientActivity(fd);
 
 			}else{
-				if (httpRequest.getIsCgiRequest())
+				// Find matching location (BEFORE CGI/static)
+				const LocationConfig* matchedLoc = _configData.findMatchingLocation(httpRequest.getPath());
+				if (!matchedLoc) {
+					std::cerr << "[ERROR] No matching location found for path: " << httpRequest.getPath() << std::endl;
+					HttpResponse resp(httpRequest);
+					resp.generateResponse(404);
+					_clients[fd].responseData = resp.getResponse();
+					_clients[fd].state = SENDING_RESPONSE;
+					return;
+				}
+
+				std::cout << "[INFO] Matched location for " << httpRequest.getPath()
+						  << " → root=" << matchedLoc->root << std::endl;
+				bool isCgi = false;
+				if (matchedLoc) {
+					std::string path = httpRequest.getPath();
+					for (std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin(); it != matchedLoc->cgi_ext.end(); ++it) {
+						if (path.size() >= it->size() &&
+							path.compare(path.size() - it->size(), it->size(), *it) == 0) {
+							isCgi = true;
+							break;
+							}
+					}
+
+				}
+				if (isCgi)
 				{
-					std::cout << "CGI handling:" << std::endl;
-					std::string Path = httpRequest.getPath();
-					std::string scriptPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www" + Path; // TODO: take from config and map
+					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getPath() << std::endl;
+
+					// Step 2: Build script path using location root + request path
+					std::string scriptPath = matchedLoc->root + httpRequest.getPath().substr(matchedLoc->path.size());
+
+
+					// If location defines explicit cgi_path (like /usr/bin/python), use it
+					// If location defines explicit cgi_path (like /usr/bin/python), use it
+					if (!matchedLoc->cgi_path.empty()) {
+						std::cout << "[CGI] Using cgi_path(s): ";
+						for (size_t i = 0; i < matchedLoc->cgi_path.size(); ++i) {
+							if (i) std::cout << ", ";
+							std::cout << matchedLoc->cgi_path[i];
+						}
+						std::cout << std::endl;
+					}
+
+
+					std::cout << "[CGI] Final script path: " << scriptPath << std::endl;
 					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd);
 					if (!cgi->start()) {
 						// Failed to start CGI → send 500
@@ -223,9 +266,9 @@ void Server::handleClientRead(int fd){
 				}
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
-					case GET: handleGET(httpRequest, _clients[fd]); break;
-					case POST: handlePOST(httpRequest, _clients[fd]); break;
-					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
+					case GET: handleGET(httpRequest, _clients[fd], matchedLoc); break;
+					case POST: handlePOST(httpRequest, _clients[fd], matchedLoc); break;
+					case DELETE: handleDELETE(httpRequest, _clients[fd], matchedLoc); break;
 				}
 
 				_clients[fd].bytesSent = 0;
@@ -338,18 +381,15 @@ void Server::disconectClient(short fd){
 }
 std::string Server::mapPath(const HttpRequest& request){
 
-<<<<<<< HEAD
-	std::string localPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www";
-=======
 	std::string localPath = _configData.root;
->>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 	std::string requestPath = request.getPath();
 	std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
 
 	return localPath + requestPath;
 }
-void Server::handleGET(const HttpRequest& request, ClientInfo& client){
+void Server::handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc){
 
+	std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
 	std::string mappedPath = mapPath(request);
 	std::cout << "mappedPath: " << mappedPath << std::endl;
 	std::ifstream file(mappedPath.c_str());
@@ -468,18 +508,9 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 		}
 	}
 */
-void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLocation){
 
 	HttpResponse response(request);
-	const LocationConfig* matchedLocation = _configData.findMatchingLocation(request.getPath());
-	if(!matchedLocation){
-		std::cout << "[DEBUG] No matching path found. matchedLocation = NULL" << std::endl;
-		response.generateResponse(403); // Forbidden no upload location configured
-		client.responseData = response.getResponse();
-		return;
-	}
-
-	std::cout << "[DEBUG] UploadPath: " << matchedLocation->upload_store << std::endl;
 	PostHandler post(matchedLocation->upload_store + '/');
 
 	std::string contentType = request.getContenType();
@@ -545,7 +576,9 @@ bool Server::validatePath(std::string path){
 /**
  * This function only handles files, but not directories.
  */
- void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
+ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc) {
+
+   std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
 
 	std::string mappedPath = mapPath(request);
 	HttpResponse response(request);

@@ -60,8 +60,20 @@ The Host header should be checked in the HTTP request parsing
 
 
 HttpRequest::HttpRequest()
-	: _requestLine(), _body(), _method(), _path(), _version(), _contentLength(),_headers(), _isValid(true){
-}
+	: _requestLine(),
+	  _body(),
+	  _rawHeaders(),
+	  _method(),
+	  _methodEnum(GET),
+	  _path(),
+	  _normalizedPath(),
+	  _mappedPath(),
+	  _queryString(),
+	  _version(),
+	  _headers(),
+	  _isValid(true),
+	  _contentLength(0)
+{}
 
 HttpRequest::~HttpRequest(){}
 
@@ -161,7 +173,6 @@ void HttpRequest::parseRequestLine(){
 		return;
 	}
 	_methodEnum = stringToEnum(_method);
-	isCGIRequest();
 	mapPath();
 	extractQueryString();
 }
@@ -272,17 +283,12 @@ std::string HttpRequest::getContenType() const {
 		return "";
 }
 
-<<<<<<< HEAD
 void HttpRequest::extractQueryString(){
 	size_t pos = _path.find('?');
 	if (pos != std::string::npos && pos + 1 < _path.length()) {
 		_queryString = _path.substr(pos + 1);
 	}
 	std::cout << "_queryString: " << _queryString << std::endl;
-}
-
-void HttpRequest::isCGIRequest() {
-	_isCgiRequest =  _path.find("/cgi-bin/") == 0;
 }
 
 void HttpRequest::mapPath(){

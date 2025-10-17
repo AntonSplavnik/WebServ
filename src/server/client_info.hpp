@@ -4,7 +4,6 @@
 
 #include <string>
 #include "../socket/socket.hpp"
-#include "../cgi/cgi.hpp"
 
 // Client connection states
 enum ClientState {

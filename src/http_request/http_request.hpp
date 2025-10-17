@@ -66,7 +66,6 @@ class HttpRequest{
 		std::string getVersion() const;
 		std::string getContenType() const;
 		const std::map<std::string, std::string>& getHeaders() const;
-        bool getIsCgiRequest() const { return _isCgiRequest; }
         std::string getNormalizedPath() const { return _normalizedPath; }
         std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
@@ -100,9 +99,9 @@ class HttpRequest{
 				//"Content-Type": "application/json",
 				//"User-Agent": "curl/7.68.0"
 		bool _isValid;
-        bool _isCgiRequest;
+        unsigned long	_contentLength; //  348
 
-        void isCGIRequest();
+
 		void mapPath();
 		void extractQueryString();
 };

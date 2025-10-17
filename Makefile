@@ -17,12 +17,8 @@ NAME		= webserv
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
-<<<<<<< HEAD
 INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http -Isrc/http_request -Isrc/http_response -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions -Isrc/cgi
-=======
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response \
-			  -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
->>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
+
 
 # Directories
 SRC_DIR		= src
@@ -51,6 +47,7 @@ SRC_FILES	= main.cpp \
 			  $(LOGGING_DIR)/logger.cpp \
 			  $(HELPERS_DIR)/helpers.cpp \
 			  $(CGI_DIR)/cgi.cpp
+
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)

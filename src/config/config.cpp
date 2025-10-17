@@ -61,23 +61,49 @@ std::vector<ConfigData> Config::getServers() const {
 }
 
 const LocationConfig* ConfigData::findMatchingLocation(const std::string& requestPath) const {
+    const LocationConfig* bestMatch = NULL;
+    size_t bestLength = 0;
 
-    std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
-    for (size_t i = 0; i < locations.size(); i++) {
+    std::cout << "[DEBUG] Finding location for: " << requestPath << std::endl;
 
-        std::cout << "[DEBUG] Paths: " << locations[i].path << std::endl;
-        size_t pathLen = locations[i].path.length();
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const LocationConfig& loc = locations[i];
+        const std::string& locPath = loc.path;
+        size_t pathLen = locPath.length();
 
-        if (requestPath.compare(0, pathLen, locations[i].path) == 0) {
-            // Ensure proper path boundary (exact match or followed by '/')
-            if (requestPath.length() == pathLen || requestPath[pathLen] == '/') {
-                    std::cout << "[DEBUG] UploadPath: " << locations[i].upload_store << std::endl;
-                    return &locations[i];
-                }
+        // Always match "/" as fallback
+        if (locPath == "/") {
+            if (bestLength < 1) {
+                bestMatch = &loc;
+                bestLength = 1;
+            }
+            continue;
+        }
+
+        // Prefix match
+        if (requestPath.compare(0, pathLen, locPath) != 0)
+            continue;
+
+        // Boundary check to prevent /api vs /apiary confusion
+        if (requestPath.length() > pathLen && requestPath[pathLen] != '/')
+            continue;
+
+        // Longest match wins
+        if (pathLen > bestLength) {
+            bestMatch = &loc;
+            bestLength = pathLen;
         }
     }
-    return NULL;
+
+    if (!bestMatch)
+        std::cout << "[DEBUG] No matching location found." << std::endl;
+    else
+        std::cout << "[DEBUG] Matched location: " << bestMatch->path << std::endl;
+
+    return bestMatch;
 }
+
+
 // Validates that the given key is in the list of known directives
 void Config::validateDirective(const char* const* directives, size_t count, const std::string& key) {
     if (std::find(directives, directives + count, key) == directives + count)
@@ -109,10 +135,14 @@ void Config::validateConfig(ConfigData& config) {
     	throw ConfigParseException("Missing required config: at least one listen directive");
     if (config.error_pages.empty())
     {
-        config.error_pages[404] = DEFAULT_ERROR_PAGE_404;
-        config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
+        config.error_pages[400] = DEFAULT_ERROR_PAGE_400;
         config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
-        config.error_pages[413] = DEFAULT_ERROR_PAGE_413;
+        config.error_pages[404] = DEFAULT_ERROR_PAGE_404;
+        config.error_pages[405] = DEFAULT_ERROR_PAGE_405;
+        config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
+        config.error_pages[502] = DEFAULT_ERROR_PAGE_502;
+        config.error_pages[503] = DEFAULT_ERROR_PAGE_503;
+        config.error_pages[-1] = DEFAULT_ERROR_PAGE_DEFAULT;
         std::cout << "Info: No error_pages specified, applying default error pages" << std::endl;
     }
     if (config.allow_methods.empty())
