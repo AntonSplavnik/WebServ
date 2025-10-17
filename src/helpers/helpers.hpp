@@ -22,4 +22,5 @@ template<typename T>
 void addUnique(std::vector<T>& dest, const T& value);
 // Value reader from a stream
 std::vector<std::string> readValues(std::istringstream& iss);
+std::string joinPath(const std::string& base, const std::string& subpath);
 

@@ -135,8 +135,8 @@ bool Cgi::handleRead() {
 
         int status;
         waitpid(pid, &status, WNOHANG);  // reap zombie safely
-        std::string Path = request.getPath();
-        std::string mappedPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www" + Path; //TODO: map properly
+        //std::string Path = request.getPath();
+        std::string mappedPath = request.getMappedPath();
         std::cout << "mappedPath: " << mappedPath << std::endl;
         HttpResponse response(request);
         response.generateCgiResponse(buffer);

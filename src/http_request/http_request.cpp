@@ -60,19 +60,19 @@ The Host header should be checked in the HTTP request parsing
 
 
 HttpRequest::HttpRequest()
-	: _requestLine(),
-	  _body(),
-	  _rawHeaders(),
-	  _method(),
-	  _methodEnum(GET),
-	  _requestedPath(),
-	  _normalizedPath(),
-	  _mappedPath(),
-	  _queryString(),
-	  _version(),
-	  _headers(),
-	  _isValid(true),
-	  _contentLength(0)
+ : _requestLine(),
+   _body(),
+   _rawHeaders(),
+   _method(),
+   _methodEnum(GET),
+   _requestedPath(),
+   _normalizedReqPath(),
+   _mappedPath(),
+   _queryString(),
+   _version(),
+   _headers(),
+   _isValid(true),
+   _contentLength(0)
 {}
 
 HttpRequest::~HttpRequest(){}
@@ -173,8 +173,9 @@ void HttpRequest::parseRequestLine(){
 		return;
 	}
 	_methodEnum = stringToEnum(_method);
-	mapPath();
 	extractQueryString();
+	normalizeReqPath();
+
 }
 
 void HttpRequest::parseHeaders(){
@@ -265,7 +266,6 @@ void HttpRequest::setContentLength(unsigned long contentLength){_contentLength =
 
 std::string HttpRequest::getMethod() const { return _method;}
 Methods HttpRequest::getMethodEnum() const {return _methodEnum;}
-std::string HttpRequest::getPath() const {return _requestedPath;}
 std::string HttpRequest::getVersion() const {return _version;}
 unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {return _headers;}
@@ -291,25 +291,34 @@ void HttpRequest::extractQueryString(){
 	std::cout << "_queryString: " << _queryString << std::endl;
 }
 
-void HttpRequest::mapPath(){
+void HttpRequest::normalizeReqPath() {
+    // 1️⃣ Remove everything after '?'
+    std::string::size_type qpos = _requestedPath.find('?');
+    if (qpos != std::string::npos)
+        _requestedPath.erase(qpos);
 
-	std::string localPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www";
+    // 2️⃣ Normalize redundant slashes
+    std::string normalized;
+    size_t i = 0;
+    while (i < _requestedPath.length()) {
+        if (_requestedPath[i] == '/') {
+            normalized += '/';
+            while (i < _requestedPath.length() && _requestedPath[i] == '/')
+                i++;
+        } else {
+            normalized += _requestedPath[i++];
+        }
+    }
 
-	// Remove query parameters from path (everything after '?')
-	size_t queryPos = _requestedPath.find('?');
-	if (queryPos != std::string::npos) {
-		_requestedPath = _requestedPath.substr(0, queryPos);
-	}
+    // 3️⃣ Remove trailing slash (except if root)
+    if (normalized.length() > 1 && normalized.back() == '/')
+        normalized.pop_back();
 
-	std::cout << "requestPath: " << _requestedPath << std::endl;
+    _normalizedReqPath = normalized;
 
-	if (_requestedPath == "/" || _requestedPath.empty()) {
-		_requestedPath = "/www/index.html";
-	}
-
-	_mappedPath = localPath + _requestedPath;
-	std::cout << "_mappedPath: " << _mappedPath << std::endl;
+    std::cout << "[DEBUG] _normalizedReqPath: " << _normalizedReqPath << std::endl;
 }
+
 
 // wrong naming for the function
 // std::string HttpRequest::getContenType() {

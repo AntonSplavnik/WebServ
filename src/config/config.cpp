@@ -1,7 +1,7 @@
 #include "config.hpp"
-#include "helpers.hpp"
-#include "config_exceptions.hpp"
-#include "logger.hpp"
+#include "../helpers/helpers.hpp"
+#include "../exceptions/config_exceptions.hpp"
+#include "../logging/logger.hpp"
 #include "directives_parsers.tpp"
 
 #include <fstream>
@@ -405,3 +405,4 @@ bool Config::parseConfig(char *argv){
     parseConfigFile(file);
     return true;
 }
+

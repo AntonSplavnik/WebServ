@@ -15,6 +15,7 @@
 #include "../socket/socket.hpp"
 #include "../server/post_handler.hpp"
 #include "../http_response/http_response.hpp"
+#include "../helpers/helpers.hpp"
 #include "../cgi/cgi.hpp"
 #include <iostream>
 #include <ctime>
@@ -199,36 +200,38 @@ void Server::handleClientRead(int fd){
 
 			}else{
 				// Find matching location (BEFORE CGI/static)
-				const LocationConfig* matchedLoc = _configData.findMatchingLocation(httpRequest.getPath());
+				const LocationConfig* matchedLoc = _configData.findMatchingLocation(httpRequest.getNormalizedReqPath());
 				if (!matchedLoc) {
-					std::cerr << "[ERROR] No matching location found for path: " << httpRequest.getPath() << std::endl;
+					std::cerr << "[ERROR] No matching location found for path: " << httpRequest.getNormalizedReqPath() << std::endl;
 					HttpResponse resp(httpRequest);
 					resp.generateResponse(404);
 					_clients[fd].responseData = resp.getResponse();
 					_clients[fd].state = SENDING_RESPONSE;
 					return;
 				}
-
-				std::cout << "[INFO] Matched location for " << httpRequest.getPath()
+				std::string relative = httpRequest.getNormalizedReqPath().substr(matchedLoc->path.size());
+				std::string mapped = joinPath(matchedLoc->root, relative);
+				httpRequest.setMappedPath(mapped);
+				std::cout << "[INFO] Matched location for " << httpRequest.getNormalizedReqPath()
 						  << " → root=" << matchedLoc->root << std::endl;
+                std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath()     << std::endl;
 				bool isCgi = false;
-				if (matchedLoc) {
-					std::string path = httpRequest.getPath();
+
+					std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
 					for (std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin(); it != matchedLoc->cgi_ext.end(); ++it) {
-						if (path.size() >= it->size() &&
-							path.compare(path.size() - it->size(), it->size(), *it) == 0) {
+						if (normalizedReqPath.size() >= it->size() &&
+							normalizedReqPath.compare(normalizedReqPath.size() - it->size(), it->size(), *it) == 0) {
 							isCgi = true;
 							break;
 							}
 					}
 
-				}
 				if (isCgi)
 				{
-					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getPath() << std::endl;
+					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getNormalizedReqPath() << std::endl;
 
 					// Step 2: Build script path using location root + request path
-					std::string scriptPath = matchedLoc->root + httpRequest.getPath().substr(matchedLoc->path.size());
+					std::string scriptPath = httpRequest.getMappedPath();
 
 
 					// If location defines explicit cgi_path (like /usr/bin/python), use it
@@ -379,18 +382,10 @@ void Server::disconectClient(short fd){
 	close(fd);
 	_clients.erase(fd);
 }
-std::string Server::mapPath(const HttpRequest& request){
-
-	std::string localPath = _configData.root;
-	std::string requestPath = request.getPath();
-	std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
-
-	return localPath + requestPath;
-}
 void Server::handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc){
 
 	std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
-	std::string mappedPath = mapPath(request);
+	std::string mappedPath = request.getMappedPath();
 	std::cout << "mappedPath: " << mappedPath << std::endl;
 	std::ifstream file(mappedPath.c_str());
 
@@ -580,7 +575,8 @@ bool Server::validatePath(std::string path){
 
    std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
 
-	std::string mappedPath = mapPath(request);
+	std::string mappedPath = request.getMappedPath();
+	std::cout << "mappedPath: " << mappedPath << std::endl;
 	HttpResponse response(request);
 	if (!validatePath(mappedPath)){
 		response.generateResponse(403);

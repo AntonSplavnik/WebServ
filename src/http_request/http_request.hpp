@@ -59,14 +59,14 @@ class HttpRequest{
 		void setBody(std::string body);
 		void setRawHeaders(std::string rawHeaders);
 		void setContentLength(unsigned long contentLength);
+        void setMappedPath(const std::string& mapped) { _mappedPath = mapped; }
 
 		//parse (get, set)
 		std::string getMethod() const;
-		std::string getPath() const;
 		std::string getVersion() const;
 		std::string getContenType() const;
 		const std::map<std::string, std::string>& getHeaders() const;
-        std::string getNormalizedPath() const { return _normalizedPath; }
+        std::string getNormalizedReqPath() const { return _normalizedReqPath; }
         std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
 
@@ -88,7 +88,7 @@ class HttpRequest{
 
 		Methods		_methodEnum; //  GET
 		std::string	_requestedPath; //  /api/v1/resource?id=123
-        std::string _normalizedPath;     // /api/v1/resource
+        std::string _normalizedReqPath;     // /api/v1/resource
         std::string	_mappedPath; // /var/www/html/api/v1/resource
                                      //TODO: mapPath outside of this class
         std::string _queryString; // id=123
@@ -102,9 +102,9 @@ class HttpRequest{
 		bool _isValid;
         unsigned long	_contentLength; //  348
 
-
-		void mapPath();
 		void extractQueryString();
+        void normalizeReqPath();
 };
+
 #endif
 

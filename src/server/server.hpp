@@ -54,7 +54,6 @@ class Server {
 		void handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 
 		bool validatePath(std::string path);
-		std::string mapPath(const HttpRequest& request);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
                 // CGI handling

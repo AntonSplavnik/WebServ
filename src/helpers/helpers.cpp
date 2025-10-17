@@ -1,5 +1,5 @@
 #include "../config/config.hpp"
-#include "helpers.hpp"
+#include "../helpers/helpers.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <climits>
@@ -108,4 +108,15 @@ bool isValidAutoindexValue(const std::string& value) {
     return false;
 }
 
+// Helper to join two paths correctly
+std::string joinPath(const std::string& base, const std::string& subpath) {
+    if (base.empty()) return subpath;
+    if (subpath.empty()) return base;
 
+    if (base.back() == '/' && subpath.front() == '/')
+        return base + subpath.substr(1);
+    else if (base.back() != '/' && subpath.front() != '/')
+        return base + "/" + subpath;
+    else
+        return base + subpath;
+}
