@@ -19,15 +19,8 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="added default error pages to the code and default.html for the unrecognised error code">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config/config.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/config.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config/config.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/config.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/helpers/helpers.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/helpers.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/helpers/helpers.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/helpers.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/http_request/http_request.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_request/http_request.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/http_request/http_request.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_request/http_request.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/server.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.hpp" afterDir="false" />
     </list>
@@ -170,15 +163,7 @@
       <workItem from="1759236056253" duration="2085000" />
       <workItem from="1760612084092" duration="3865000" />
       <workItem from="1760616134498" duration="40407000" />
-      <workItem from="1760727744962" duration="1051000" />
-    </task>
-    <task id="LOCAL-00003" summary="Enhance configuration parser to support error (support one html page for different errors, for example for 400, 404 the 40x.html error page) pages and improve parsing logic">
-      <option name="closed" value="true" />
-      <created>1756323991407</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1756323991407</updated>
+      <workItem from="1760727744962" duration="2723000" />
     </task>
     <task id="LOCAL-00004" summary="Add autoindex, configuration option and refactor parsing logic optimised">
       <option name="closed" value="true" />
@@ -564,7 +549,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760638702891</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded">
+      <option name="closed" value="true" />
+      <created>1760729140854</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1760729140854</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -594,7 +587,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="WSERV-21 parse the listen directive from the config file, supporting formats like host:port, port, or host. It validates the host and port, sets defaults if needed, and prevents duplicate listeners by checking if the pair already exists in _configData.listeners. If validation fails or a duplicate is found, it throws a ConfigParseException. Otherwise, it adds the listener to the config. The logic is correct and robust for typical use cases." />
     <MESSAGE value="Refactor listen directive parsing; improve host and port validation, and handle default values more efficiently" />
     <MESSAGE value="Refactor redirect directive parsing; enforce argument requirements and improve error handling" />
     <MESSAGE value="Refactor redirect directive parsing; allow optional status code and set default to 302" />
@@ -619,7 +611,8 @@
     <MESSAGE value="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
     <MESSAGE value="adopted cgi for the new architecture" />
     <MESSAGE value="added default error pages to the code and default.html for the unrecognised error code" />
-    <option name="LAST_COMMIT_MESSAGE" value="added default error pages to the code and default.html for the unrecognised error code" />
+    <MESSAGE value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

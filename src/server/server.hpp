@@ -53,7 +53,7 @@ class Server {
 		void handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 
-		bool validatePath(std::string path);
+		bool validatePath(const std::string& path);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
                 // CGI handling

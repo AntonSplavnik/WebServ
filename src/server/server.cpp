@@ -21,6 +21,9 @@
 #include <ctime>
 #include <fstream>
 #include <errno.h>
+#include <limits.h>   // for realpath
+#include <unistd.h>   // for access()
+#include <sys/stat.h> // for stat()
 
 /* - initialize() - Create and configure the listening socket using your
    Socket class
@@ -564,10 +567,34 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, const Lo
 	CGI turns your server into a platform that can run any program to generate web pages
 	dynamically.
 */
-bool Server::validatePath(std::string path){
 
-	return (path == "/Users/tghnx1/Desktop/42/Webserv42/runtime/www/uploads");
+
+bool Server::validatePath(const std::string& path) {
+    char resolved[PATH_MAX];
+
+    // Try to resolve full absolute path
+    if (!realpath(path.c_str(), resolved)) {
+        std::cerr << "[SECURITY] Invalid path: " << path << std::endl;
+        return false;
+    }
+
+    std::string resolvedPath(resolved);
+    std::string root = _configData.root;
+
+    // Ensure root ends with '/'
+    if (!root.empty() && root.back() != '/')
+        root += '/';
+
+    // ✅ Allow only files inside the configured root directory
+    if (resolvedPath.find(root) == 0)
+        return true;
+
+    std::cerr << "[SECURITY] Forbidden: " << resolvedPath
+              << " is outside root " << root << std::endl;
+    return false;
 }
+
+
 /**
  * This function only handles files, but not directories.
  */
