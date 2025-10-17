@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServ - Simple</title>
+    <link rel="icon" href="data:text/plain;charset=utf-8,:zap:" type="text/plain">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .info {
+            background-color: #F9F9F9;
+            padding: 15px;
+            border-left: 4px solid #007BFF;
+            margin: 20px 0;
+        }
+        .links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .links a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .links a:hover {
+            background-color: #0056B3;
+        }
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .test-section {
+            background-color: #E8F4F8;
+            padding: 20px;
+            border: 1px solid #BEE5EB;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #0C5460;
+        }
+        .test-section textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        .test-section button {
+            background-color: #17A2B8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .test-section button:hover {
+            background-color: #138496;
+        }
+        .test-result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
+            display: none;
+        }
+        .test-result.success {
+            background-color: #D4EDDA;
+            border: 1px solid #C3E6CB;
+            color: #155724;
+        }
+        .test-result.error {
+            background-color: #F8D7DA;
+            border: 1px solid #F5C6CB;
+            color: #721C24;
+        }
+        .multipart-section {
+            background-color: #FFF3CD;
+            padding: 20px;
+            border: 1px solid #FFEAA7;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .multipart-section h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        .form-group input[type="file"] {
+            padding: 3px;
+        }
+        .multipart-section button {
+            background-color: #FFC107;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .multipart-section button:hover {
+            background-color: #E0A800;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebServ</h1>
+    <div class="test-section">
+        <h3>:test_tube: Text/Plain Test</h3>
+        <p>Test the POST text/plain functionality:</p>
+        <textarea id="textPlainData" placeholder="Enter your text here to test text/plain POST...">Hello WebServ!
+This is a test of text/plain data.
+Line breaks and special characters: éàè çù</textarea>
+        <br>
+        <button onclick="testTextPlain()">Send Text/Plain POST</button>
+        <div id="textPlainResult" class="test-result"></div>
+    </div>
+    <div class="multipart-section">
+        <h3>:file_folder: Multipart/Form-Data Test</h3>
+        <p>Test file upload and form data with multipart/form-data:</p>
+        <form id="multipartForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="john_doe" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="john@example.com" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="3" placeholder="Enter description">This is a test upload from WebServ multipart form.</textarea>
+            </div>
+            <div class="form-group">
+                <label for="fileUpload">Choose File to Upload:</label>
+                <input type="file" id="fileUpload" name="avatar" accept="image/*,.txt,.pdf">
+                <small style="color: #666;">Select an image, text file, or PDF to test file upload</small>
+            </div>
+            <button type="button" onclick="testMultipart()">Upload File & Data</button>
+        </form>
+        <div id="multipartResult" class="test-result"></div>
+    </div>
+    <div class="info">
+        <p><strong>Simple HTTP Server in C++</strong></p>
+        <p>This server supports HTTP GET, POST and DELETE methods.</p>
+        <ul>
+            <li>Port: 8080</li>
+            <li>Status: Online</li>
+            <li>Protocol: HTTP/1.1</li>
+        </ul>
+    </div>
+    <div class="links">
+        <a href="/test.html">HTTP Tests</a>
+        <a href="/index.html">Full Version</a>
+    </div>
+    <div class="status">
+        <p>WebServ © 2025 - High Performance HTTP Server</p>
+    </div>
+    <script>
+        async function testTextPlain() {
+            const textarea = document.getElementById('textPlainData');
+            const resultDiv = document.getElementById('textPlainResult');
+            const button = event.target;
+            // Disable button during request
+            button.disabled = true;
+            button.textContent = 'Sending...';
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: textarea.value
+                });
+                if (response.ok) {
+                    const responseText = await response.text();
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = '<strong>:white_check_mark: Success!</strong><br>Response: ' + responseText;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = '<strong>:x: Error!</strong><br>Status: ' + response.status + ' ' + response.statusText;
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = '<strong>:x: Network Error!</strong><br>' + error.message;
+            }
+            // Show result and reset button
+            resultDiv.style.display = 'block';
+            button.disabled = false;
+            button.textContent = 'Send Text/Plain POST';
+        }
+        async function testMultipart() {
+            const form = document.getElementById('multipartForm');
+            const resultDiv = document.getElementById('multipartResult');
+            const button = event.target;
+            // Disable button during request
+            button.disabled = true;
+            button.textContent = 'Uploading...';
+            try {
+                // Create FormData from the form
+                const formData = new FormData(form);
+                // Show what we're sending (for debugging)
+                console.log('Sending multipart data:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+                    } else {
+                        console.log(`${key}: ${value}`);
+                    }
+                }
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    body: formData
+                    // Note: Don't set Content-Type header, let browser set it with boundary
+                });
+                if (response.ok) {
+                    const responseText = await response.text();
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = '<strong>:white_check_mark: Upload Success!</strong><br>' + responseText;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = '<strong>:x: Upload Error!</strong><br>Status: ' + response.status + ' ' + response.statusText;
+                }
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = '<strong>:x: Network Error!</strong><br>' + error.message;
+            }
+            // Show result and reset button
+            resultDiv.style.display = 'block';
+            button.disabled = false;
+            button.textContent = 'Upload File & Data';
+        }
+        // Add drag & drop functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileUpload');
+            const multipartSection = document.querySelector('.multipart-section');
+            // Visual feedback for drag & drop
+            multipartSection.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.backgroundColor = '#E8F5E8';
+            });
+            multipartSection.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.backgroundColor = '#FFF3CD';
+            });
+            multipartSection.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.backgroundColor = '#FFF3CD';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    console.log('File dropped:', files[0].name);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

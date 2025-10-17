@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/12 13:17:37 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 14:11:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ std::string HttpResponse::getContentType() {
 	switch (extention) {
 		case JPEG: return "image/jpeg";
 		case HTML: return "text/html";
-		case TXT: return "text/plaine";
+		case TXT: return "text/plain";
 		case JS: return "text/javascript";
 		case PNG: return "image/png";
 		case PDF: return "application/pdf";
@@ -132,6 +132,18 @@ std::string HttpResponse::getTimeNow() {
 	return httpTime;
 }
 
+void HttpResponse::generatePostResponse(){
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n"
+		<< _body;
+	_response = oss.str();
+}
 
 void HttpResponse::generateGetResponse() {
 
@@ -226,6 +238,8 @@ void HttpResponse::generateResponse(int statusCode) {
 	_connectionType = _request.getContenType();
 	switch (_method)
 	{
+	case POST:
+		generatePostResponse(); break;
 	case GET:
 		generateGetResponse(); break;
 	case DELETE:
@@ -238,7 +252,7 @@ void HttpResponse::generateResponse(int statusCode) {
 	}
 }
 std::string HttpResponse::extractBody() {
-	std::ifstream file(_filePath, std::ios::binary);
+	std::ifstream file(_filePath.c_str(), std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
 	return content;

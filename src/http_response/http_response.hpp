@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/10/12 13:15:21 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 18:39:55 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,12 @@
 #include <fstream>
 #include <string>
 #include <map>
+<<<<<<< HEAD
 #include "../http_request/http_request.hpp"
+=======
+#include <algorithm>
+#include "http_request.hpp"
+>>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 enum fileExtentions{
 	HTML,
@@ -37,6 +42,7 @@ class HttpResponse {
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
+<<<<<<< HEAD
 		void generateGetResponse();
 		void generateDeleteResponse();
 		void generateCgiResponse(const std::string &cgiOutput);
@@ -46,6 +52,8 @@ class HttpResponse {
 		fileExtentions	extractFileExtension(std::string filePath);
 		std::string	getReasonPhrase();
 		std::string	getContentType();
+=======
+>>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
@@ -54,15 +62,26 @@ class HttpResponse {
 		void setHeader(std::string header);
 		void setPath(std::string path);
 
-		std::string	getBody() const;
-		std::string	getPath() const;
-		float		getVersion() const;
-		int			getStatusCode() const;
+		std::string		getBody() const;
+		std::string		getPath() const;
+		float			getVersion() const;
+		int				getStatusCode() const;
 		unsigned long	getContentLength() const;
-		std::string	getResponse() const;
+		std::string		getResponse() const;
 
 
 	private:
+
+		void generateGetResponse();
+		void generatePostResponse();
+		void generateDeleteResponse();
+
+		std::string extractBody();
+		std::string	getTimeNow();
+		fileExtentions	extractFileExtension(std::string filePath);
+		std::string	getReasonPhrase();
+		std::string	getContentType();
+
 		HttpRequest _request;
 		Methods		_method;
 

@@ -8,7 +8,6 @@
     <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppFormatterOtherPage" type="string" />
-    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexRemoved" />
   </component>
   <component name="CMakeProjectFlavorService">
     <option name="flavorId" value="CMakePlainProjectFlavor" />
@@ -20,7 +19,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="httpRequest:&#10;added:&#10;_normalizedPath;&#10;_mappedPath; (temporary);&#10;_queryString;&#10;bool _isValid;&#10;bool _isCgiRequest;&#10;void isCGIRequest();&#10;void mapPath();&#10;void extractQueryString();">
+      <change afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/test_POST_GET.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/cgi/cgi.hpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/config/config.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/main.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/main.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/server/server.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/socket/socket.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/src/config/config.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/src/config/config.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/src/http_request/http_request.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/src/http_request/http_request.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/src/http_response/http_response.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/src/http_response/http_response.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/src/server/server.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/src/server/server.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obj/src/socket/socket.o" beforeDir="false" afterPath="$PROJECT_DIR$/obj/src/socket/socket.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_request/http_request.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_request/http_request.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_request/http_request.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_request/http_request.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_response/http_response.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_response/http_response.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_response/http_response.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_response/http_response.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/client_info.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/client_info.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/server.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server_controller/server_controller.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server_controller/server_controller.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server_controller/server_controller.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server_controller/server_controller.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/webserv" beforeDir="false" afterPath="$PROJECT_DIR$/webserv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +108,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "main+cgi",
-    "last_opened_file_path": "/Users/tghnx1/Desktop/42/Webserv42",
+    "last_opened_file_path": "/Users/tghnx1/Desktop/42/Webserv42/src",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -98,15 +120,16 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src" />
       <recent name="$PROJECT_DIR$/src/runtime/www/errors" />
       <recent name="$PROJECT_DIR$/src/config" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/runtime/www/cgi-bin" />
       <recent name="$PROJECT_DIR$/src/config" />
       <recent name="$PROJECT_DIR$/src/commonHelpers" />
       <recent name="$PROJECT_DIR$/runtime/www" />
       <recent name="$PROJECT_DIR$/conf" />
-      <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="RunManager">
@@ -156,6 +179,8 @@
       <workItem from="1758909163365" duration="73000" />
       <workItem from="1759144623436" duration="11090000" />
       <workItem from="1759236056253" duration="2085000" />
+      <workItem from="1760612084092" duration="3865000" />
+      <workItem from="1760616134498" duration="10433000" />
     </task>
     <task id="LOCAL-00001" summary="added some headers and the standart config file">
       <option name="closed" value="true" />

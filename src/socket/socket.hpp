@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 14:47:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 18:11:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,16 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <cstring>
+#include <cerrno>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+// #define BUFFER_SIZE 8192    // 8 KB - good balance
+// #define BUFFER_SIZE 16384   // 16 KB - faster
+#define BUFFER_SIZE 65536   // 64 KB - very fast
 #define MAX_CON_BACKLOG 10
 
 

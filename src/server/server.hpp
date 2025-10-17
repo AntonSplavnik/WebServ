@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/13 15:44:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/14 20:42:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,23 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <cstring>
+#include <cerrno>
 #include <poll.h>
+<<<<<<< HEAD
 #include "../socket/socket.hpp"
 #include "../config/config.hpp"
 #include "../http_request/http_request.hpp"
 #include "../http_response/http_response.hpp"
 #include "../cgi/cgi.hpp"
+=======
+#include "socket.hpp"
+#include "client_info.hpp"
+#include "http_request.hpp"
+#include "http_response.hpp"
+#include "post_handler.hpp"
+#include "config.hpp"
+>>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 class Server {
 

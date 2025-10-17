@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/02 16:43:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/15 15:16:58 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,10 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <algorithm>
+#include <cstdlib>
+#include "../server/client_info.hpp"
+
 
 enum Methods {
 	GET,
@@ -31,7 +35,8 @@ class HttpRequest{
 		~HttpRequest();
 
 		void parseRequest(std::string requestData);
-
+		void partialParseRequest(const std::string requestData);
+		
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
@@ -48,6 +53,7 @@ class HttpRequest{
 		std::string getBody() const;
 		std::string getRawHeaders() const;
 		unsigned long getContentLength() const;
+		unsigned long getBodyLength() const;
 
 		void setRequstLine(std::string requestLine);
 		void setBody(std::string body);
@@ -77,7 +83,6 @@ class HttpRequest{
 		std::string		_requestLine;
 		std::string		_body;
 		std::string		_rawHeaders;
-		unsigned long	_contentLength;
 
 		//reqest line
 		std::string	_method; // "GET"

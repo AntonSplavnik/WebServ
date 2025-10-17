@@ -32,12 +32,13 @@ static const size_t LOCATION_DIRECTIVES_COUNT = sizeof(LOCATION_DIRECTIVES) / si
 static const char *SERVER_DIRECTIVES[] = {
 	"location", "listen", "server_name", "backlog", "max_clients",
 	"access_log", "error_log", "autoindex", "index", "root",
-	"allow_methods", "error_page", "cgi_ext", "cgi_path", "client_max_body_size",
-	"redirect", "keepalive_timeout", "keepalive_max_requests"
+	"allow_methods", "error_page", "cgi_ext", "cgi_path",
+	"client_max_body_size", "keepalive_timeout", "keepalive_max_requests"
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
 // Default error pages
+<<<<<<< HEAD
 static const char *DEFAULT_ERROR_PAGE_400 = "runtime/www/errors/400.html";
 static const char *DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/403.html";
 static const char *DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/404.html";
@@ -50,6 +51,12 @@ static const char *DEFAULT_ERROR_PAGE_DEFAULT = "runtime/www/errors/default.html
 
 
 
+=======
+#define DEFAULT_ERROR_PAGE_404 "runtime/www/errors/404.html"
+#define DEFAULT_ERROR_PAGE_500 "runtime/www/errors/500.html"
+#define DEFAULT_ERROR_PAGE_403 "runtime/www/errors/403.html"
+#define DEFAULT_ERROR_PAGE_413 "runtime/www/errors/400.html"
+>>>>>>> 79fcc5d960ccba1cbf6e0d85b402c4962da74f69
 
 
 struct LocationConfig
@@ -87,6 +94,9 @@ struct ConfigData
 {
 	ConfigData();
 
+	// Find location that matches the given request path
+	const LocationConfig* findMatchingLocation(const std::string& requestPath) const;
+
 	// Network binding
 	std::vector<std::pair<std::string, unsigned short> > listeners; // listen_addresses
 	std::vector<std::string> server_names;
@@ -112,9 +122,6 @@ struct ConfigData
 	// CGI configuration
 	std::vector<std::string> cgi_path; // cgi_interpreters
 	std::vector<std::string> cgi_ext; // cgi_extensions;
-
-	// File uploads
-	std::string upload_store; // upload_directory
 
 	// Logging
 	std::string access_log; // access_log_path
