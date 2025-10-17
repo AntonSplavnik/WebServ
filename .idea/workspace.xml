@@ -19,10 +19,9 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security.">
+      <change beforePath="$PROJECT_DIR$/conf/working.conf" beforeDir="false" afterPath="$PROJECT_DIR$/conf/working.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/server.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -163,15 +162,7 @@
       <workItem from="1759236056253" duration="2085000" />
       <workItem from="1760612084092" duration="3865000" />
       <workItem from="1760616134498" duration="40407000" />
-      <workItem from="1760727744962" duration="2723000" />
-    </task>
-    <task id="LOCAL-00004" summary="Add autoindex, configuration option and refactor parsing logic optimised">
-      <option name="closed" value="true" />
-      <created>1756387728889</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1756387728889</updated>
+      <workItem from="1760727744962" duration="3224000" />
     </task>
     <task id="LOCAL-00005" summary="Enhance configuration parser to support location blocks and allow methods, and add access and error log options">
       <option name="closed" value="true" />
@@ -557,7 +548,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760729140854</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security.">
+      <option name="closed" value="true" />
+      <created>1760730786133</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1760730786133</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -587,7 +586,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor listen directive parsing; improve host and port validation, and handle default values more efficiently" />
     <MESSAGE value="Refactor redirect directive parsing; enforce argument requirements and improve error handling" />
     <MESSAGE value="Refactor redirect directive parsing; allow optional status code and set default to 302" />
     <MESSAGE value="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block" />
@@ -612,7 +610,8 @@
     <MESSAGE value="adopted cgi for the new architecture" />
     <MESSAGE value="added default error pages to the code and default.html for the unrecognised error code" />
     <MESSAGE value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
+    <MESSAGE value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
+    <option name="LAST_COMMIT_MESSAGE" value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

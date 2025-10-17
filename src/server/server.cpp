@@ -585,7 +585,7 @@ bool Server::validatePath(const std::string& path) {
     if (!root.empty() && root.back() != '/')
         root += '/';
 
-    // ✅ Allow only files inside the configured root directory
+    //  Allow only files inside the configured root directory
     if (resolvedPath.find(root) == 0)
         return true;
 
