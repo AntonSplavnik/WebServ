@@ -65,7 +65,7 @@ HttpRequest::HttpRequest()
 	  _rawHeaders(),
 	  _method(),
 	  _methodEnum(GET),
-	  _path(),
+	  _requestedPath(),
 	  _normalizedPath(),
 	  _mappedPath(),
 	  _queryString(),
@@ -150,14 +150,14 @@ void HttpRequest::parseRequestLine(){
 	std::istringstream iss(_requestLine);
 
 	iss >> _method;
-	iss >> _path;
+	iss >> _requestedPath;
 	iss >> _version;
 
 	std::cout << "_method: " << _method << std::endl
-			<< "_path: " << _path << std::endl
+			<< "_requestedPath: " << _requestedPath << std::endl
 			<< "_version: " << _version << std::endl;
 
-	if (_method.empty() || _path.empty() || _version.empty()) {
+	if (_method.empty() || _requestedPath.empty() || _version.empty()) {
 		std::cout << " Error: Invalid request line format" << std::endl;
 		_isValid = false;
 		return;
@@ -259,13 +259,13 @@ unsigned long HttpRequest::getBodyLength() const {return _body.length();}
 
 //parse
 void HttpRequest::setMethod(std::string method) {_method = method;}
-void HttpRequest::setPath(std::string path){_path = path;}
+void HttpRequest::setPath(std::string path){_requestedPath = path;}
 void HttpRequest::setVersion(std::string version){_version = version;}
 void HttpRequest::setContentLength(unsigned long contentLength){_contentLength = contentLength;}
 
 std::string HttpRequest::getMethod() const { return _method;}
 Methods HttpRequest::getMethodEnum() const {return _methodEnum;}
-std::string HttpRequest::getPath() const {return _path;}
+std::string HttpRequest::getPath() const {return _requestedPath;}
 std::string HttpRequest::getVersion() const {return _version;}
 unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {return _headers;}
@@ -284,9 +284,9 @@ std::string HttpRequest::getContenType() const {
 }
 
 void HttpRequest::extractQueryString(){
-	size_t pos = _path.find('?');
-	if (pos != std::string::npos && pos + 1 < _path.length()) {
-		_queryString = _path.substr(pos + 1);
+	size_t pos = _requestedPath.find('?');
+	if (pos != std::string::npos && pos + 1 < _requestedPath.length()) {
+		_queryString = _requestedPath.substr(pos + 1);
 	}
 	std::cout << "_queryString: " << _queryString << std::endl;
 }
@@ -296,18 +296,18 @@ void HttpRequest::mapPath(){
 	std::string localPath = "/Users/tghnx1/Desktop/42/Webserv42/runtime/www";
 
 	// Remove query parameters from path (everything after '?')
-	size_t queryPos = _path.find('?');
+	size_t queryPos = _requestedPath.find('?');
 	if (queryPos != std::string::npos) {
-		_path = _path.substr(0, queryPos);
+		_requestedPath = _requestedPath.substr(0, queryPos);
 	}
 
-	std::cout << "requestPath: " << _path << std::endl;
+	std::cout << "requestPath: " << _requestedPath << std::endl;
 
-	if (_path == "/" || _path.empty()) {
-		_path = "/www/index.html";
+	if (_requestedPath == "/" || _requestedPath.empty()) {
+		_requestedPath = "/www/index.html";
 	}
 
-	_mappedPath = localPath + _path;
+	_mappedPath = localPath + _requestedPath;
 	std::cout << "_mappedPath: " << _mappedPath << std::endl;
 }
 

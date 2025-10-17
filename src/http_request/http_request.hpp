@@ -87,9 +87,10 @@ class HttpRequest{
 		std::string	_method; // "GET"
 
 		Methods		_methodEnum; //  GET
-		std::string	_path; //  /api/v1/resource?id=123
+		std::string	_requestedPath; //  /api/v1/resource?id=123
         std::string _normalizedPath;     // /api/v1/resource
         std::string	_mappedPath; // /var/www/html/api/v1/resource
+                                     //TODO: mapPath outside of this class
         std::string _queryString; // id=123
 		std::string	_version; // HTTP/1.1
 

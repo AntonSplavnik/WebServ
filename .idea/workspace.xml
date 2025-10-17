@@ -619,20 +619,4 @@
     <MESSAGE value="Refactor helper functions; replace static arrays with dynamic validation for HTTP methods, CGI extensions, and autoindex values" />
     <MESSAGE value="Refactor config parsing; replace static directive arrays with constant arrays for improved readability and maintainability" />
     <MESSAGE value="Refactor config parsing; move location-specific parsing logic to separate function, add default error page constants, and improve log file assignment" />
-    <MESSAGE value="Refactor config parsing; enhance structure by integrating location block handling into server config parsing and improving function organization" />
-    <MESSAGE value="Refactor config parsing; extract parsing logic into dedicated functions for improved readability and maintainability" />
-    <MESSAGE value="Refactor config validation; introduce directive validation function and enhance error handling for configuration fields" />
-    <MESSAGE value="WSERV-28&#10; add duplicate location path" />
-    <MESSAGE value="WSERV-23&#10;Now config parser supports different servers" />
-    <MESSAGE value="WSRV 24&#10;&#10;implemented a strictCheckAfterServerBlock function that checks that only &quot;server&quot; block can be after the prev server block. So no unexpected tockens and no extra braces" />
-    <MESSAGE value="Add documentation for Config Parser; outline supported directives, data structures, parsing flow, and error handling" />
-    <MESSAGE value="readame" />
-    <MESSAGE value="Enhance config parser: add default error page for 413, improve location validation, and update documentation" />
-    <MESSAGE value="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
-    <option name="LAST_COMMIT_MESSAGE" value="reafctored main. Put path creation inside a class. Now to parse it is enough check that argc == 2 and just send argv to a created config class" />
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
-  </component>
-</project>
+    <MESSAGE value="Refactor config parsing; enhance structur
