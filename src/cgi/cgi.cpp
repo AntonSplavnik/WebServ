@@ -1,5 +1,6 @@
 #include "cgi.hpp"
 #include "../http_response/http_response.hpp"
+#include "../logging/logger.hpp"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -81,8 +82,24 @@ bool Cgi::start() {
         close(inpipe[1]);
         close(outpipe[0]);
 
+        const std::string scriptPath = request.getMappedPath();
+        if (!chdirToScriptDir(scriptPath)) {
+            _exit(126);  // non-zero => parent will treat as 500
+        }
 
         setEnv(request, scriptPath);  // Ensure PATH is set
+        std::string ext = scriptPath.substr(scriptPath.find_last_of('.') + 1);
+        const char* interpreter = NULL;
+
+        if (ext == "py")
+            interpreter = "python3";
+        else if (ext == "php")
+            interpreter = "php-cgi";
+        else if (ext == "pl")
+            interpreter = "perl";
+        else
+            interpreter = "bash"; // fallback
+        execlp(interpreter, interpreter, scriptPath.c_str(), NULL);
 
         // ✅ use env to locate python3 dynamically
         execl("/usr/bin/env", "env", "python3", scriptPath.c_str(), NULL);

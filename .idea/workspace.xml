@@ -19,9 +19,20 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security.">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test.">
+      <change afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/relative_test.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/testcgdir.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conf/working.conf" beforeDir="false" afterPath="$PROJECT_DIR$/conf/working.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-09-30 13.19.14.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-10-06 19.40.43.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/www/uploads/file_1760694043_1.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/runtime/www/uploads/holy.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cgi/cgi.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,6 +47,7 @@
       <list>
         <option value="CMakeLists.txt" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -95,7 +107,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -107,10 +119,10 @@
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/runtime/www/cgi-bin" />
+      <recent name="$PROJECT_DIR$/runtime/www/cgi2" />
       <recent name="$PROJECT_DIR$/src/config" />
       <recent name="$PROJECT_DIR$/src/commonHelpers" />
       <recent name="$PROJECT_DIR$/runtime/www" />
-      <recent name="$PROJECT_DIR$/conf" />
     </key>
   </component>
   <component name="RunManager">
@@ -162,15 +174,9 @@
       <workItem from="1759236056253" duration="2085000" />
       <workItem from="1760612084092" duration="3865000" />
       <workItem from="1760616134498" duration="40407000" />
-      <workItem from="1760727744962" duration="3224000" />
-    </task>
-    <task id="LOCAL-00005" summary="Enhance configuration parser to support location blocks and allow methods, and add access and error log options">
-      <option name="closed" value="true" />
-      <created>1756833813829</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1756833813829</updated>
+      <workItem from="1760727744962" duration="3775000" />
+      <workItem from="1760807076353" duration="20000" />
+      <workItem from="1760807139646" duration="4893000" />
     </task>
     <task id="LOCAL-00006" summary="Add client_max_body_size, cgi_path, and cgi_ext options to configuration parser">
       <option name="closed" value="true" />
@@ -556,7 +562,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760730786133</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test.">
+      <option name="closed" value="true" />
+      <created>1760731557612</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1760731557612</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -586,7 +600,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor redirect directive parsing; enforce argument requirements and improve error handling" />
     <MESSAGE value="Refactor redirect directive parsing; allow optional status code and set default to 302" />
     <MESSAGE value="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block" />
     <MESSAGE value="Refactor redirect directive parsing (need to point a redirection with the code)" />
@@ -611,7 +624,8 @@
     <MESSAGE value="added default error pages to the code and default.html for the unrecognised error code" />
     <MESSAGE value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
     <MESSAGE value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
+    <MESSAGE value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
+    <option name="LAST_COMMIT_MESSAGE" value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

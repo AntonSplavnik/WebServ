@@ -46,7 +46,10 @@ SRC_FILES	= main.cpp \
 			  $(SERVER_MGR_DIR)/server_controller.cpp \
 			  $(LOGGING_DIR)/logger.cpp \
 			  $(HELPERS_DIR)/helpers.cpp \
-			  $(CGI_DIR)/cgi.cpp
+			  $(CGI_DIR)/cgi.cpp \
+			  $(CGI_DIR)/cgiHelpers.cpp
+
+
 
 
 # Object files

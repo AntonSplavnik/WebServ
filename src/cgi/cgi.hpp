@@ -32,14 +32,14 @@ private:
 	int 		inFd;
 	std::string scriptPath;
 	HttpRequest request;
-
 	std::map<int, ClientInfo> &_clients;
 	int			_clientFd;
-
 	std::string buffer;
 	time_t 		startTime;
 
 	void	setEnv(const HttpRequest &request, const std::string &scriptPath);
+	bool chdirToScriptDir(const std::string &scriptPath);
 };
+
 
 #endif
