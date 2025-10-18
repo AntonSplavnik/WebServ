@@ -219,16 +219,16 @@ void Server::handleClientRead(int fd){
 						  << " → root=" << matchedLoc->root << std::endl;
                 std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath()     << std::endl;
 				bool isCgi = false;
-
 					std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
-					for (std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin(); it != matchedLoc->cgi_ext.end(); ++it) {
-						if (normalizedReqPath.size() >= it->size() &&
-							normalizedReqPath.compare(normalizedReqPath.size() - it->size(), it->size(), *it) == 0) {
-							isCgi = true;
-							break;
-							}
-					}
-
+					std::string cgiExt;
+                    for (std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin(); it != matchedLoc->cgi_ext.end(); ++it) {
+	                    if (normalizedReqPath.size() >= it->size() &&
+		                normalizedReqPath.compare(normalizedReqPath.size() - it->size(), it->size(), *it) == 0) {
+		                    isCgi = true;
+		                    cgiExt = *it;
+		                    break;
+	                    }
+                    }
 				if (isCgi)
 				{
 					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getNormalizedReqPath() << std::endl;
@@ -250,7 +250,7 @@ void Server::handleClientRead(int fd){
 
 
 					std::cout << "[CGI] Final script path: " << scriptPath << std::endl;
-					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd);
+					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd, matchedLoc, cgiExt);
 					if (!cgi->start()) {
 						// Failed to start CGI → send 500
 						HttpResponse resp(httpRequest);

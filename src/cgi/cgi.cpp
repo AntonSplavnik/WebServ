@@ -12,16 +12,19 @@
 Cgi::Cgi(const std::string &path,
          const HttpRequest &req,
          std::map<int, ClientInfo> &clients,
-         int clientFd)
+         int clientFd, const LocationConfig* loc, std::string cgiExt)
     : pid(-1),
       outFd(-1),
       finished(false),
+      _matchedLoc(loc),
+      ext(cgiExt),
       inFd(-1),
       scriptPath(path),
       request(req),
       _clients(clients),
       _clientFd(clientFd),
-      startTime(time(NULL)) {}
+      startTime(time(NULL))
+       {}
 
 
 Cgi::~Cgi() {
@@ -62,6 +65,7 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
 
 
 bool Cgi::start() {
+
     int inpipe[2];
     int outpipe[2];
     if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
@@ -88,13 +92,12 @@ bool Cgi::start() {
 
         setEnv(request, scriptPath);  // Ensure PATH is set
         // --- Determine interpreter ---
-        std::string ext = scriptPath.substr(scriptPath.find_last_of('.') + 1);
         std::string interpreter;
-        if (ext == "py")
+        if (ext == ".py")
             interpreter = "/usr/bin/python3";
-        else if (ext == "php")
+        else if (ext == ".php")
             interpreter = "/usr/bin/php-cgi";
-        else if (ext == "pl")
+        else if (ext == ".pl")
             interpreter = "/usr/bin/perl";
         else
             interpreter = "/bin/bash"; // fallback

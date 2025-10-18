@@ -19,7 +19,8 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="added a relative path support for the cgi script">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="rewrote for execve">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-09-30 13.19.14.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-10-06 19.40.43.jpg" beforeDir="false" />
@@ -27,8 +28,7 @@
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/holy.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config/config.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/config.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,18 +97,19 @@
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main+cgi&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/tghnx1/Desktop/42/Webserv42/src&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/tghnx1/Desktop/42/Webserv42/runtime/www/cgi-bin&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CLionExternalConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/runtime/www/cgi-bin" />
       <recent name="$PROJECT_DIR$/src" />
       <recent name="$PROJECT_DIR$/src/runtime/www/errors" />
       <recent name="$PROJECT_DIR$/src/config" />
@@ -122,6 +123,11 @@
     </key>
   </component>
   <component name="RunManager">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="confParsertest.cpp" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" temporary="true" PROGRAM_PARAMS="test.conf" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://test" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Webserv42" TARGET_NAME="confParsertest.cpp" CONFIG_NAME="confParsertest.cpp">
       <option name="sourceFile" value="test/confParsertest.cpp" />
       <method v="2">
@@ -172,15 +178,7 @@
       <workItem from="1760616134498" duration="40407000" />
       <workItem from="1760727744962" duration="3775000" />
       <workItem from="1760807076353" duration="20000" />
-      <workItem from="1760807139646" duration="6674000" />
-    </task>
-    <task id="LOCAL-00007" summary="Add client_max_body_size and autoindex to configuration parser with validation">
-      <option name="closed" value="true" />
-      <created>1756845924390</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1756845924390</updated>
+      <workItem from="1760807139646" duration="9825000" />
     </task>
     <task id="LOCAL-00008" summary="TODO: add validation to the other parameters and write the warnings to the log file">
       <option name="closed" value="true" />
@@ -566,7 +564,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760812506113</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL-00056" summary="rewrote for execve">
+      <option name="closed" value="true" />
+      <created>1760814418100</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1760814418100</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -596,7 +602,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block" />
     <MESSAGE value="Refactor redirect directive parsing (need to point a redirection with the code)" />
     <MESSAGE value="Refactor location config parsing; enhance upload_enabled validation, add default error pages and throw on dublicates of : index, root, client_max_body size" />
     <MESSAGE value="Refactor config parsing; improve location block handling, add unmatched brace check, and enhance error page directives" />
@@ -621,7 +626,8 @@
     <MESSAGE value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
     <MESSAGE value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
     <MESSAGE value="added a relative path support for the cgi script" />
-    <option name="LAST_COMMIT_MESSAGE" value="added a relative path support for the cgi script" />
+    <MESSAGE value="rewrote for execve" />
+    <option name="LAST_COMMIT_MESSAGE" value="rewrote for execve" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
