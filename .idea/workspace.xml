@@ -19,16 +19,17 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="rewrote for execve">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Add support for CGI extension handling in Cgi class; pass matched location and extension to constructor">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conf/working.conf" beforeDir="false" afterPath="$PROJECT_DIR$/conf/working.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-09-30 13.19.14.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-10-06 19.40.43.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/file_1760694043_1.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/holy.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/server.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/server.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config/config.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/config.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -178,15 +179,7 @@
       <workItem from="1760616134498" duration="40407000" />
       <workItem from="1760727744962" duration="3775000" />
       <workItem from="1760807076353" duration="20000" />
-      <workItem from="1760807139646" duration="9825000" />
-    </task>
-    <task id="LOCAL-00008" summary="TODO: add validation to the other parameters and write the warnings to the log file">
-      <option name="closed" value="true" />
-      <created>1756845976119</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1756845976119</updated>
+      <workItem from="1760807139646" duration="10920000" />
     </task>
     <task id="LOCAL-00009" summary="TODO: add validation to the other parameters and write the warnings to the log file">
       <option name="closed" value="true" />
@@ -572,7 +565,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760814418100</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="Add support for CGI extension handling in Cgi class; pass matched location and extension to constructor">
+      <option name="closed" value="true" />
+      <created>1760817568252</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1760817568252</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -602,7 +603,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor redirect directive parsing (need to point a redirection with the code)" />
     <MESSAGE value="Refactor location config parsing; enhance upload_enabled validation, add default error pages and throw on dublicates of : index, root, client_max_body size" />
     <MESSAGE value="Refactor config parsing; improve location block handling, add unmatched brace check, and enhance error page directives" />
     <MESSAGE value="moved back when not checking the braces" />
@@ -627,7 +627,8 @@
     <MESSAGE value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
     <MESSAGE value="added a relative path support for the cgi script" />
     <MESSAGE value="rewrote for execve" />
-    <option name="LAST_COMMIT_MESSAGE" value="rewrote for execve" />
+    <MESSAGE value="Add support for CGI extension handling in Cgi class; pass matched location and extension to constructor" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add support for CGI extension handling in Cgi class; pass matched location and extension to constructor" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

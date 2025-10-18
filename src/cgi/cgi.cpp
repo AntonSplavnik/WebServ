@@ -63,6 +63,32 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
     }
 }
 
+void Cgi::executeCgiWithArgs()
+{
+    // --- Determine interpreter ---
+    std::string interpreter;
+    if (ext == ".py")
+        interpreter = "/usr/bin/python3";
+    else if (ext == ".php")
+        interpreter = "/usr/bin/php-cgi";
+
+    // --- Prepare args ---
+    char *argv[3];
+    argv[0] = const_cast<char*>(interpreter.c_str());
+    argv[1] = const_cast<char*>(scriptPath.c_str());
+    argv[2] = NULL;
+
+    // --- Build environment array ---
+    extern char **environ; // use current env as base
+    // You can later extend this if you build your own envp
+
+    execve(argv[0], argv, environ);
+
+    // If we reach here, execve failed
+    perror("execve");
+    _exit(1);
+}
+
 
 bool Cgi::start() {
 
@@ -91,32 +117,7 @@ bool Cgi::start() {
         }
 
         setEnv(request, scriptPath);  // Ensure PATH is set
-        // --- Determine interpreter ---
-        std::string interpreter;
-        if (ext == ".py")
-            interpreter = "/usr/bin/python3";
-        else if (ext == ".php")
-            interpreter = "/usr/bin/php-cgi";
-        else if (ext == ".pl")
-            interpreter = "/usr/bin/perl";
-        else
-            interpreter = "/bin/bash"; // fallback
-
-        // --- Prepare args ---
-        char *argv[3];
-        argv[0] = const_cast<char*>(interpreter.c_str());
-        argv[1] = const_cast<char*>(scriptPath.c_str());
-        argv[2] = NULL;
-
-        // --- Build environment array ---
-        extern char **environ; // use current env as base
-        // You can later extend this if you build your own envp
-
-        execve(argv[0], argv, environ);
-
-        // If we reach here, execve failed
-        perror("execve");
-        _exit(1);
+        executeCgiWithArgs();
     }
 
     // --- PARENT ---
@@ -134,7 +135,6 @@ bool Cgi::start() {
             std::cout << "[CGI] wrote " << written << " bytes to CGI stdin\n";
         }
     }
-
     close(inFd);  // always close stdin, so child gets EOF
     return true;
 }

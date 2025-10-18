@@ -45,6 +45,7 @@ private:
 
 	void	setEnv(const HttpRequest &request, const std::string &scriptPath);
 	bool chdirToScriptDir();
+    void executeCgiWithArgs();
 };
 
 

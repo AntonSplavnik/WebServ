@@ -9,9 +9,7 @@ const int MAX_BACKLOG = 1024;
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
 
 // Valid CGI extensions
-static const char *VALID_CGI_EXTENSIONS[] = {
-	".cgi", ".pl", ".py", ".php", ".sh", ".rb", ".js", ".asp", ".exe", ".bat", ".tcl", ".lua"
-};
+static const char *VALID_CGI_EXTENSIONS[] = { ".py", ".php" };
 static const size_t VALID_CGI_EXTENSIONS_COUNT = sizeof(VALID_CGI_EXTENSIONS) / sizeof(VALID_CGI_EXTENSIONS[0]);
 
 // Valid autoindex values
