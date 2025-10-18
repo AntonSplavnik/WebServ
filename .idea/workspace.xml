@@ -19,20 +19,16 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test.">
-      <change afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/relative_test.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/testcgdir.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="added a relative path support for the cgi script">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/conf/working.conf" beforeDir="false" afterPath="$PROJECT_DIR$/conf/working.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-09-30 13.19.14.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-10-06 19.40.43.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/file_1760694043_1.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/holy.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgiHelpers.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config/config.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/config.hpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,15 +172,7 @@
       <workItem from="1760616134498" duration="40407000" />
       <workItem from="1760727744962" duration="3775000" />
       <workItem from="1760807076353" duration="20000" />
-      <workItem from="1760807139646" duration="4893000" />
-    </task>
-    <task id="LOCAL-00006" summary="Add client_max_body_size, cgi_path, and cgi_ext options to configuration parser">
-      <option name="closed" value="true" />
-      <created>1756842614865</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1756842614865</updated>
+      <workItem from="1760807139646" duration="6674000" />
     </task>
     <task id="LOCAL-00007" summary="Add client_max_body_size and autoindex to configuration parser with validation">
       <option name="closed" value="true" />
@@ -570,7 +558,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760731557612</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="added a relative path support for the cgi script">
+      <option name="closed" value="true" />
+      <created>1760812506112</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1760812506113</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -600,7 +596,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor redirect directive parsing; allow optional status code and set default to 302" />
     <MESSAGE value="Refactor server name handling; change from single string to vector for uniqueness and handling unexpected tokens from location block" />
     <MESSAGE value="Refactor redirect directive parsing (need to point a redirection with the code)" />
     <MESSAGE value="Refactor location config parsing; enhance upload_enabled validation, add default error pages and throw on dublicates of : index, root, client_max_body size" />
@@ -625,7 +620,8 @@
     <MESSAGE value="Refactor path handling in HttpRequest and server; normalize request paths, update mapped path logic, and improve header includes.&#10;&#10;so now cgi and methods are not hardcoded" />
     <MESSAGE value="Enhance path validation in Server; implement realpath resolution and restrict access to configured root directory for improved security." />
     <MESSAGE value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
-    <option name="LAST_COMMIT_MESSAGE" value="Update CGI location in configuration; change path from /cgi-bin to /gocgi for test." />
+    <MESSAGE value="added a relative path support for the cgi script" />
+    <option name="LAST_COMMIT_MESSAGE" value="added a relative path support for the cgi script" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

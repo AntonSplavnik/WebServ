@@ -82,30 +82,37 @@ bool Cgi::start() {
         close(inpipe[1]);
         close(outpipe[0]);
 
-        const std::string scriptPath = request.getMappedPath();
-        if (!chdirToScriptDir(scriptPath)) {
+        if (!chdirToScriptDir()) {
             _exit(126);  // non-zero => parent will treat as 500
         }
 
         setEnv(request, scriptPath);  // Ensure PATH is set
+        // --- Determine interpreter ---
         std::string ext = scriptPath.substr(scriptPath.find_last_of('.') + 1);
-        const char* interpreter = NULL;
-
+        std::string interpreter;
         if (ext == "py")
-            interpreter = "python3";
+            interpreter = "/usr/bin/python3";
         else if (ext == "php")
-            interpreter = "php-cgi";
+            interpreter = "/usr/bin/php-cgi";
         else if (ext == "pl")
-            interpreter = "perl";
+            interpreter = "/usr/bin/perl";
         else
-            interpreter = "bash"; // fallback
-        execlp(interpreter, interpreter, scriptPath.c_str(), NULL);
+            interpreter = "/bin/bash"; // fallback
 
-        // ✅ use env to locate python3 dynamically
-        execl("/usr/bin/env", "env", "python3", scriptPath.c_str(), NULL);
-        // Alternative (direct): execl("/usr/bin/python3", "python3", scriptPath.c_str(), NULL);
+        // --- Prepare args ---
+        char *argv[3];
+        argv[0] = const_cast<char*>(interpreter.c_str());
+        argv[1] = const_cast<char*>(scriptPath.c_str());
+        argv[2] = NULL;
 
-        perror("execl");
+        // --- Build environment array ---
+        extern char **environ; // use current env as base
+        // You can later extend this if you build your own envp
+
+        execve(argv[0], argv, environ);
+
+        // If we reach here, execve failed
+        perror("execve");
         _exit(1);
     }
 

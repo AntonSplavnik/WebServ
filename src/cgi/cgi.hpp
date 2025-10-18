@@ -38,7 +38,7 @@ private:
 	time_t 		startTime;
 
 	void	setEnv(const HttpRequest &request, const std::string &scriptPath);
-	bool chdirToScriptDir(const std::string &scriptPath);
+	bool chdirToScriptDir();
 };
 
 
