@@ -38,10 +38,11 @@ class HttpResponse {
 		HttpResponse(HttpRequest request);
 		~HttpResponse();
 
-		void generateResponse(int statusCode);
+		void generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput);
 		void generateGetResponse();
 		void generateDeleteResponse();
 		void generateCgiResponse(const std::string &cgiOutput);
+        void generateErrorResponse();
 
 		std::string extractBody();
 		std::string	getTimeNow();

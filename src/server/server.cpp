@@ -192,7 +192,7 @@ void Server::handleClientRead(int fd){
 			httpRequest.parseRequest(_clients[fd].requestData);
 			if(!httpRequest.getStatus()){
 				HttpResponse errorResponse(httpRequest);
-				errorResponse.generateResponse(400);
+				errorResponse.generateResponse(400, false, "");
 
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
@@ -207,7 +207,7 @@ void Server::handleClientRead(int fd){
 				if (!matchedLoc) {
 					std::cerr << "[ERROR] No matching location found for path: " << httpRequest.getNormalizedReqPath() << std::endl;
 					HttpResponse resp(httpRequest);
-					resp.generateResponse(404);
+					resp.generateResponse(404, false , "");
 					_clients[fd].responseData = resp.getResponse();
 					_clients[fd].state = SENDING_RESPONSE;
 					return;
@@ -254,7 +254,7 @@ void Server::handleClientRead(int fd){
 					if (!cgi->start()) {
 						// Failed to start CGI → send 500
 						HttpResponse resp(httpRequest);
-						resp.generateResponse(500);
+						resp.generateResponse(500, false , "");
 						_clients[fd].responseData = resp.getResponse();
 						_clients[fd].state = SENDING_RESPONSE;
 						delete cgi;
@@ -396,12 +396,12 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client, const Loc
 	response.setPath(mappedPath);
 	if (file.is_open()){
 
-		response.generateResponse(200);
+		response.generateResponse(200, false, "");
 		client.responseData = response.getResponse();
 	}
 	else{
 		std::cout << "Error: 404 path is not found" << std::endl;
-		response.generateResponse(404);
+		response.generateResponse(404, false, "");
 		client.responseData = response.getResponse();
 	}
 
@@ -523,7 +523,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, const Lo
 	}
 	else {
 		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
-		response.generateResponse(415);
+		response.generateResponse(415, false, "");
 		client.responseData = response.getResponse();
 	}
 }
@@ -606,7 +606,7 @@ bool Server::validatePath(const std::string& path) {
 	std::cout << "mappedPath: " << mappedPath << std::endl;
 	HttpResponse response(request);
 	if (!validatePath(mappedPath)){
-		response.generateResponse(403);
+		response.generateResponse(403, false, "");
 		client.responseData = response.getResponse();
 		std::cout << "Error: 403 Forbidden" << std::endl;
 		return;
@@ -616,19 +616,19 @@ bool Server::validatePath(const std::string& path) {
 	if (file.is_open()){
 		file.close();
 		if(std::remove(mappedPath.c_str()) == 0){
-			response.generateResponse(204);
+			response.generateResponse(204, false, "");
 			client.responseData = response.getResponse();
 			std::cout << "Ok" << std::endl;
 		}
 		else{
-			response.generateResponse(403);
+			response.generateResponse(403, false, "");
 			client.responseData = response.getResponse();
 			std::cout << "Error: 403 permission denied" << std::endl;
 		}
 	}
 	else{
 		std::cout << "Error: 404 path is not found" << std::endl;
-		response.generateResponse(404);
+		response.generateResponse(404, false, "");
 		client.responseData = response.getResponse();
 	}
 /*

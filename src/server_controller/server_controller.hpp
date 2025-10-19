@@ -34,6 +34,9 @@ class ServerController{
 		void 	rebuildPollFds();
 		void 	checkClientTimeouts(Server& server);
 		bool 	isClientTimedOut(std::map<int, ClientInfo>& clients, int fd);
+        //cgi timeout:
+        bool 	isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd);
+        void	checkCgiTimeouts(Server& server);
 
 		std::vector<Server*> 		_servers;
 		std::vector<struct pollfd>	_pollFds;

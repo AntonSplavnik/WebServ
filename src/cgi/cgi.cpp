@@ -198,7 +198,7 @@ bool Cgi::handleRead() {
         std::string mappedPath = request.getMappedPath();
         std::cout << "mappedPath: " << mappedPath << std::endl;
         HttpResponse response(request);
-        response.generateCgiResponse(buffer);
+        response.generateResponse(200, true, buffer);
         _clients[_clientFd].responseData = response.getResponse();
         _clients[_clientFd].state = SENDING_RESPONSE;
 

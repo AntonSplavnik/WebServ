@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 import os
 
-print("Content-Type: text/plain\n")
+print("Status: 200 OK")
+print("Content-Type: text/html; charset=utf-8")
+print("Content-Length:", len(body))
+print("Connection: close")
+print("Cache-Control: no-cache, no-store, must-revalidate")
+print("Pragma: no-cache")
+print("Expires: 0")
+print("Set-Cookie: sessionid=abc123; HttpOnly; Path=/")
+print("X-Powered-By: Python/3 CGI\n")
 
 print("=== CGI chdir test ===")
 cwd = os.getcwd()

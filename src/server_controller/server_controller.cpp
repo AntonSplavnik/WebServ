@@ -182,6 +182,62 @@ void ServerController::run(){
 		for (size_t i = 0; i < _servers.size(); i++)
 		{
 			checkClientTimeouts(*(_servers[i]));
+			checkCgiTimeouts(*(_servers[i]));
 		}
+	}
+}
+
+bool ServerController::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
+	time_t now = time(NULL);
+	std::map<int, Cgi*>::iterator it = cgiMap.find(fd);
+	if (it == cgiMap.end() || !it->second)
+		return false;
+	Cgi* cgi = it->second;
+	return (now - cgi->getStartTime() > CGI_TIMEOUT);
+}
+
+void ServerController::checkCgiTimeouts(Server& server) {
+	std::map<int, Cgi*>& cgiMap = server.getCgiMap();
+	std::map<int, Cgi*>::iterator it = cgiMap.begin();
+
+	while (it != cgiMap.end()) {
+		int currentFd = it->first;
+		Cgi* cgi = it->second;
+
+		if (!cgi) {
+			++it;
+			continue;
+		}
+
+		if (isCgiTimedOut(cgiMap, currentFd)) {
+			std::cout << "[CGI TIMEOUT] Process pid=" << cgi->pid
+					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
+
+			//  Kill the process
+			kill(cgi->pid, SIGKILL);
+
+			//  Clean up process (avoid zombie)
+			waitpid(cgi->pid, NULL, 0);
+
+			//  Prepare 504 Gateway Timeout response
+			HttpResponse resp(cgi->getRequest());
+			resp.generateResponse(504, false, ""); // standard HTTP timeout code
+
+			int clientFd = cgi->getClientFd();
+			if (server.getClients().find(clientFd) != server.getClients().end()) {
+				server.getClients()[clientFd].responseData = resp.getResponse();
+				server.getClients()[clientFd].state = SENDING_RESPONSE;
+			}
+
+			// 4️⃣ Close pipes & clean up memory
+			if (cgi->outFd >= 0) close(cgi->outFd);
+			delete cgi;
+			cgiMap.erase(it++);
+
+			std::cout << "[CGI TIMEOUT] Response 504 sent to client FD=" << clientFd << std::endl;
+			continue;
+		}
+
+		++it;
 	}
 }

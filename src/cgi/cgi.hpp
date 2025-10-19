@@ -1,6 +1,8 @@
 #ifndef CGI_HPP
 #define CGI_HPP
 
+#define CGI_TIMEOUT 3  // seconds — how long CGI may run before it's killed TODO: increase
+
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
@@ -26,6 +28,9 @@ public:
 	int		getClientFd() const { return _clientFd; };
 	void	setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
 	const LocationConfig* getMatchedLocation() const { return _matchedLoc; }
+    time_t getStartTime() const { return startTime; }
+    HttpRequest getRequest() const { return request; }
+
 
 	pid_t	pid;
 	int		outFd;

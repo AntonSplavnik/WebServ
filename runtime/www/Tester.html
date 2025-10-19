@@ -175,6 +175,93 @@
             <button onclick="incrementCounter()">Increment</button>
             <button onclick="resetCounter()">Reset</button>
         </div>
+
+        <div class="test-section">
+            <h2>🧩 CGI Script Tests</h2>
+            <p>Use these buttons to test your CGI implementation with different HTTP methods.</p>
+
+            <div style="margin-top:15px;">
+                <button onclick="testCgiGet()">CGI GET</button>
+                <button onclick="testCgiPost()">CGI POST</button>
+                <button onclick="testCgiDelete()">CGI DELETE</button>
+            </div>
+
+            <div id="cgiOutput" style="
+                background:#1a202c;
+                color:#90cdf4;
+                padding:15px;
+                border-radius:8px;
+                font-family:monospace;
+                margin-top:15px;
+                white-space:pre-wrap;
+                min-height:100px;">
+                CGI output will appear here...
+            </div>
+        </div>
+
+        <script>
+            const cgiOut = document.getElementById('cgiOutput');
+
+            function logCgi(msg, type='info') {
+                const time = new Date().toLocaleTimeString();
+                const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '🌀';
+                cgiOut.textContent += `[${time}] ${prefix} ${msg}\n`;
+                cgiOut.scrollTop = cgiOut.scrollHeight;
+            }
+
+            function testCgiGet() {
+                cgiOut.textContent = '';
+                showSpinner(true);
+                logCgi('Sending CGI GET...');
+                fetch('/cgi-bin/test_POST_GET.py')
+                    .then(r => r.text().then(t => {
+                        showSpinner(false);
+                        logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
+                        logCgi('Body:\n' + t, 'info');
+                    }))
+                    .catch(e => {
+                        showSpinner(false);
+                        logCgi(e.message, 'error');
+                    });
+            }
+
+            function testCgiPost() {
+                cgiOut.textContent = '';
+                showSpinner(true);
+                logCgi('Sending CGI POST...');
+                fetch('/cgi-bin/testcgdir.py', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: "Hello from POST", time: Date.now() })
+                })
+                    .then(r => r.text().then(t => {
+                        showSpinner(false);
+                        logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
+                        logCgi('Body:\n' + t, 'info');
+                    }))
+                    .catch(e => {
+                        showSpinner(false);
+                        logCgi(e.message, 'error');
+                    });
+            }
+
+            function testCgiDelete() {
+                cgiOut.textContent = '';
+                showSpinner(true);
+                logCgi('Sending CGI DELETE...');
+                fetch('/cgi-bin/testcgdir.py', { method: 'DELETE' })
+                    .then(r => r.text().then(t => {
+                        showSpinner(false);
+                        logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
+                        logCgi('Body:\n' + t, 'info');
+                    }))
+                    .catch(e => {
+                        showSpinner(false);
+                        logCgi(e.message, 'error');
+                    });
+            }
+        </script>
+
     </div>
 
     <script>

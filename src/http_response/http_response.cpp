@@ -170,87 +170,173 @@ void HttpResponse::generateDeleteResponse() {
 	_response = oss.str();
 }
 
-void generateErrorResponse() {}
+void HttpResponse::generateErrorResponse() //TODO: load a custom HTML file per error code (like error_pages/404.html, error_pages/500.html), and fall back to this default if not found
+    //TODO: check if it works with sattic
+{
+
+    std::ostringstream body;
+
+    // Simple HTML body for the error
+    body << "<html><head><title>" << _statusCode << " " << _reasonPhrase
+         << "</title></head><body><center><h1>" << _statusCode << " "
+         << _reasonPhrase
+         << "</h1></center><hr><center>WebServ42/1.0</center></body></html>";
+
+    _body = body.str();
+    _contentType = "text/html";
+    _contentLength = _body.size();
+    _connectionType = "close";  // close connection on error
+
+    // Build full HTTP response
+    std::ostringstream oss;
+    oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+        << "Date: " << getTimeNow() << "\r\n"
+        << "Server: " << _serverName << "/" << _serverVersion << "\r\n"
+        << "Content-Type: " << _contentType << "\r\n"
+        << "Content-Length: " << _contentLength << "\r\n"
+        << "Connection: " << _connectionType << "\r\n\r\n"
+        << _body;
+
+    _response = oss.str();
+}
+
 
 void HttpResponse::generateCgiResponse(const std::string &cgiOutput)
 {
-	// --- find header/body separator ---
-	size_t headerEnd = cgiOutput.find("\r\n\r\n");
-	size_t separatorLength = 4;
-	if (headerEnd == std::string::npos) {
-		headerEnd = cgiOutput.find("\n\n");
-		separatorLength = 2;
-	}
+    // --- 1️⃣ Find headers/body separator ---
+    size_t headerEnd = cgiOutput.find("\r\n\r\n");
+    size_t separatorLength = 4;
+    if (headerEnd == std::string::npos) {
+        headerEnd = cgiOutput.find("\n\n");
+        separatorLength = 2;
+    }
 
-	std::string headers = cgiOutput.substr(0, headerEnd);
-	std::string body = cgiOutput.substr(headerEnd + separatorLength);
+    std::string headers = cgiOutput.substr(0, headerEnd);
+    std::string body = cgiOutput.substr(headerEnd + separatorLength);
 
+    // --- 2️⃣ Default values ---
+    int statusCode = 200;
+	std::string statusText = "OK";
+    std::string contentType = "text/plain";
+    std::string connection = "keep-alive";
+    long contentLength = -1; // means not provided by CGI
 
-	// --- parse Content-Type from CGI headers ---
-	std::string contentType = "text/html"; // default
-	std::string connection = "keep-alive"; // todo: parse from headers
-	size_t pos = headers.find("Content-Type:");
-	if (pos != std::string::npos) {
-		size_t start = headers.find_first_not_of(" \t", pos + 13);
-		size_t end = headers.find("\n", start);
-		contentType = headers.substr(start, end - start);
-		if (!contentType.empty() && contentType.back() == '\r')
-			contentType.pop_back();
-	}
+    // --- 3️⃣ Parse CGI headers manually ---
+    std::istringstream hdrStream(headers);
+    std::string line;
+    while (std::getline(hdrStream, line))
+    {
+        if (!line.empty() && line[line.size() - 1] == '\r')
+            line.erase(line.size() - 1);
 
-	// --- compute content length ---
-	std::ostringstream lengthStream;
-	lengthStream << body.size();
+        if (line.find("Content-Type:") == 0)
+        {
+            size_t start = line.find_first_not_of(" \t", 13);
+            if (start != std::string::npos)
+                contentType = line.substr(start);
+        }
+        else if (line.find("Content-Length:") == 0)
+        {
+            size_t start = line.find_first_not_of(" \t", 15);
+            if (start != std::string::npos)
+            {
+                std::string lenStr = line.substr(start);
+                std::istringstream iss(lenStr);
+                iss >> contentLength; // simple C++98 safe parsing
+                if (iss.fail())
+                    contentLength = -1;
+            }
+        }
+        else if (line.find("Connection:") == 0)
+        {
+            size_t start = line.find_first_not_of(" \t", 11);
+            if (start != std::string::npos)
+                connection = line.substr(start);
+        }
+        else if (line.find("Status:") == 0) {
+    		size_t start = line.find_first_not_of(" \t", 7);
+    		if (start != std::string::npos) {
+        		std::istringstream iss(line.substr(start));
+        		iss >> statusCode;
+        		std::getline(iss, statusText);
+        		if (!statusText.empty() && statusText[0] == ' ')
+            		statusText.erase(0, 1);
+    		}
+		}
+    }
 
-	// --- now build final HTTP response ---
-	std::ostringstream oss;
-	oss << "HTTP/1.1 200 OK\r\n";
-	oss << "Date: " << getTimeNow() << "\r\n";
-	oss << "Server: WebServ/1.0\r\n";
-	oss << "Content-Type: " << contentType << "\r\n";
-	oss << "Content-Length: " << body.size() << "\r\n";
-	oss << "Connection: " << connection << "\r\n\r\n";
+    // ---  Fallback if Content-Length missing ---
+    if (contentLength < 0)
+        contentLength = static_cast<long>(body.size());
 
-	oss << body;
+    // ---  Build final HTTP response ---
+    std::ostringstream oss;
+    oss << "HTTP/1.1 " << statusCode << " " << statusText << "\r\n"
+        << "Date: " << getTimeNow() << "\r\n"
+        << "Server: WebServ/1.0\r\n"
+        << "Content-Type: " << contentType << "\r\n"
+        << "Content-Length: " << contentLength << "\r\n"
+        << "Connection: " << connection << "\r\n\r\n"
+        << body;
 
-	_response = oss.str();
+    _response = oss.str();
 }
 
-void HttpResponse::generateResponse(int statusCode) {
 
+void HttpResponse::generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput)
+{
 	_method = _request.getMethodEnum();
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase(); //change to map
+	_reasonPhrase = getReasonPhrase();
 	_date = getTimeNow();
 
-	if(_statusCode >= 400){
+	//  --- 1. Handle CGI case ---
+	if (isCgi)
+	{
+		generateCgiResponse(cgiOutput);
+		return;
+	}
+
+	// --- 2. Handle HTTP errors ---
+	if (_statusCode >= 400)
+	{
 		generateErrorResponse();
 		return;
 	}
 
-	std::cout << "_path: " << _filePath << std::endl;
+	//  --- 3. Normal file-based response ---
 	_body = extractBody();
-	std::cout << "_path: " << _filePath << std::endl;
-
-	std::cout << "_body: " << _body << std::endl;
 	_contentType = getContentType();
 	_contentLength = getContentLength();
-	_connectionType = _request.getContenType();
+
+	// Determine connection type: default keep-alive
+	std::map<std::string, std::string>::const_iterator it = _request.getHeaders().find("connection");
+	if (it != _request.getHeaders().end())
+		_connectionType = it->second;
+	else
+		_connectionType = "keep-alive";
+
+	//  --- 4. Generate based on HTTP method ---
 	switch (_method)
 	{
-	case POST:
-		generatePostResponse(); break;
-	case GET:
-		generateGetResponse(); break;
-	case DELETE:
-		generateDeleteResponse(); break;
-	default:
-		_statusCode = 405;
-		_reasonPhrase = "Method Not Allowed";
-		generateErrorResponse();
-		break;
+		case POST:
+			generatePostResponse();
+			break;
+		case GET:
+			generateGetResponse();
+			break;
+		case DELETE:
+			generateDeleteResponse();
+			break;
+		default:
+			_statusCode = 405;
+			_reasonPhrase = "Method Not Allowed";
+			generateErrorResponse();
+			break;
 	}
 }
+
+
 std::string HttpResponse::extractBody() {
 	std::ifstream file(_filePath.c_str(), std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
