@@ -88,8 +88,8 @@ class HttpRequest{
 		std::string	_method; // "GET"
 
 		Methods		_methodEnum; //  GET
-                //TODO: deliver all this vars correctly:
-                 						// http://localhost:8080/cgi/test_POST_GET.py/foo/bar?x=1&y=2
+                //TODO: deliver all this vars correctly :
+        // http://localhost:8080/cgi/test_POST_GET.py/foo/bar?x=1&y=2
 		std::string	_requestedPath; 	// "/cgi/test_POST_GET.py/foo/bar?x=1&y=2"  (raw path + query as received)
         std::string _normalizedReqPath; // "/cgi/test_POST_GET.py/foo/bar"         (normalized path, no query, no duplicate slashes)
         std::string	_mappedPath; 		// "/var/www/cgi/test_POST_GET.py"         (filesystem mapping for the script/resource)

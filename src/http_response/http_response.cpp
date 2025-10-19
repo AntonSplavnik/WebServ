@@ -217,7 +217,7 @@ void HttpResponse::generateCgiResponse(const std::string &cgiOutput)
     // --- 2️⃣ Default values ---
     int statusCode = 200;
 	std::string statusText = "OK";
-    std::string contentType = "text/plain";
+    std::string contentType = "text/html";
     std::string connection = "keep-alive";
     long contentLength = -1; // means not provided by CGI
 

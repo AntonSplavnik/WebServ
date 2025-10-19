@@ -19,15 +19,15 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="response.generateResponse(200, false, &quot;&quot;);">
+    <list default="true" id="5be3ef1f-0f17-4684-864f-7787e7487dad" name="Changes" comment="Enhance CGI handling: support JSON and form data in POST requests, improve HTML output, and update debug information&#10;&#10;added check of how much bytes were sent,">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/runtime/www/Tester.html" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/www/Tester.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/runtime/www/cgi-bin/test_POST_GET.py" beforeDir="false" afterPath="$PROJECT_DIR$/runtime/www/cgi-bin/test_POST_GET.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-09-30 13.19.14.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/2025-10-06 19.40.43.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/file_1760694043_1.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/runtime/www/uploads/holy.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cgi/cgi.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/cgi/cgi.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_request/http_request.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_request/http_request.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/http_response/http_response.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/http_response/http_response.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -178,15 +178,7 @@
       <workItem from="1760727744962" duration="3775000" />
       <workItem from="1760807076353" duration="20000" />
       <workItem from="1760807139646" duration="12407000" />
-      <workItem from="1760867168592" duration="24906000" />
-    </task>
-    <task id="LOCAL-00013" summary="Add directory structure, error page HTML files and update configuration paths for logs and error pages">
-      <option name="closed" value="true" />
-      <created>1756996179814</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1756996179814</updated>
+      <workItem from="1760867168592" duration="26467000" />
     </task>
     <task id="LOCAL-00014" summary="Refactor configuration parser: normalize paths, add file and directory validation, and improve error handling for log files. Check the path then checks for the file rights, if error =&gt; creates files in the path">
       <option name="closed" value="true" />
@@ -572,7 +564,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760889332653</updated>
     </task>
-    <option name="localTasksCounter" value="62" />
+    <task id="LOCAL-00062" summary="Enhance CGI handling: support JSON and form data in POST requests, improve HTML output, and update debug information&#10;&#10;added check of how much bytes were sent,">
+      <option name="closed" value="true" />
+      <created>1760894714914</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1760894714914</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -602,7 +602,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Refactor helper functions; replace static arrays with dynamic validation for HTTP methods, CGI extensions, and autoindex values" />
     <MESSAGE value="Refactor config parsing; replace static directive arrays with constant arrays for improved readability and maintainability" />
     <MESSAGE value="Refactor config parsing; move location-specific parsing logic to separate function, add default error page constants, and improve log file assignment" />
     <MESSAGE value="Refactor config parsing; enhance structure by integrating location block handling into server config parsing and improving function organization" />
@@ -627,7 +626,8 @@
     <MESSAGE value="implemented the setting all the env var, some of them are needed to set by Anton (TODO)." />
     <MESSAGE value="implemented cgi headers parser and the server calculate the content-length by itself if not presented and sets default status code 200, statusText OK, contentType &quot;text/plain&quot;, connection = &quot;keep-alive&quot;" />
     <MESSAGE value="response.generateResponse(200, false, &quot;&quot;);" />
-    <option name="LAST_COMMIT_MESSAGE" value="response.generateResponse(200, false, &quot;&quot;);" />
+    <MESSAGE value="Enhance CGI handling: support JSON and form data in POST requests, improve HTML output, and update debug information&#10;&#10;added check of how much bytes were sent," />
+    <option name="LAST_COMMIT_MESSAGE" value="Enhance CGI handling: support JSON and form data in POST requests, improve HTML output, and update debug information&#10;&#10;added check of how much bytes were sent," />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

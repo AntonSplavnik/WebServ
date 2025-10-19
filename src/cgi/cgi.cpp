@@ -45,12 +45,24 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
         host = it->second;
     setenv("SERVER_NAME", host.c_str(), 1);
     setenv("SERVER_PORT", "8080", 1); // or from _matchedLoc / configData
-
     //  Request details
     setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
     setenv("QUERY_STRING", request.getQueryString().c_str(), 1);
     setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1);
     setenv("SCRIPT_NAME", request.getNormalizedReqPath().c_str(), 1);
+    setenv("PATH", "/usr/local/bin:/usr/bin:/bin", 1);
+	setenv("DOCUMENT_ROOT", _matchedLoc ? _matchedLoc->root.c_str() : ".", 1);
+	setenv("REDIRECT_STATUS", "200", 1); // required for php-cgi
+	setenv("REQUEST_URI", request.getNormalizedReqPath().c_str(), 1);
+    for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+     	it != headers.end(); ++it)
+	{
+    	std::string key = "HTTP_" + it->first;
+    	std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+    	std::replace(key.begin(), key.end(), '-', '_');
+    	setenv(key.c_str(), it->second.c_str(), 1);
+	}
+
 
     //  Content info (for POST, PUT)
     std::string body = request.getBody();
@@ -84,14 +96,16 @@ if (_clients.find(_clientFd) != _clients.end()) {
     std::string reqPath = request.getNormalizedReqPath();
     std::string scriptName = request.getMappedPath();
 
-    if (reqPath.find(scriptName) != std::string::npos) {
-        pathInfo = reqPath.substr(scriptName.size());
-        if (!pathInfo.empty()) {
-            pathTranslated = scriptPath + pathInfo;
-            setenv("PATH_INFO", pathInfo.c_str(), 1);
-            setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
-        }
-    }
+    std::string urlPath = request.getNormalizedReqPath();
+	std::string locPath = _matchedLoc ? _matchedLoc->path : "";
+
+	if (urlPath.size() > locPath.size())
+	{
+    	std::string pathInfo = urlPath.substr(locPath.size());
+    	std::string pathTranslated = scriptPath + pathInfo;
+    	setenv("PATH_INFO", pathInfo.c_str(), 1);
+    	setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
+	}
 }
 
 
@@ -132,6 +146,10 @@ bool Cgi::start() {
         return false;
     }
 
+	if (access(scriptPath.c_str(), X_OK) != 0) {
+    	perror("access");
+    	return false; // will trigger 500
+	}
     pid = fork();
     if (pid < 0) {
         perror("fork");
@@ -207,6 +225,13 @@ bool Cgi::handleRead() {
 
         int status;
         waitpid(pid, &status, WNOHANG);  // reap zombie safely
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+    		HttpResponse errResp(request);
+   	 		errResp.generateResponse(500, false, "");
+    		_clients[_clientFd].responseData = errResp.getResponse();
+    		_clients[_clientFd].state = SENDING_RESPONSE;
+    		return false;
+		}
         //std::string Path = request.getPath();
         std::string mappedPath = request.getMappedPath();
         std::cout << "mappedPath: " << mappedPath << std::endl;
