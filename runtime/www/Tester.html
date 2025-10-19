@@ -197,6 +197,12 @@
                 min-height:100px;">
                 CGI output will appear here...
             </div>
+
+            <div style="margin-top:15px;">
+                <input type="text" id="postFoo" placeholder="foo value" value="bar">
+                <input type="number" id="postNum" placeholder="num value" value="42">
+                <button onclick="testCgiPost()">CGI POST</button>
+            </div>
         </div>
 
         <script>
@@ -213,37 +219,52 @@
                 cgiOut.textContent = '';
                 showSpinner(true);
                 logCgi('Sending CGI GET...');
-                fetch('/cgi-bin/test_POST_GET.py')
-                    .then(r => r.text().then(t => {
+                // Add parameters to the URL
+                const url = '/cgi-bin/test_POST_GET.py?foo=bar&num=42';
+                fetch(url)
+                    .then(r => {
                         showSpinner(false);
-                        logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
-                        logCgi('Body:\n' + t, 'info');
-                    }))
+                        if (r.headers.get('content-type')?.includes('text/html')) {
+                            window.location.href = url;
+                        } else {
+                            r.text().then(t => {
+                                logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
+                                logCgi('Body:\n' + t, 'info');
+                            });
+                        }
+                    })
                     .catch(e => {
                         showSpinner(false);
                         logCgi(e.message, 'error');
                     });
             }
 
-            function testCgiPost() {
+
+                function testCgiPost() {
                 cgiOut.textContent = '';
                 showSpinner(true);
                 logCgi('Sending CGI POST...');
-                fetch('/cgi-bin/testcgdir.py', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: "Hello from POST", time: Date.now() })
-                })
-                    .then(r => r.text().then(t => {
-                        showSpinner(false);
-                        logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
-                        logCgi('Body:\n' + t, 'info');
-                    }))
-                    .catch(e => {
-                        showSpinner(false);
-                        logCgi(e.message, 'error');
-                    });
+                // Get values from input fields
+                const foo = document.getElementById('postFoo').value;
+                const num = document.getElementById('postNum').value;
+                fetch('/cgi-bin/test_POST_GET.py', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ foo, num })
+            })
+                .then(r => {
+                showSpinner(false);
+                r.text().then(t => {
+                logCgi(`Status: ${r.status} ${r.statusText}`, 'success');
+                logCgi('Body:\n' + t, 'info');
+            });
+            })
+                .catch(e => {
+                showSpinner(false);
+                logCgi(e.message, 'error');
+            });
             }
+
 
             function testCgiDelete() {
                 cgiOut.textContent = '';

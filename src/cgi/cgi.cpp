@@ -124,6 +124,7 @@ void Cgi::executeCgiWithArgs()
 
 bool Cgi::start() {
 
+  //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
     int inpipe[2];
     int outpipe[2];
     if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
@@ -161,12 +162,24 @@ bool Cgi::start() {
     fcntl(outFd, F_SETFL, O_NONBLOCK);
     // If POST → write body to stdin of CGI
     if (request.getMethod() == "POST") {
-        const std::string &body = request.getBody();
-        if (!body.empty()) {
-            ssize_t written = write(inFd, body.c_str(), body.size());
-            std::cout << "[CGI] wrote " << written << " bytes to CGI stdin\n";
-        }
-    }
+    	const std::string &body = request.getBody();
+    	ssize_t totalWritten = 0;
+    	ssize_t n;
+
+    	while (totalWritten < (ssize_t)body.size()) {
+        	n = write(inFd, body.c_str() + totalWritten, body.size() - totalWritten);
+        	if (n < 0) {
+            	if (errno == EINTR) continue;      // retry on interrupt
+            	perror("[CGI] write error");
+            	break;
+        	}
+        	totalWritten += n;
+    	}
+		std::cout << "[CGI] Sending POST body to script: " << scriptPath;
+
+    	std::cout << "[CGI] wrote " << totalWritten << " bytes to CGI stdin\n";
+	}
+
     close(inFd);  // always close stdin, so child gets EOF
     return true;
 }
