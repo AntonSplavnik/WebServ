@@ -31,37 +31,69 @@ Cgi::~Cgi() {
     if (outFd >= 0) close(outFd);
     if (inFd >= 0) close(inFd);
 }
-
 void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
+    //  Base CGI variables
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-    setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1);
-    setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
-    setenv("QUERY_STRING", request.getQueryString().c_str(), 1);
+    setenv("SERVER_PROTOCOL", request.getVersion().c_str(), 1);
+    setenv("SERVER_SOFTWARE", "Webserv42/1.0", 1); //TODO: set somewhere and take it from there
 
-
-    // Basic headers
+    //  Server name and port
     std::string host = "localhost";
     std::map<std::string, std::string> headers = request.getHeaders();
-    if (headers.find("host") != headers.end())
-        host = headers["host"];
+    std::map<std::string, std::string>::const_iterator it = headers.find("host");
+    if (it != headers.end())
+        host = it->second;
     setenv("SERVER_NAME", host.c_str(), 1);
-    setenv("SERVER_PORT", "8080", 1);
+    setenv("SERVER_PORT", "8080", 1); // or from _matchedLoc / configData
 
-    // POST-specific
-    if (request.getMethod() == "POST") {
-        std::string body = request.getBody();
-        std::string contentType = request.getContenType();
-        std::string contentLength = std::to_string(body.size());
+    //  Request details
+    setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
+    setenv("QUERY_STRING", request.getQueryString().c_str(), 1);
+    setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1);
+    setenv("SCRIPT_NAME", request.getNormalizedReqPath().c_str(), 1);
 
-        setenv("CONTENT_TYPE", contentType.c_str(), 1);
-        setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+    //  Content info (for POST, PUT)
+    std::string body = request.getBody();
+    std::string contentLength = "0";
+    if (!body.empty()) {
+        std::ostringstream oss;
+        oss << body.size();
+        contentLength = oss.str();
     }
-    // DELETE — просто указываем метод и пустое тело
-    else if (request.getMethod() == "DELETE") {
-        setenv("CONTENT_LENGTH", "0", 1);
+    setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+    setenv("CONTENT_TYPE", request.getContenType().c_str(), 1);
+
+    //  Client (REMOTE_ADDR / PORT)
+    std::string remoteAddr = "127.0.0.1";
+    std::string remotePort = "80";
+    #if 0
+if (_clients.find(_clientFd) != _clients.end()) {
+    remoteAddr = _clients[_clientFd].client_ip;
+    std::ostringstream port;
+    port << _clients[_clientFd].client_port;
+    remotePort = port.str();
+}
+#endif //TODO: add client ip and port to ClientInfo and set them on accept
+    setenv("REMOTE_ADDR", remoteAddr.c_str(), 1);
+    setenv("REMOTE_PORT", remotePort.c_str(), 1);
+
+    //  PATH_INFO / PATH_TRANSLATED
+    // (if your request URL is /cgi/test.py/foo/bar → PATH_INFO = /foo/bar)
+    std::string pathInfo = ""; // TODO: extract from request path
+    std::string pathTranslated = ""; // TODO: map to filesystem
+    std::string reqPath = request.getNormalizedReqPath();
+    std::string scriptName = request.getMappedPath();
+
+    if (reqPath.find(scriptName) != std::string::npos) {
+        pathInfo = reqPath.substr(scriptName.size());
+        if (!pathInfo.empty()) {
+            pathTranslated = scriptPath + pathInfo;
+            setenv("PATH_INFO", pathInfo.c_str(), 1);
+            setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
+        }
     }
 }
+
 
 void Cgi::executeCgiWithArgs()
 {

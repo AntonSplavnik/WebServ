@@ -70,6 +70,7 @@ class HttpRequest{
         std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
 
+
 		void setMethod(std::string method);
 		void setPath(std::string path);
 		void setVersion(std::string version);
@@ -87,12 +88,17 @@ class HttpRequest{
 		std::string	_method; // "GET"
 
 		Methods		_methodEnum; //  GET
-		std::string	_requestedPath; //  /api/v1/resource?id=123
-        std::string _normalizedReqPath;     // /api/v1/resource
-        std::string	_mappedPath; // /var/www/html/api/v1/resource
-                                     //TODO: mapPath outside of this class
-        std::string _queryString; // id=123
-		std::string	_version; // HTTP/1.1
+                //TODO: deliver all this vars correctly:
+                 						// http://localhost:8080/cgi/test_POST_GET.py/foo/bar?x=1&y=2
+		std::string	_requestedPath; 	// "/cgi/test_POST_GET.py/foo/bar?x=1&y=2"  (raw path + query as received)
+        std::string _normalizedReqPath; // "/cgi/test_POST_GET.py/foo/bar"         (normalized path, no query, no duplicate slashes)
+        std::string	_mappedPath; 		// "/var/www/cgi/test_POST_GET.py"         (filesystem mapping for the script/resource)
+
+        std::string _queryString; 		// "x=1&y=2"                               (everything after '?')
+		std::string	_version;  			// "HTTP/1.1"
+        std::string _pathInfo;   		// "/foo/bar"                              (info after the script name for CGI)
+        std::string _pathTranslated; 	// "/var/www/cgi/foo/bar"                  (pathInfo translated to filesystem)
+
 
 		//headers
 		std::map<std::string, std::string>	_headers;

@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
-import os, sys
+import os
 
 print("Content-Type: text/plain\n")
 
-method = os.environ.get("REQUEST_METHOD", "")
-query  = os.environ.get("QUERY_STRING", "")
+# Only the vars that your C++ server should set
+vars_to_check = [
+    "GATEWAY_INTERFACE",
+    "SERVER_PROTOCOL",
+    "SERVER_SOFTWARE",
+    "SERVER_NAME",
+    "SERVER_PORT",
+    "REQUEST_METHOD",
+    "SCRIPT_NAME",
+    "SCRIPT_FILENAME",
+    "QUERY_STRING",
+    "CONTENT_TYPE",
+    "CONTENT_LENGTH",
+    "PATH_INFO",
+    "PATH_TRANSLATED",
+    "REMOTE_ADDR",
+    "REMOTE_PORT",
+]
 
-if method == "GET":
-    print("GET request with query:", query)
+print("=== Selected CGI Environment Variables ===\n")
 
-elif method == "POST":
-    length = int(os.environ.get("CONTENT_LENGTH", 0))
-    body = sys.stdin.read(length)
-    print("POST body:", body)
-
-elif method == "DELETE":
-    print("DELETE called on:", query)
+for var in vars_to_check:
+    val = os.environ.get(var)
+    if val is not None:
+        print(f"{var} = {val}")
+    else:
+        print(f"{var} = [NOT SET]")

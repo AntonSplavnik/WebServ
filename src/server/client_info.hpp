@@ -31,6 +31,8 @@ struct ClientInfo {
 	int maxRequests;            // Max requests per connection
 	int requestCount;           // Current request count
 	bool shouldClose;           // Close on error
+    //std::string client_ip; TODO: add client ip and port to ClientInfo and set them on accept
+    //int client_port; TODO: add client ip and port to ClientInfo and set them on accept
 };
 
 #endif
