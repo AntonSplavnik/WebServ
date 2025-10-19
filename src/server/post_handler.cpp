@@ -51,11 +51,11 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
 
     if (saveRawContent(filePath, request.getBody())) {
         HttpResponse response(request);
-        response.generateResponse(200);
+        response.generateResponse(200, false, "");
         client.responseData = response.getResponse();
     } else {
         HttpResponse response(request);
-        response.generateResponse(500);
+        response.generateResponse(500, false, "");
         client.responseData = response.getResponse();
     }
 }
@@ -166,7 +166,7 @@ void PostHandler::handleMultipart(const HttpRequest& request, ClientInfo& client
 	processMultipartParts(parts, request, client);
 
 	HttpResponse response(request);
-	response.generateResponse(200);
+	response.generateResponse(200, false, "");
 	client.responseData = response.getResponse();
 }
 
@@ -313,7 +313,7 @@ void PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts,
         }
     }
     HttpResponse response(request);
-    response.generateResponse(200);
+    response.generateResponse(200, false, "");
     client.responseData = response.getResponse();
 }
 
