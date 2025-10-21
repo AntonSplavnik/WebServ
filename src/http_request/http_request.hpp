@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 15:16:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/19 20:05:38 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,8 +32,8 @@ class HttpRequest{
 		~HttpRequest();
 
 		void parseRequest(std::string requestData);
-		void partialParseRequest(const std::string requestData);
-		
+		void ParsePartialRequest(const std::string requestData);
+
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();

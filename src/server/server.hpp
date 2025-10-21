@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 20:42:13 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/17 17:34:08 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,20 +39,20 @@ class Server {
 	private:
 
 		void initializeListeningSockets();
-
 		int isListeningSocket(int fd) const;
+		bool isPathSafe(const std::string& mappedPath, const std::string& allowedRoot);
 		void handlePOLLERR(int fd);
 		void handlePOLLHUP(int fd);
 		void handleListenEvent(int fd);
 		void handleClientRead(int indexOfLinstenSocket);
 		void handleClientWrite(int fd);
 
-		void handleGET(const HttpRequest& request, ClientInfo& client);
-		void handlePOST(const HttpRequest& request, ClientInfo& client);
-		void handleDELETE(const HttpRequest& request, ClientInfo& client);
+		void handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
+		void handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
+		void handleDELETE(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
 
-		bool validatePath(std::string path, const HttpRequest& request);
-		std::string mapPath(const HttpRequest& request);
+		bool validatePath(const HttpRequest& request, const LocationConfig*& location);
+		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
 		// Utility

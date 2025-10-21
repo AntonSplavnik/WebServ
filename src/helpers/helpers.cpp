@@ -19,9 +19,16 @@ std::vector<std::string> readValues(std::istringstream& iss) {
 
 // Helper to normalize paths (resolve ., .., symlinks)
 std::string normalizePath(const std::string& path) {
+    bool hadTrailingSlash = (!path.empty() && path[path.length() - 1] == '/');
     char resolved[PATH_MAX];
-    if (realpath(path.c_str(), resolved))
-        return std::string(resolved);
+    if (realpath(path.c_str(), resolved)) {
+        std::string result(resolved);
+        // Preserve trailing slash for directories (but not for root "/")
+        if (hadTrailingSlash && result != "/") {
+            result += '/';
+        }
+        return result;
+    }
     return path; // fallback if path does not exist
 }
 

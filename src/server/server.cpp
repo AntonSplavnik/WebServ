@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 18:14:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/21 16:03:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,6 @@
 #include <ctime>
 #include <fstream>
 
-/* - initialize() - Create and configure the listening socket using your
-   Socket class
-  - start() - Set up poll array, add listening socket to poll
-  - run() - Main event loop with poll()
-  - stop() - Cleanup */
 Server::Server(const ConfigData& config)
 	:_configData(config){
 
@@ -31,9 +26,6 @@ Server::Server(const ConfigData& config)
 Server::~Server(){
 	shutdown();
 }
-/**
- * Initialisatin of listening sockets
- */
 void Server::initializeListeningSockets(){
 
 	//add logic for incoming listening sockets from the config file.
@@ -118,7 +110,7 @@ void Server::handleListenEvent(int indexOfLinstenSocket){
 void Server::handleClientRead(int fd){
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
-		std::cout << "Max request count reached: " << fd << std::endl;
+		std::cout << "[DEBUG] Max request count reached: " << fd << std::endl;
 
 		/*
 			1. Graceful Closure: You should finish sending the current
@@ -135,48 +127,43 @@ void Server::handleClientRead(int fd){
 		char buffer[BUFFER_SIZE];
 		std::memset(buffer, 0, BUFFER_SIZE);
 		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
-		std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
+		std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 		if (bytes <= 0) {
 			if (bytes == 0) {
-				std::cout << "Client FD " << fd << " disconnected" << std::endl;
+				std::cout << "[DEBUG] Client FD " << fd << " disconnected" << std::endl;
 				disconectClient(fd);
 			} else { // bytes < 0
-				if (errno == EAGAIN || errno == EWOULDBLOCK) {
-					// No data available - continue monitoring
-					return;
-				}
-				std::cout << "Error on FD " << fd << ": " << strerror(errno) << std::endl;
-  				disconectClient(fd);
+
+				std::cout << "[DEBUG] Error on FD " << fd << ": " << strerror(errno) << std::endl;
+				disconectClient(fd);
 			}
 		}
 		else {
 
 			updateClientActivity(fd);
-			
-			_clients[fd].requestData.append(buffer, bytes);
+			{
+				_clients[fd].requestData.append(buffer, bytes);
 
-			// Check if headers complete
-			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
-			if(headerEnd == std::string::npos)
-				return;  // Keep receiving headers
+				// Check if headers complete
+				size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
+				if(headerEnd == std::string::npos)
+					return;  // Keep receiving headers
 
-			// Parse headers to get Content-Length
-			HttpRequest tempParser;
-			tempParser.partialParseRequest(_clients[fd].requestData);
-			size_t contentLength = tempParser.getContentLength();
+				// Parse headers to get Content-Length
+				HttpRequest tempParser;
+				tempParser.ParsePartialRequest(_clients[fd].requestData);
+				size_t contentLength = tempParser.getContentLength();
 
-			// Check if full body received
-			size_t bodyStart = headerEnd + 4;
-			size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
+				// Check if full body received
+				size_t bodyStart = headerEnd + 4;
+				size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
 
-			std::cout << "[DEBUG] Content-Length: " << contentLength
-			<< ", Body received: " << bodyReceived
-			<< ", Total data: " << _clients[fd].requestData.length() << std::endl;
+				std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;
 
-			if(bodyReceived < contentLength)
-				return;  // Keep receiving body
-
+				if(bodyReceived < contentLength)
+					return;  // Keep receiving body
+			}
 
 			// Full request is received, prepare response
 			HttpRequest httpRequest;
@@ -184,25 +171,59 @@ void Server::handleClientRead(int fd){
 			if(!httpRequest.getStatus()){
 				HttpResponse errorResponse(httpRequest);
 				errorResponse.generateResponse(400);
-
+				_clients[fd].responseData = errorResponse.getResponse();
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
 				_clients[fd].shouldClose = true;
-				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
-
-			updateClientActivity(fd);
-
+				std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+				return;
 			}else{
+				updateClientActivity(fd);
+
+				HttpResponse response(httpRequest);
+				std::cout << "[DEBUG] STARTING MATCHING LOCATION! " << std::endl;
+				const LocationConfig* matchedLocation = _configData.findMatchingLocation(httpRequest.getPath());
+				if(!matchedLocation){
+					std::cout << "[DEBUG] No matched location in config file" << std::endl;
+					response.generateResponse(404);
+					_clients[fd].responseData = response.getResponse();
+					_clients[fd].bytesSent = 0;
+					_clients[fd].state = SENDING_RESPONSE;
+					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					return;
+				}
+				if(!validatePath(httpRequest, matchedLocation)) {
+					std::cout << "[DEBUG] Path validation failed (method not allowed or missing root)" << std::endl;
+					response.generateResponse(403);
+					_clients[fd].responseData = response.getResponse();
+					_clients[fd].bytesSent = 0;
+					_clients[fd].state = SENDING_RESPONSE;
+					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					return;
+				}
+
+				std::string mappedPath = mapPath(httpRequest, matchedLocation);
+				if(!isPathSafe(mappedPath, matchedLocation->root)) {
+					response.generateResponse(403);
+					_clients[fd].responseData = response.getResponse();
+					_clients[fd].bytesSent = 0;
+					_clients[fd].state = SENDING_RESPONSE;
+					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					return;
+				}
+
+				//if cgi -> cgi
+
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
-					case GET: handleGET(httpRequest, _clients[fd]); break;
-					case POST: handlePOST(httpRequest, _clients[fd]); break;
-					case DELETE: handleDELETE(httpRequest, _clients[fd]); break;
+					case GET: handleGET(httpRequest, _clients[fd], mappedPath); break;
+					case POST: handlePOST(httpRequest, _clients[fd], mappedPath); break;
+					case DELETE: handleDELETE(httpRequest, _clients[fd], mappedPath); break;
 				}
 
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
-				std::cout << "Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+				std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
 			}
 		}
 	}
@@ -286,18 +307,110 @@ void Server::disconectClient(short fd){
 	close(fd);
 	_clients.erase(fd);
 }
-std::string Server::mapPath(const HttpRequest& request){
+bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot){
 
-	std::string localPath = _configData.root;
-	std::string requestPath = request.getPath();
-	std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
+	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
+		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
+		return false;
+	}
 
-	return localPath + requestPath;
+	if(mappedPath.find('\0') != std::string::npos){
+		std::cout << "[SECURITY] Null byte injection detected" << std::endl;
+		return false;
+	}
+
+	// Canonical path check (strongest defense)
+	char resolvedPath[PATH_MAX];
+	char resolvedRoot[PATH_MAX];
+
+	// Resolve the mapped path to canonical form
+	// Note: realpath() returns NULL if file doesn't exist yet (important for POST/upload)
+	if (realpath(mappedPath.c_str(), resolvedPath) == NULL) {
+
+		// File doesn't exist - for POST this is expected
+		// Validate the parent directory instead
+		std::string parentDir = mappedPath.substr(0, mappedPath.find_last_of('/'));
+		if (parentDir.empty()) parentDir = ".";
+
+		if (realpath(parentDir.c_str(), resolvedPath) == NULL) {
+			std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+			return false;
+		}
+		// Add back the filename for comparison
+		std::string filename = mappedPath.substr(mappedPath.find_last_of('/'));
+		std::string fullPath = std::string(resolvedPath) + filename;
+		strncpy(resolvedPath, fullPath.c_str(), PATH_MAX - 1);
+		resolvedPath[PATH_MAX - 1] = '\0';
+	}
+
+	// Resolve the allowed root
+	if (realpath(allowedRoot.c_str(), resolvedRoot) == NULL) {
+		std::cout << "[SECURITY] Invalid allowed root: " << allowedRoot << std::endl;
+		return false;
+	}
+
+	// Check if resolved path starts with resolved root
+	std::string canonicalPath(resolvedPath);
+	std::string canonicalRoot(resolvedRoot);
+
+	if (canonicalPath.compare(0, canonicalRoot.length(), canonicalRoot) != 0) {
+		std::cout << "[SECURITY] Path escape attempt!" << std::endl;
+		std::cout << "[SECURITY] Requested: " << mappedPath << std::endl;
+		std::cout << "[SECURITY] Resolved:  " << canonicalPath << std::endl;
+		std::cout << "[SECURITY] Root:      " << canonicalRoot << std::endl;
+		return false;
+	}
+	return true;
 }
-void Server::handleGET(const HttpRequest& request, ClientInfo& client){
+bool Server::validatePath(const HttpRequest& request, const LocationConfig*& location){
 
-	std::string mappedPath = mapPath(request);
-	std::cout << "mappedPath: " << mappedPath << std::endl;
+	if (!location || location->root.empty()) {
+		std::cout << "[DEBUG] No matching location found" << request.getPath() << std::endl;
+		return false;
+	}
+
+	bool methodAllowed = false;
+	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
+		if (location->allow_methods[i] == request.getMethod()) {
+			methodAllowed = true;
+			break;
+		}
+	}
+
+	if (!methodAllowed) {
+		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation){
+
+	std::string locationRoot = matchedLocation->root;
+	std::string locationPath = matchedLocation->path;
+	std::string requestPath = request.getPath();
+	std::string relativePath;
+
+	if(requestPath.compare(0, locationPath.length(), locationPath) == 0)
+		relativePath = requestPath.substr(locationPath.length());
+	else{
+		std::cerr << "[ERROR] mapPath called with non-matching paths!" << std::endl;
+		relativePath = requestPath;  // Fallback
+	}
+
+	if(!locationRoot.empty() && locationRoot[locationRoot.length() - 1 ] == '/'
+		&& !relativePath.empty() && relativePath[0] == '/')
+		relativePath = relativePath.substr(1);
+
+	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
+	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
+	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
+	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
+	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+	return locationRoot + relativePath;
+}
+void Server::handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath){
+
 	std::ifstream file(mappedPath.c_str());
 
 	HttpResponse response(request);
@@ -355,78 +468,12 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	}
 */
 }
-/*
-	The POST method receives data from the client, processes it, and uses HttpResponse methods to
-	send back a result.
-
-	1. Extract data from request body → form data, JSON, file uploads
-	2. Process the data → save to database, execute CGI script, handle form submission
-	3. Generate appropriate response → success/failure message
-	4. Use HttpResponse to build response
-
-	  Unlike GET which reads files from server, POST accepts data from client:
-
-	- Form submissions → username=john&password=123
-	- File uploads → image/document data in request body
-	- API calls → JSON data for creating/updating resources
-	- CGI execution → pass data to scripts for processing
-
-
-	GET Method Can Handle:
-
-	1. Static Files:
-	- /index.html → read file from disk
-	- /images/logo.png → serve static content
-
-	2. Dynamic Content (CGI):
-	- /cgi-bin/search.py?q=webserv → execute script with query parameters
-	- /api/users?limit=10 → database query via CGI
-	- /weather.php?city=paris → dynamic page generation
-
-	3. Server-side Processing:
-	- Database queries (read-only)
-	- API calls to external services
-	- Template rendering
-
-	Key Differences:
-
-	GET with CGI:
-	- Parameters in URL query string: ?name=value&foo=bar
-	- No request body data
-	- Should be idempotent (safe to repeat)
-
-	POST with CGI:
-	- Data in request body: form data, JSON, files
-	- Can modify server state (create/update/delete)
-	- Not idempotent
-
-	Example GET with CGI:
-
-	void Server::handleGET(const HttpRequest& request, ClientInfo& client) {
-		std::string path = request.getPath();  // "/cgi-bin/search.py"
-
-		if (path.find("/cgi-bin/") == 0) {
-			// Execute CGI script with query parameters
-			executeCGI(path, request.getQuery(), "", client);  // No body for GET
-		} else {
-			// Serve static file
-			serveStaticFile(path, client);
-		}
-	}
-*/
-void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath){
 
 	HttpResponse response(request);
-	const LocationConfig* matchedLocation = _configData.findMatchingLocation(request.getPath());
-	if(!matchedLocation){
-		std::cout << "[DEBUG] No matching path found. matchedLocation = NULL" << std::endl;
-		response.generateResponse(403); // Forbidden no upload location configured
-		client.responseData = response.getResponse();
-		return;
-	}
 
-	std::cout << "[DEBUG] UploadPath: " << matchedLocation->upload_store << std::endl;
-	PostHandler post(matchedLocation->upload_store + '/');
+	std::cout << "[DEBUG] UploadPath: " << mappedPath << std::endl;
+	PostHandler post(mappedPath);
 
 	std::string contentType = request.getContenType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
@@ -444,97 +491,21 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 		client.responseData = response.getResponse();
 	}
 }
-/*
-	CGI for GET and POST
+void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, std::string mappedPath) {
 
-	Without CGI (Static):
-	- GET /index.html → Server reads /var/www/index.html file and sends it
-	- POST /contact.html → Server processes form data itself and sends response
-
-	With CGI (Dynamic):
-	- GET /cgi-bin/weather.py?city=paris → Server executes Python script, script generates HTML
-	response
-	- POST /cgi-bin/contact.py → Server passes form data to Python script, script processes it and
-	generates response
-
-	CGI Role:
-
-	CGI = External program that generates web content
-
-	Instead of serving static files, the server:
-	1. Executes a program (Python, PHP, C++, etc.)
-	2. Passes request data to the program
-	3. Captures program's output
-	4. Sends that output as HTTP response
-
-	Examples:
-
-	GET with CGI:
-	Client: GET /cgi-bin/time.py
-	Server: executes time.py script
-	Script: prints "Current time: 2:30 PM"
-	Server: sends that as HTTP response
-
-	POST with CGI:
-	Client: POST /cgi-bin/save.py (with form data)
-	Server: executes save.py, passes form data to it
-	Script: processes data, prints "Data saved successfully"
-	Server: sends that as HTTP response
-
-	CGI turns your server into a platform that can run any program to generate web pages
-	dynamically.
-*/
-bool Server::validatePath(std::string path, const HttpRequest& request){
-    const LocationConfig* location = _configData.findMatchingLocation(request.getPath());
-	if (!location || location->upload_store.empty()) {
-		std::cout << "[DEBUG] No matching location found" << request.getPath() << std::endl;
-		return false;
-    }
-	//security check
-	if (path.substr(0, location->upload_store.length()) != location->upload_store) {
-		std::cout << "[DEBUG] Path is not in upload directory" << std::endl;
-		return false;
-	}
-
-	bool deleteAllowed = false;
-	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
-		if (location->allow_methods[i] == "DELETE") {
-			deleteAllowed = true;
-			break;
-		}
-	}
-	if (!deleteAllowed) {
-		std::cout << "[DEBUG] DELETE method not allowed for this location" << std::endl;
-		return false;
-    }
-	return true;
-}
-/**
- * This function only handles files, but not directories.
- */
- void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
-
-	std::string mappedPath = mapPath(request);
 	HttpResponse response(request);
-	if (!validatePath(mappedPath, request)){
-		response.generateResponse(403);
-		client.responseData = response.getResponse();
-		std::cout << "Error: 403 Forbidden" << std::endl;
-		return;
-	}
-
 	std::ifstream file(mappedPath.c_str());
 	if (file.is_open()){
 		file.close();
 		if(std::remove(mappedPath.c_str()) == 0){
 			response.generateResponse(204);
 			client.responseData = response.getResponse();
-			std::cout << "Succes: 204 file deleted" << std::endl;
+			std::cout << "[DEBUG] Succes: 204 file deleted" << std::endl;
 		}
 		else{
 			response.generateResponse(403);
 			client.responseData = response.getResponse();
-			std::cout << "Error: 403 permission denied" << std::endl;
+			std::cout << "[DEBUG] Error: 403 permission denied" << std::endl;
 		}
 	}
 	else{

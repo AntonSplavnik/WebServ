@@ -63,21 +63,50 @@ std::vector<ConfigData> Config::getServers() const {
 const LocationConfig* ConfigData::findMatchingLocation(const std::string& requestPath) const {
 
     std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
+
+    const LocationConfig* bestMatch = NULL;
+    size_t longestMatch = 0;
+
     for (size_t i = 0; i < locations.size(); i++) {
 
-        std::cout << "[DEBUG] Paths: " << locations[i].path << std::endl;
+        std::cout << "[DEBUG] Checking location: " << locations[i].path << std::endl;
         size_t pathLen = locations[i].path.length();
 
+        // Check if request path starts with this location path
         if (requestPath.compare(0, pathLen, locations[i].path) == 0) {
-            // Ensure proper path boundary (exact match or followed by '/')
-            if (requestPath.length() == pathLen || requestPath[pathLen] == '/') {
-                    std::cout << "[DEBUG] UploadPath: " << locations[i].upload_store << std::endl;
-                    return &locations[i];
+
+            // For root location "/", always matches
+            if (locations[i].path == "/") {
+                // Only use root if we haven't found a longer match
+                if (pathLen > longestMatch) {
+                    bestMatch = &locations[i];
+                    longestMatch = pathLen;
+                    std::cout << "[DEBUG] Root location matches (length: " << pathLen << ")" << std::endl;
                 }
+            }
+            // For non-root locations, ensure proper path boundary
+            else if (requestPath.length() == pathLen || requestPath[pathLen] == '/') {
+                // This is a valid match - use it if it's longer than current best
+                if (pathLen > longestMatch) {
+                    bestMatch = &locations[i];
+                    longestMatch = pathLen;
+                    std::cout << "[DEBUG] Location matches (length: " << pathLen << ")" << std::endl;
+                }
+            }
         }
     }
-    return NULL;
+
+    if (bestMatch) {
+        std::cout << "[DEBUG] Best match: " << bestMatch->path << " (root: " << bestMatch->root << ")" << std::endl;
+    } else {
+        std::cout << "[DEBUG] No matching location found" << std::endl;
+    }
+
+    return bestMatch;
 }
+
+
+// }
 // Validates that the given key is in the list of known directives
 void Config::validateDirective(const char* const* directives, size_t count, const std::string& key) {
     if (std::find(directives, directives + count, key) == directives + count)
