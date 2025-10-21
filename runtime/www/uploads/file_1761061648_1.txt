@@ -1,0 +1,3 @@
+Hello WebServ!
+This is a test of text/plain data.
+Line breaks and special characters: éàè çù

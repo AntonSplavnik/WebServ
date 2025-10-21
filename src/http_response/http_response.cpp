@@ -57,9 +57,9 @@
   Each line ends with \r\n (carriage return + line feed).
 */
 
-HttpResponse::HttpResponse(HttpRequest request)
+HttpResponse::HttpResponse(HttpRequest request, const ConfigData& configData)
 	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
-	_serverName("WebServ"), _serverVersion(1.0f){}
+	_serverName("WebServ"), _serverVersion(1.0f), _config(configData){}
 
 HttpResponse::~HttpResponse(){}
 
@@ -83,7 +83,7 @@ fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 	else return UNKNOWN;
 }
 
-std::string HttpResponse::getContentType() {
+std::string HttpResponse::determineContentType() {
 
 	fileExtentions extention = extractFileExtension(_filePath);
 
@@ -132,6 +132,39 @@ std::string HttpResponse::getTimeNow() {
 	return httpTime;
 }
 
+void HttpResponse::generateErrorResponse() {
+
+	std::string errorPagePath = getErrorPagePath(_statusCode, _request.getPath());
+    std::cout << "[DEBUG ERROR_PAGE] errorPagePath: " << errorPagePath << std::endl;
+
+	if (!errorPagePath.empty()) {
+		std::ifstream errorFile(errorPagePath.c_str());
+		if (errorFile.is_open()) {
+			std::stringstream buffer;
+			buffer << errorFile.rdbuf();
+			_contentType = "text/html";
+			_body = buffer.str();
+			_contentLength = _body.length();
+		}
+	}
+	else {
+		std::cout << "[DEBUG] Default page error" << std::endl;
+		_contentType = "text/html";
+		_body = "<html><body><h1>Error " + std::to_string(_statusCode) + "</h1></body></html>";
+		_contentLength = _body.length();
+	}
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << getTimeNow() << "\r\n"
+		<< "Server: " << _serverName << "/" << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n"
+		<< _body;
+	_response = oss.str();
+}
+
 void HttpResponse::generatePostResponse(){
 
 	std::ostringstream oss;
@@ -170,7 +203,17 @@ void HttpResponse::generateDeleteResponse() {
 	_response = oss.str();
 }
 
-void generateErrorResponse() {}
+std::string HttpResponse::getErrorPagePath(int statusCode, const std::string& requestPath) const {
+    const LocationConfig* location = _config.findMatchingLocation(requestPath);
+    if (location && location->error_pages.count(statusCode)) {
+        return _config.root + "/" + location->error_pages.find(statusCode)->second;
+    }
+    
+    if (_config.error_pages.count(statusCode)) {
+        return _config.root + "/" + _config.error_pages.find(statusCode)->second;
+    }
+    return "";
+}
 
 void HttpResponse::generateResponse(int statusCode) {
 
@@ -184,14 +227,11 @@ void HttpResponse::generateResponse(int statusCode) {
 		return;
 	}
 
-	std::cout << "_path: " << _filePath << std::endl;
 	_body = extractBody();
-	std::cout << "_path: " << _filePath << std::endl;
-
-	std::cout << "_body: " << _body << std::endl;
-	_contentType = getContentType();
+	_contentType = determineContentType();
 	_contentLength = getContentLength();
 	_connectionType = _request.getContenType();
+
 
 	switch (_method)
 	{
@@ -220,12 +260,13 @@ void HttpResponse::setBody(std::string body) {_body = body;}
 void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
 void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
+void HttpResponse::setContentType(std::string contentType) { _contentType = contentType;}
 void HttpResponse::setPath(std::string path) {_filePath = path;}
-
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 std::string HttpResponse::getBody() const {return _body;}
 std::string HttpResponse::getPath()const {return _filePath;}
+std::string HttpResponse::getContentType()const {return _contentType;}
 float HttpResponse::getVersion() const {return _serverVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 std::string HttpResponse::getResponse() const {return _response;}

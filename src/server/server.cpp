@@ -182,7 +182,7 @@ void Server::handleClientRead(int fd){
 			HttpRequest httpRequest;
 			httpRequest.parseRequest(_clients[fd].requestData);
 			if(!httpRequest.getStatus()){
-				HttpResponse errorResponse(httpRequest);
+				HttpResponse errorResponse(httpRequest, _configData);
 				errorResponse.generateResponse(400);
 
 				_clients[fd].bytesSent = 0;
@@ -300,10 +300,9 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 	std::cout << "mappedPath: " << mappedPath << std::endl;
 	std::ifstream file(mappedPath.c_str());
 
-	HttpResponse response(request);
+	HttpResponse response(request, _configData);
 	response.setPath(mappedPath);
 	if (file.is_open()){
-
 		response.generateResponse(200);
 		client.responseData = response.getResponse();
 	}
@@ -311,6 +310,7 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 		std::cout << "Error: 404 path is not found" << std::endl;
 		response.generateResponse(404);
 		client.responseData = response.getResponse();
+
 	}
 
 	/*
@@ -416,7 +416,7 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client){
 */
 void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 
-	HttpResponse response(request);
+	HttpResponse response(request, _configData);
 	const LocationConfig* matchedLocation = _configData.findMatchingLocation(request.getPath());
 	if(!matchedLocation){
 		std::cout << "[DEBUG] No matching path found. matchedLocation = NULL" << std::endl;
@@ -426,7 +426,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client){
 	}
 
 	std::cout << "[DEBUG] UploadPath: " << matchedLocation->upload_store << std::endl;
-	PostHandler post(matchedLocation->upload_store + '/');
+	PostHandler post(matchedLocation->upload_store + '/', _configData);
 
 	std::string contentType = request.getContenType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
@@ -494,7 +494,7 @@ bool Server::validatePath(std::string path){
  void Server::handleDELETE(const HttpRequest& request, ClientInfo& client) {
 
 	std::string mappedPath = mapPath(request);
-	HttpResponse response(request);
+	HttpResponse response(request, _configData);
 	if (!validatePath(mappedPath)){
 		response.generateResponse(403);
 		client.responseData = response.getResponse();

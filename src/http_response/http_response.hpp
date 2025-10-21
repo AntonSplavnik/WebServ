@@ -20,6 +20,8 @@
 #include <map>
 #include <algorithm>
 #include "http_request.hpp"
+#include "config.hpp"
+
 
 enum fileExtentions{
 	HTML,
@@ -34,7 +36,7 @@ enum fileExtentions{
 class HttpResponse {
 
 	public:
-		HttpResponse(HttpRequest request);
+		HttpResponse(HttpRequest request, const ConfigData& configData);
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
@@ -43,6 +45,7 @@ class HttpResponse {
 		void setReasonPhrase(std::string reasonPhrase);
 		void setVersion(float version);
 		void setStatusCode(int code);
+		void setContentType(std::string contentType);
 		void setHeader(std::string header);
 		void setPath(std::string path);
 
@@ -52,6 +55,7 @@ class HttpResponse {
 		int				getStatusCode() const;
 		unsigned long	getContentLength() const;
 		std::string		getResponse() const;
+		std::string		getContentType() const;
 
 
 	private:
@@ -59,12 +63,16 @@ class HttpResponse {
 		void generateGetResponse();
 		void generatePostResponse();
 		void generateDeleteResponse();
+		void generateErrorResponse();
 
 		std::string extractBody();
 		std::string	getTimeNow();
 		fileExtentions	extractFileExtension(std::string filePath);
 		std::string	getReasonPhrase();
-		std::string	getContentType();
+		std::string	determineContentType();
+
+		std::string getErrorPagePath(int statusCode, const std::string& requestPath) const;
+		// std::string loadErrorPage(const std::string& errorPagePath);
 
 		HttpRequest _request;
 		Methods		_method;
@@ -83,6 +91,8 @@ class HttpResponse {
 		unsigned long	_contentLength;
 		std:: string	_connectionType;
 		std::map<std::string, std::string> _headers;
+
+		const ConfigData& _config;
 
 		//body
 		std::string	_body;

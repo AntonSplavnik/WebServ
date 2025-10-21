@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "config.hpp"
 
 // Forward declarations
 class HttpRequest;
@@ -33,7 +34,7 @@ struct MultipartPart {
 
 class PostHandler {
     public:
-        PostHandler(const std::string uploadPath);
+        PostHandler(const std::string uploadPath, const ConfigData& configData);
 
         // Main POST handling methods
         void handlePOST(const HttpRequest& request, ClientInfo& client);
@@ -59,6 +60,7 @@ class PostHandler {
         bool saveRawContent(const std::string& filePath, const std::string& content);
 
     private:
+        const ConfigData& _configData;
         std::string _uploadPath;
 };
 

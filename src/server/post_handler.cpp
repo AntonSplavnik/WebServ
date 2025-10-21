@@ -17,8 +17,8 @@
 #include <sstream>
 #include <cstdlib>
 
-PostHandler::PostHandler(const std::string uploadPath)
-    :_uploadPath(uploadPath){
+PostHandler::PostHandler(const std::string uploadPath, const ConfigData& configData)
+    :_configData(configData), _uploadPath(uploadPath) {
     std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
 }
 
@@ -50,11 +50,11 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     if (saveRawContent(filePath, request.getBody())) {
-        HttpResponse response(request);
+        HttpResponse response(request, _configData);
         response.generateResponse(200);
         client.responseData = response.getResponse();
     } else {
-        HttpResponse response(request);
+        HttpResponse response(request, _configData);
         response.generateResponse(500);
         client.responseData = response.getResponse();
     }
@@ -165,7 +165,7 @@ void PostHandler::handleMultipart(const HttpRequest& request, ClientInfo& client
 	std::vector<MultipartPart> parts = parseMultipartData(requestBody, boundary);
 	processMultipartParts(parts, request, client);
 
-	HttpResponse response(request);
+	HttpResponse response(request, _configData);
 	response.generateResponse(200);
 	client.responseData = response.getResponse();
 }
@@ -312,7 +312,7 @@ void PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts,
             saveFormFieldToLog(part.name, part.content);
         }
     }
-    HttpResponse response(request);
+    HttpResponse response(request, _configData);
     response.generateResponse(200);
     client.responseData = response.getResponse();
 }
