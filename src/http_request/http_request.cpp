@@ -311,8 +311,8 @@ void HttpRequest::normalizeReqPath() {
     }
 
     // 3️⃣ Remove trailing slash (except if root)
-    if (normalized.length() > 1 && normalized.back() == '/')
-        normalized.pop_back();
+    if (normalized.length() > 1 && normalized[normalized.size() - 1] == '/')
+    	normalized.resize(normalized.size() - 1);
 
     _normalizedReqPath = normalized;
 

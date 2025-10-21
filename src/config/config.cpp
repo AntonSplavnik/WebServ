@@ -135,14 +135,14 @@ void Config::validateConfig(ConfigData& config) {
     	throw ConfigParseException("Missing required config: at least one listen directive");
     if (config.error_pages.empty())
     {
-        config.error_pages[400] = DEFAULT_ERROR_PAGE_400;
-        config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
-        config.error_pages[404] = DEFAULT_ERROR_PAGE_404;
-        config.error_pages[405] = DEFAULT_ERROR_PAGE_405;
-        config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
-        config.error_pages[502] = DEFAULT_ERROR_PAGE_502;
-        config.error_pages[503] = DEFAULT_ERROR_PAGE_503;
-        config.error_pages[-1] = DEFAULT_ERROR_PAGE_DEFAULT;
+        config.error_pages[400] = "runtime/www/errors/400.html";
+        config.error_pages[403] = "runtime/www/errors/403.html";
+        config.error_pages[404] = "runtime/www/errors/404.html";
+        config.error_pages[405] = "runtime/www/errors/405.html";
+        config.error_pages[500] = "runtime/www/errors/500.html";
+        config.error_pages[502] = "runtime/www/errors/502.html";
+        config.error_pages[503] = "runtime/www/errors/503.html";
+        config.error_pages[-1] = "runtime/www/errors/default.html";
         std::cout << "Info: No error_pages specified, applying default error pages" << std::endl;
     }
     if (config.allow_methods.empty())

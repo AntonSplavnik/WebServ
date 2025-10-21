@@ -110,13 +110,13 @@ bool isValidAutoindexValue(const std::string& value) {
 
 // Helper to join two paths correctly
 std::string joinPath(const std::string& base, const std::string& subpath) {
-    if (base.empty()) return subpath;
-    if (subpath.empty()) return base;
-
-    if (base.back() == '/' && subpath.front() == '/')
-        return base + subpath.substr(1);
-    else if (base.back() != '/' && subpath.front() != '/')
-        return base + "/" + subpath;
-    else
-        return base + subpath;
+    if (!base.empty() && !subpath.empty()) {
+        if (base[base.size() - 1] == '/' && subpath[0] == '/')
+            return base + subpath.substr(1);
+        else if (base[base.size() - 1] != '/' && subpath[0] != '/')
+            return base + "/" + subpath;
+        else
+            return base + subpath;
+    }
+    return base + subpath;
 }

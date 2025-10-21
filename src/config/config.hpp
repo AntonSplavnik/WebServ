@@ -5,6 +5,10 @@
 #include <map>
 #include <vector>
 
+// docker build -t webserv42 .
+// docker run -it -v ${PWD}:/home/root webserv42
+
+
 const int MAX_BACKLOG = 1024;
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
 
@@ -37,14 +41,14 @@ static const char *SERVER_DIRECTIVES[] = {
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
 
 // Default error pages
-static const char *DEFAULT_ERROR_PAGE_400 = "runtime/www/errors/400.html";
-static const char *DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/403.html";
-static const char *DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/404.html";
-static const char *DEFAULT_ERROR_PAGE_405 = "runtime/www/errors/405.html";
-static const char *DEFAULT_ERROR_PAGE_500 = "runtime/www/errors/500.html";
-static const char *DEFAULT_ERROR_PAGE_502 = "runtime/www/errors/502.html";
-static const char *DEFAULT_ERROR_PAGE_503 = "runtime/www/errors/503.html";
-static const char *DEFAULT_ERROR_PAGE_DEFAULT = "runtime/www/errors/default.html";
+//static const char *DEFAULT_ERROR_PAGE_400 = "runtime/www/errors/400.html";
+//static const char *DEFAULT_ERROR_PAGE_403 = "runtime/www/errors/403.html";
+//static const char *DEFAULT_ERROR_PAGE_404 = "runtime/www/errors/404.html";
+//static const char *DEFAULT_ERROR_PAGE_405 = "runtime/www/errors/405.html";
+//static const char *DEFAULT_ERROR_PAGE_500 = "runtime/www/errors/500.html";
+//static const char *DEFAULT_ERROR_PAGE_502 = "runtime/www/errors/502.html";
+//static const char *DEFAULT_ERROR_PAGE_503 = "runtime/www/errors/503.html";
+//static const char *DEFAULT_ERROR_PAGE_DEFAULT = "runtime/www/errors/default.html";
 
 
 struct LocationConfig
