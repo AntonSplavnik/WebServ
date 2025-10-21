@@ -81,7 +81,7 @@ class HttpRequest{
 
 	private:
 		std::string		_requestLine;
-		std::string		_body;
+		std::string		_body; //TODO: implement unchunked body parsing
 		std::string		_rawHeaders;
 
 		//reqest line

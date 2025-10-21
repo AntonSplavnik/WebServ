@@ -157,11 +157,11 @@ void ServerController::run(){
 		int ret = poll(_pollFds.data(), _pollFds.size(), -1);
 
 		//errno != EINTR check for interrupted poll
-		if (ret < 0 && errno != EINTR) {
+		if (ret < 0){ //&& errno != EINTR) {
 			std::cerr << "Poll failed.\n";
 			break;
 		}
-
+		std::cout << "DEBUG: poll() completed." << std::endl;
 		if (ret > 0){
 			std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
 			for(size_t i = 0; i < _pollFds.size(); i++){
