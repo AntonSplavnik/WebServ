@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 18:06:36 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/17 20:49:32 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, con
     std::string extension = getExtensionFromContentType(contentType);
 
     std::string filename = generateFilename(extension);
-    std::string filePath = _uploadPath + "/" + filename;
+    std::string filePath = _uploadPath + filename;
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     if (saveRawContent(filePath, request.getBody())) {

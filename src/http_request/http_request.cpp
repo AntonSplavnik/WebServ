@@ -6,64 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 15:16:36 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/19 20:05:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "http_request.hpp"
-
-/*
-The Host header should be checked in the HTTP request parsing
-  phase, specifically in the HttpRequest class after parsing
-  headers.
-
-  Where to Check Host Header:
-
-  1. In HttpRequest::parseHeaders() method (http_requst.cpp:75-80)
-
-  void HttpRequest::parseHeaders(){
-      // Parse all headers into _headers map
-      // Then validate required headers:
-
-      // HTTP 1.1 requires Host header
-      if (_headers.find("host") == _headers.end() &&
-          _headers.find("Host") == _headers.end()) {
-          _isValid = false;
-          // Set error for 400 Bad Request
-      }
-  }
-
-  2. Check in Server before method execution (server.cpp:186-194)
-
-  HttpRequest requestParser;
-  requestParser.parseRequest(_clients[fd]);
-
-  // Check if request is valid (including Host header)
-  if (!requestParser.isValid()) {
-      // Send 400 Bad Request response
-      _clients[fd].responseData = "HTTP/1.1 400 Bad
-  Request\r\n...";
-      return;
-  }
-
-  // Only execute methods if request is valid
-  Methods method = stringToMethod(requestParser.getMethod());
-
-  Best Practice Flow:
-
-  1. Parse request → HttpRequest::parseRequest()
-  2. Validate headers → Check Host header exists
-  3. Set _isValid = false if missing Host header
-  4. Server checks isValid() before executing GET/POST/DELETE
-  5. Send 400 Bad Request if invalid
-*/
-
-
-HttpRequest::HttpRequest()
-	: _requestLine(), _body(), _method(), _path(), _version(), _contentLength(),_headers(), _isValid(true){
-}
-
-HttpRequest::~HttpRequest(){}
 
 /*
 Critical HTTP parsing test scenarios
@@ -75,6 +22,12 @@ Critical HTTP parsing test scenarios
 	- Content-Length header validation failures
 	- Non-implemented HTTP method requests
 */
+
+HttpRequest::HttpRequest()
+	: _requestLine(), _body(), _method(), _path(), _version(), _contentLength(),_headers(), _isValid(true){
+}
+HttpRequest::~HttpRequest(){}
+
 void HttpRequest::parseRequest(const std::string requestData){
 
 	extractLineHeaderBodyLen(requestData);
@@ -86,8 +39,7 @@ void HttpRequest::parseRequest(const std::string requestData){
 	parseBody();
 	if (!_isValid) return;
 }
-
-void HttpRequest::partialParseRequest(const std::string requestData){
+void HttpRequest::ParsePartialRequest(const std::string requestData){
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
 	parseRequestLine();
@@ -95,7 +47,6 @@ void HttpRequest::partialParseRequest(const std::string requestData){
 	parseHeaders();
 	if (!_isValid) return;
 }
-
 void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 
 	//STEP 1 -> Extract request line
@@ -120,14 +71,12 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		_body = rawData.substr(headerBodySeparator + 4);
 	}
 }
-
 Methods stringToEnum(const std::string& method) {
 	if (method == "GET") return GET;
 	if (method == "POST") return POST;
 	if (method == "DELETE") return DELETE;
 	throw std::invalid_argument("Unknown method");
 }
-
 void HttpRequest::parseRequestLine(){
 
 	if (_requestLine.empty()) {
@@ -162,7 +111,6 @@ void HttpRequest::parseRequestLine(){
 	}
 	_methodEnum = stringToEnum(_method);
 }
-
 void HttpRequest::parseHeaders(){
 
 /*
@@ -214,7 +162,6 @@ void HttpRequest::parseHeaders(){
 		_contentLength = 0;  // No Content-Length header
 	}
 }
-
 void HttpRequest::parseBody(){
 
 	if (_body.empty()) {
@@ -232,7 +179,7 @@ void HttpRequest::parseBody(){
 	}
 }
 
-//extract
+// extract
 void HttpRequest::setRequstLine(std::string requestLine) {_requestLine = requestLine;}
 void HttpRequest::setBody(std::string body) {_body = body;}
 void HttpRequest::setRawHeaders(std::string rawHeaders) {_rawHeaders = rawHeaders;}
@@ -242,8 +189,7 @@ std::string HttpRequest::getBody() const {return _body;}
 std::string HttpRequest::getRawHeaders() const {return _rawHeaders;}
 unsigned long HttpRequest::getBodyLength() const {return _body.length();}
 
-
-//parse
+// parse
 void HttpRequest::setMethod(std::string method) {_method = method;}
 void HttpRequest::setPath(std::string path){_path = path;}
 void HttpRequest::setVersion(std::string version){_version = version;}
@@ -258,8 +204,7 @@ const std::map<std::string, std::string>& HttpRequest::getHeaders() const {retur
 
 bool HttpRequest::getStatus() const {return _isValid;}
 
-
-//content type
+// content type
 // void HttpRequest::setContentType(std::string ContentType){}
 std::string HttpRequest::getContenType() const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find("content-type");
