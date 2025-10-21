@@ -17,6 +17,8 @@
 #include <string>
 #include <map>
 #include <sstream>
+#include <algorithm>
+#include <cstdlib>
 #include "client_info.hpp"
 
 enum Methods {

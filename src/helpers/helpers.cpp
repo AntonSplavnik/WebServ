@@ -2,7 +2,7 @@
 #include "helpers.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
-#include <regex>
+#include <climits>
 #include <sstream>
 
 // Helper to read all values from iss, stripping trailing semicolons
@@ -11,7 +11,7 @@ std::vector<std::string> readValues(std::istringstream& iss) {
     std::string value;
     while (iss >> value)
     {
-        if (!value.empty() && value.back() == ';') value.pop_back();
+        if (!value.empty() && value[value.size() - 1] == ';') value.erase(value.size() - 1);
         if (!value.empty()) values.push_back(value);
     }
     return values;

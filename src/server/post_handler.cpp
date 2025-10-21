@@ -216,8 +216,8 @@ MultipartPart PostHandler::parseMultipartPart(const std::string& partData) {
 	std::string content = partData.substr(headerEnd + 4);
 
 	// Nettoyer le contenu (enlever les \r\n finaux)
-	while (!content.empty() && (content.back() == '\r' || content.back() == '\n')) {
-		content.pop_back();
+	while (!content.empty() && (content[content.size() - 1] == '\r' || content[content.size() - 1] == '\n')) {
+		content.erase(content.size() - 1);
 	}
 
 	// Parser les headers ligne par ligne
@@ -226,8 +226,8 @@ MultipartPart PostHandler::parseMultipartPart(const std::string& partData) {
 
 	while (std::getline(headerStream, headerLine)) {
 	// Nettoyer \r en fin de ligne
-		if (!headerLine.empty() && headerLine.back() == '\r') {
-			headerLine.pop_back();
+		if (!headerLine.empty() && headerLine[headerLine.size() - 1] == '\r') {
+			headerLine.erase(headerLine.size() - 1);
         }
 
 		if (headerLine.find("Content-Disposition:") == 0) {

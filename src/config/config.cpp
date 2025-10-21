@@ -278,14 +278,14 @@ void Config::parseLocationConfigField(LocationConfig& config, const std::string&
 void Config::parseServerConfigField(ConfigData& config, const std::string& key, const std::vector<std::string>& tokens, std::ifstream& file)
 {
   // Validate directive based on context
-  if (!inLocationBlock)
-    	validateDirective(SERVER_DIRECTIVES, SERVER_DIRECTIVES_COUNT, key);
-	if (tokens.empty())
+    if (!inLocationBlock)
+        validateDirective(SERVER_DIRECTIVES, SERVER_DIRECTIVES_COUNT, key);
+    if (tokens.empty())
         throw ConfigParseException("Directive " + key + " requires at least one argument");
     if (key == "location")
         parseLocationBlock(config, file, tokens);
- 	else if (key == "listen")
-       	parseListenDirective(config, tokens[0]);
+    else if (key == "listen")
+        parseListenDirective(config, tokens[0]);
     else if (key == "server_name")
         addUnique(config.server_names, tokens[0]);
     else if (key == "backlog")
@@ -296,10 +296,10 @@ void Config::parseServerConfigField(ConfigData& config, const std::string& key, 
         parseKeepaliveTimeoutDirective(config, tokens[0]);
     else if (key == "keepalive_max_requests")
         parseKeepaliveRequestsDirective(config, tokens[0]);
-	else if (key == "error_log")
-    	assignLogFile(config.error_log, tokens[0]);
+    else if (key == "error_log")
+        assignLogFile(config.error_log, tokens[0]);
     else if (key == "access_log")
-    	assignLogFile(config.access_log, tokens[0]);
+        assignLogFile(config.access_log, tokens[0]);
 }
 
 

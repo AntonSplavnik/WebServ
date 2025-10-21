@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <cstring>
+#include <cerrno>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>

@@ -209,7 +209,7 @@ void HttpResponse::generateResponse(int statusCode) {
 	}
 }
 std::string HttpResponse::extractBody() {
-	std::ifstream file(_filePath, std::ios::binary);
+	std::ifstream file(_filePath.c_str(), std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
 	return content;
