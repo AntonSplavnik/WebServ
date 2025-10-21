@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/21 16:23:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/21 17:32:45 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,8 @@ void Server::handleListenEvent(int indexOfLinstenSocket){
 }
 void Server::handleClientRead(int fd){
 
+	std::cout << "\n#######  HANDLE CLIENT READ DATA #######" << std::endl;
+
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
 		std::cout << "[DEBUG] Max request count reached: " << fd << std::endl;
 
@@ -181,7 +183,7 @@ void Server::handleClientRead(int fd){
 				updateClientActivity(fd);
 
 				HttpResponse response(httpRequest);
-				std::cout << "[DEBUG] STARTING MATCHING LOCATION! " << std::endl;
+				std::cout << "\n#######  PATH MATCHING/VALIDATIONr #######" << std::endl;
 				const LocationConfig* matchedLocation = _configData.findMatchingLocation(httpRequest.getPath());
 				if(!matchedLocation){
 					std::cout << "[DEBUG] No matched location in config file" << std::endl;
@@ -211,6 +213,7 @@ void Server::handleClientRead(int fd){
 					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
 					return;
 				}
+				std::cout << "#################################\n" << std::endl;
 
 				//if cgi -> cgi
 
@@ -227,6 +230,8 @@ void Server::handleClientRead(int fd){
 			}
 		}
 	}
+		std::cout << "#################################\n" << std::endl;
+
 }
 void Server::handleClientWrite(int fd){
 
@@ -265,6 +270,7 @@ void Server::handleClientWrite(int fd){
 				_clients[fd].bytesSent = 0;
 				_clients[fd].responseData.clear();
 				_clients[fd].requestData.clear();
+				updateClientActivity(fd);  // Reset timeout for keep-alive
 
 			} else {
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;

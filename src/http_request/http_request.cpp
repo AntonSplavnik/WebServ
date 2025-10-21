@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/19 20:05:19 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/21 17:21:26 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,8 @@ HttpRequest::~HttpRequest(){}
 
 void HttpRequest::parseRequest(const std::string requestData){
 
+	std::cout << "\n#######  HTTP PARSE REQUEST DATA #######" << std::endl;
+
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
 	parseRequestLine();
@@ -38,16 +40,26 @@ void HttpRequest::parseRequest(const std::string requestData){
 	if (!_isValid) return;
 	parseBody();
 	if (!_isValid) return;
+
+	std::cout << "#################################\n" << std::endl;
 }
 void HttpRequest::ParsePartialRequest(const std::string requestData){
+
+	std::cout << "\n#######  HTTP PARTIAL PARSE REQUEST DATA #######" << std::endl;
+
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
 	parseRequestLine();
 	if (!_isValid) return;
 	parseHeaders();
 	if (!_isValid) return;
+
+	std::cout << "#################################\n" << std::endl;
+
 }
+
 void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
+
 
 	//STEP 1 -> Extract request line
 	size_t firstCRLF = rawData.find("\r\n");
@@ -214,11 +226,10 @@ std::string HttpRequest::getContenType() const {
 		return "";
 }
 
-// wrong naming for the function
-// std::string HttpRequest::getContenType() {
-// 	std::map<std::string, std::string>::const_iterator it = _headers.find("Connection");
-// 	if (it != _headers.end())
-// 		return it->second;
-// 	else
-// 		return "Keep-alive";
-// }
+std::string HttpRequest::getConnectionType() const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find("connection");
+	if (it != _headers.end())
+		return it->second;
+	else
+		return "keep-alive";
+}
