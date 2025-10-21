@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 14:11:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/21 17:48:40 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -228,9 +228,13 @@ void HttpResponse::generateResponse(int statusCode) {
 	}
 
 	_body = extractBody();
+<<<<<<< HEAD
 	_contentType = determineContentType();
+=======
+	_contentType = getContentType();
+>>>>>>> origin/main
 	_contentLength = getContentLength();
-	_connectionType = _request.getContenType();
+	_connectionType = _request.getConnectionType();
 
 
 	switch (_method)

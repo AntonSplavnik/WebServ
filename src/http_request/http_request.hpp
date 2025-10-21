@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 15:16:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/21 17:13:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,8 +34,8 @@ class HttpRequest{
 		~HttpRequest();
 
 		void parseRequest(std::string requestData);
-		void partialParseRequest(const std::string requestData);
-		
+		void ParsePartialRequest(const std::string requestData);
+
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
@@ -64,12 +64,14 @@ class HttpRequest{
 		std::string getPath() const;
 		std::string getVersion() const;
 		std::string getContenType() const;
+		std::string getConnectionType() const;
+
 		const std::map<std::string, std::string>& getHeaders() const;
 
 		void setMethod(std::string method);
 		void setPath(std::string path);
 		void setVersion(std::string version);
-		void setContentType(std::string ContentType);
+		void setContentType(std::string ContentType) const;
 
 		Methods getMethodEnum() const;
 		bool getStatus() const;
@@ -80,10 +82,10 @@ class HttpRequest{
 		std::string		_rawHeaders;
 
 		//reqest line
-		std::string	_method;
-		Methods		_methodEnum;
-		std::string	_path;
-		std::string	_version;
+		std::string		_method;
+		Methods			_methodEnum;
+		std::string		_path;
+		std::string		_version;
 		unsigned long	_contentLength;
 
 		//headers
