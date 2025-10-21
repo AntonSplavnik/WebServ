@@ -182,7 +182,7 @@ void Server::handleClientRead(int fd){
 			}else{
 				updateClientActivity(fd);
 
-				HttpResponse response(httpRequest);
+				HttpResponse response(httpRequest, _configData);
 				std::cout << "\n#######  PATH MATCHING/VALIDATIONr #######" << std::endl;
 				const LocationConfig* matchedLocation = _configData.findMatchingLocation(httpRequest.getPath());
 				if(!matchedLocation){
@@ -499,7 +499,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::str
 }
 void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, std::string mappedPath) {
 
-	HttpResponse response(request, _configData);
+	HttpResponse response(request,_configData);
 	std::ifstream file(mappedPath.c_str());
 	if (file.is_open()){
 		file.close();

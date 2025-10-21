@@ -228,11 +228,7 @@ void HttpResponse::generateResponse(int statusCode) {
 	}
 
 	_body = extractBody();
-<<<<<<< HEAD
 	_contentType = determineContentType();
-=======
-	_contentType = getContentType();
->>>>>>> origin/main
 	_contentLength = getContentLength();
 	_connectionType = _request.getConnectionType();
 
