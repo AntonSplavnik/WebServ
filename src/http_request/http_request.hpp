@@ -36,7 +36,7 @@ class HttpRequest{
 
 		void parseRequest(std::string requestData);
 		void partialParseRequest(const std::string requestData);
-		
+
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
@@ -69,6 +69,9 @@ class HttpRequest{
         std::string getNormalizedReqPath() const { return _normalizedReqPath; }
         std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
+		std::string getRequestedPath() const { return _requestedPath; }
+		std::string getPathInfo() const { return _pathInfo; }
+		std::string getPathTranslated() const { return _pathTranslated; }
 
 
 		void setMethod(std::string method);

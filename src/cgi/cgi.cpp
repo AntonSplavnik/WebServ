@@ -1,6 +1,7 @@
 #include "cgi.hpp"
 #include "../http_response/http_response.hpp"
 #include "../logging/logger.hpp"
+#include "../server_controller/server_controller.hpp"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -35,25 +36,37 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
     //  Base CGI variables
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
     setenv("SERVER_PROTOCOL", request.getVersion().c_str(), 1);
-    setenv("SERVER_SOFTWARE", "Webserv42/1.0", 1); //TODO: set somewhere and take it from there
-
-    //  Server name and port
+    setenv("SERVER_SOFTWARE", SERVER_SOFTWARE_NAME, 1);
+	setenv("REMOTE_USER", "", 1); // no auth implemented
     std::string host = "localhost";
     std::map<std::string, std::string> headers = request.getHeaders();
     std::map<std::string, std::string>::const_iterator it = headers.find("host");
     if (it != headers.end())
         host = it->second;
     setenv("SERVER_NAME", host.c_str(), 1);
-    setenv("SERVER_PORT", "8080", 1); // or from _matchedLoc / configData
+	setenv("SERVER_PORT", "8080", 1); // default
+    // if (_clients.find(_clientFd) != _clients.end()) {
+    // 	unsigned short port = _clients[_clientFd].server_port;
+
+    // 	std::ostringstream portStr;
+    // 	portStr << port; // use ostringstream for C++98
+    // 	setenv("SERVER_PORT", portStr.str().c_str(), 1);
+	// } TODO: get actual server port when it is stored in ClientInfo
+
     //  Request details
     setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
     setenv("QUERY_STRING", request.getQueryString().c_str(), 1);
     setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1);
-    setenv("SCRIPT_NAME", request.getNormalizedReqPath().c_str(), 1);
+
+    std::string scriptName = request.getNormalizedReqPath();
+	// if (!request.getPathInfo().empty())
+    // 	scriptName.erase(scriptName.size() - request.getPathInfo().size()); //uncomment when PATH_INFO is implemented
+	setenv("SCRIPT_NAME", scriptName.c_str(), 1);
     setenv("PATH", "/usr/local/bin:/usr/bin:/bin", 1);
 	setenv("DOCUMENT_ROOT", _matchedLoc ? _matchedLoc->root.c_str() : ".", 1);
 	setenv("REDIRECT_STATUS", "200", 1); // required for php-cgi
-	setenv("REQUEST_URI", request.getNormalizedReqPath().c_str(), 1);
+	setenv("REQUEST_URI", request.getRequestedPath().c_str(), 1);
+
     for (std::map<std::string, std::string>::const_iterator it = headers.begin();
      	it != headers.end(); ++it)
 	{
@@ -65,14 +78,10 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
 
 
     //  Content info (for POST, PUT)
-    std::string body = request.getBody();
-    std::string contentLength = "0";
-    if (!body.empty()) {
-        std::ostringstream oss;
-        oss << body.size();
-        contentLength = oss.str();
-    }
-    setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+    std::ostringstream oss;
+	oss << request.getContentLength();
+	setenv("CONTENT_LENGTH", oss.str().c_str(), 1);
+
     setenv("CONTENT_TYPE", request.getContenType().c_str(), 1);
 
     //  Client (REMOTE_ADDR / PORT)
@@ -85,27 +94,17 @@ if (_clients.find(_clientFd) != _clients.end()) {
     port << _clients[_clientFd].client_port;
     remotePort = port.str();
 }
-#endif //TODO: add client ip and port to ClientInfo and set them on accept
+#endif //TODO: add client ip and port to ClientInfo when set them on accept
     setenv("REMOTE_ADDR", remoteAddr.c_str(), 1);
     setenv("REMOTE_PORT", remotePort.c_str(), 1);
 
     //  PATH_INFO / PATH_TRANSLATED
     // (if your request URL is /cgi/test.py/foo/bar → PATH_INFO = /foo/bar)
-    std::string pathInfo = ""; // TODO: extract from request path
-    std::string pathTranslated = ""; // TODO: map to filesystem
-    std::string reqPath = request.getNormalizedReqPath();
-    std::string scriptName = request.getMappedPath();
+    std::string pathInfo = "/foo/bar"; // TODO: extract from request path
+    std::string pathTranslated = scriptPath + pathInfo; // TODO: map to filesystem
 
-    std::string urlPath = request.getNormalizedReqPath();
-	std::string locPath = _matchedLoc ? _matchedLoc->path : "";
-
-	if (urlPath.size() > locPath.size())
-	{
-    	std::string pathInfo = urlPath.substr(locPath.size());
-    	std::string pathTranslated = scriptPath + pathInfo;
-    	setenv("PATH_INFO", pathInfo.c_str(), 1);
+		setenv("PATH_INFO", pathInfo.c_str(), 1);
     	setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
-	}
 }
 
 
@@ -113,6 +112,8 @@ void Cgi::executeCgiWithArgs()
 {
     // --- Determine interpreter ---
     std::string interpreter;
+	//interpreter = "/home/mkokorev/Desktop/Projects/webserver/ubuntu_cgi_tester";
+
     if (ext == ".py")
         interpreter = "/usr/bin/python3";
     else if (ext == ".php")

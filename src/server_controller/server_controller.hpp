@@ -17,6 +17,8 @@
 #include "../config/config.hpp"
 #include "../cgi/cgi.hpp"
 
+#define SERVER_SOFTWARE_NAME "Webserv42/1.0"
+
 class ServerController{
 
 	public:

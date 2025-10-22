@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-import os, sys, json, urllib.parse, cgi
+import os
+import sys
+import json
+import urllib.parse
+import cgi
 
 def html_escape(s):
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -35,15 +39,25 @@ elif method == "POST":
     elif "application/json" in content_type:
         try:
             data = json.loads(raw_body)
-            # Convert to uniform dict-of-lists
-            params = {k: [str(v)] for k, v in data.items()}
+            params = {k: [str(v)] for k, v in data.items()}  # uniform dict-of-lists
         except Exception as e:
             params = {"error": [f"Invalid JSON: {e}"]}
     else:
         params = {"raw_body": [raw_body]}
 
-# --- HTML Output ---
+# --- Important environment variables to display ---
+important_vars = [
+    "AUTH_TYPE", "CONTENT_LENGTH", "CONTENT_TYPE", "GATEWAY_INTERFACE",
+    "PATH_INFO", "PATH_TRANSLATED", "QUERY_STRING", "REMOTE_ADDR",
+    "REMOTE_HOST", "REMOTE_IDENT", "REMOTE_USER", "REQUEST_METHOD",
+    "SCRIPT_NAME", "SERVER_NAME", "SERVER_PORT", "SERVER_PROTOCOL",
+    "SERVER_SOFTWARE"
+]
+
+# --- CGI Header (must come first) ---
 print("Content-Type: text/html; charset=utf-8\n")
+
+# --- HTML Output ---
 print("<!DOCTYPE html>")
 print("<html><head>")
 print("<meta charset='utf-8'>")
@@ -54,8 +68,9 @@ body { font-family: monospace; background: #1e1e1e; color: #dcdcdc; padding: 20p
 h1 { color: #9cdcfe; }
 h2 { color: #ce9178; margin-top: 20px; }
 pre { background: #252526; padding: 10px; border-radius: 8px; }
-table { border-collapse: collapse; }
+table { border-collapse: collapse; margin-top: 10px; }
 td, th { border: 1px solid #444; padding: 5px 10px; }
+th { background: #333; }
 """)
 print("</style></head><body>")
 
@@ -63,6 +78,7 @@ print("<h1>🚀 CGI Debug</h1>")
 print(f"<h2>Method: {method}</h2>")
 print(f"<h2>Content-Type: {html_escape(content_type)}</h2>")
 
+# --- Parameters section ---
 if params:
     print("<h2>All Parameters</h2><pre>")
     for k, v in params.items():
@@ -71,14 +87,25 @@ if params:
 else:
     print("<h2>All Parameters</h2><pre>No parameters received</pre>")
 
+# --- JSON representation ---
 print("<h2>JSON</h2><pre>")
-print(json.dumps(params, indent=2))
+print(html_escape(json.dumps(params, indent=2)))
 print("</pre>")
 
+# --- Raw POST body ---
 if raw_body:
     print("<h2>Raw POST Body</h2><pre>")
     print(html_escape(raw_body))
     print("</pre>")
+
+# --- Environment variables ---
+print("<h2>Environment Variables</h2>")
+print("<table>")
+print("<tr><th>Variable</th><th>Value</th></tr>")
+for var in important_vars:
+    val = os.environ.get(var, "")
+    print(f"<tr><td>{html_escape(var)}</td><td>{html_escape(val)}</td></tr>")
+print("</table>")
 
 print("<hr><div style='text-align:center'>WebServ42 CGI Test</div>")
 print("</body></html>")

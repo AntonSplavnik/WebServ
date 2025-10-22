@@ -228,6 +228,13 @@ void HttpRequest::parseHeaders(){
 	} else {
 		_contentLength = 0;  // No Content-Length header
 	}
+
+	// std::cout << "Parsed Headers:" << std::endl;
+	// for (it = _headers.begin(); it != _headers.end(); ++it) {
+	// 	std::cout << it->first << ": " << it->second << std::endl
+	// 			  << "Content-Length: " << _contentLength << std::endl;
+	// }
+	// exit(228);
 }
 
 void HttpRequest::parseBody(){
