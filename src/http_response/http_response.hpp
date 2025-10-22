@@ -67,7 +67,7 @@ class HttpResponse {
 
 		std::string extractBody();
 		std::string	getTimeNow();
-		fileExtentions	extractFileExtension(std::string filePath);
+		std::string extractFileExtension(std::string filePath);
 		std::string	getReasonPhrase();
 		std::string	determineContentType();
 
@@ -91,6 +91,11 @@ class HttpResponse {
 		unsigned long	_contentLength;
 		std:: string	_connectionType;
 		std::map<std::string, std::string> _headers;
+
+		static std::map<std::string, std::string> initMimeTypes();
+		static const std::map<std::string, std::string> _mimeTypes;
+		std::string getMimeType(const std::string& extension) const;
+		std::string extractFileExtension(const std::string& filePath) const;
 
 		const ConfigData& _config;
 

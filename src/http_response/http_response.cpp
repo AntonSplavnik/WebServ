@@ -63,39 +63,93 @@ HttpResponse::HttpResponse(HttpRequest request, const ConfigData& configData)
 
 HttpResponse::~HttpResponse(){}
 
+const std::map<std::string, std::string> HttpResponse::_mimeTypes = HttpResponse::initMimeTypes();
 
-fileExtentions HttpResponse::extractFileExtension(std::string filePath){
+std::map<std::string, std::string> HttpResponse::initMimeTypes() {
+    std::map<std::string, std::string> types;
+    
+	// Texte
+	types["html"] = "text/html; charset=utf-8";
+	types["htm"] = "text/html; charset=utf-8";
+	types["css"] = "text/css; charset=utf-8";
+	types["js"] = "text/javascript; charset=utf-8";
+	types["json"] = "application/json; charset=utf-8";
+	types["xml"] = "application/xml; charset=utf-8";
+	types["txt"] = "text/plain; charset=utf-8";
+	types["csv"] = "text/csv; charset=utf-8";
+	types["md"] = "text/markdown; charset=utf-8";
 
-	size_t dotPos = filePath.find_last_of('.');
-	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
-		return UNKNOWN;
-	}
-	std::string extension = filePath.substr(dotPos + 1);
-	std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+	// Images
+    types["jpg"] = "image/jpeg";
+    types["jpeg"] = "image/jpeg";
+    types["png"] = "image/png";
+    types["gif"] = "image/gif";
+    types["svg"] = "image/svg+xml";
+    types["webp"] = "image/webp";
+	types["ico"] = "image/x-icon";
+	types["bmp"] = "image/bmp";
 
-	if (extension == "html" || extension == "htm") return HTML;
-	else if (extension == "pdf") return PDF;
-	else if (extension == "jpg" || extension == "jpeg") return JPEG;
-	else if (extension == "txt") return TXT;
-	else if (extension == "png") return PNG;
-	else if (extension == "js") return JS;
+	// Audio
+	types["mp3"] = "audio/mpeg";
+	types["wav"] = "audio/wav";
+	types["ogg"] = "audio/ogg";
+	types["m4a"] = "audio/mp4";
 
-	else return UNKNOWN;
+	// Vidéo
+	types["mp4"] = "video/mp4";
+	types["webm"] = "video/webm";
+	types["avi"] = "video/x-msvideo";
+	types["mov"] = "video/quicktime";
+
+	// Application
+	types["pdf"] = "application/pdf";
+	types["zip"] = "application/zip";
+	types["tar"] = "application/x-tar";
+	types["gz"] = "application/gzip";
+	types["wasm"] = "application/wasm";
+	
+	// Polices
+	types["ttf"] = "font/ttf";
+	types["woff"] = "font/woff";
+	types["woff2"] = "font/woff2";
+	
+	return types;
 }
 
+// MIME = Multipurpose Internet Mail Extensions
+// Return MIME from map _mimeTypes
+std::string HttpResponse::getMimeType(const std::string& extension) const {
+
+	std::map<std::string, std::string>::const_iterator it = _mimeTypes.find(extension);
+    
+	if (it != _mimeTypes.end()) {
+		return it->second;
+	}
+    return "application/octet-stream";
+}
+
+//function to exctract extension after '.' and lowercase it
+std::string HttpResponse::extractFileExtension(std::string filePath){
+
+	//Find extension after '.'
+	size_t dotPos = filePath.find_last_of('.');
+	if (dotPos == std::string::npos || dotPos == filePath.length() - 1) {
+		return "";
+    }
+	std::string extension = filePath.substr(dotPos + 1);
+    
+    // Convert to lowercase
+	for (size_t i = 0; i < extension.length(); ++i) {
+		extension[i] = std::tolower(extension[i]);
+	}
+	return extension;
+}
+
+//example : Swith index.html to "text/html; charset=utf-8"
 std::string HttpResponse::determineContentType() {
 
-	fileExtentions extention = extractFileExtension(_filePath);
-
-	switch (extention) {
-		case JPEG: return "image/jpeg";
-		case HTML: return "text/html";
-		case TXT: return "text/plain";
-		case JS: return "text/javascript";
-		case PNG: return "image/png";
-		case PDF: return "application/pdf";
-		default: return "application/octet-stream";
-	}
+	std::string extension = extractFileExtension(_filePath);
+	return getMimeType(extension);
 }
 
 std::string HttpResponse::getReasonPhrase() {
