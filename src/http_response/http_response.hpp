@@ -60,8 +60,7 @@ class HttpResponse {
 
 	private:
 
-		void generateGetResponse();
-		void generatePostResponse();
+		void generateGpResponse();
 		void generateDeleteResponse();
 		void generateErrorResponse();
 

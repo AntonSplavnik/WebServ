@@ -12,51 +12,6 @@
 
 #include "http_response.hpp"
 
-/*
-	Here's a typical HTTP response structure:
-
-  HTTP/1.1 200 OK
-  Date: Tue, 24 Sep 2025 16:00:00 GMT
-  Server: WebServ/1.0
-  Content-Type: text/html
-  Content-Length: 1234
-  Connection: keep-alive
-
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Example Page</title>
-  </head>
-  <body>
-      <h1>Hello World</h1>
-      <p>This is the response body content.</p>
-  </body>
-  </html>
-
-  Structure breakdown:
-
-  1. Status Line: HTTP/1.1 200 OK
-    - Protocol version
-    - Status code (200)
-    - Reason phrase (OK)
-  2. Headers: Key-value pairs ending with \r\n
-    - Date: When response was generated
-    - Server: Server information
-    - Content-Type: MIME type of content
-    - Content-Length: Size of body in bytes
-    - Connection: Connection handling
-  3. Empty Line: \r\n separates headers from body
-  4. Body: The actual content (HTML, JSON, file data, etc.)
-
-  Common status codes:
-  - 200 OK - Success
-  - 404 Not Found - File not found
-  - 500 Internal Server Error - Server error
-  - 403 Forbidden - Access denied
-
-  Each line ends with \r\n (carriage return + line feed).
-*/
-
 HttpResponse::HttpResponse(HttpRequest request, const ConfigData& configData)
 	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
 	_serverName("WebServ"), _serverVersion(1.0f), _config(configData){}
@@ -107,7 +62,7 @@ std::map<std::string, std::string> HttpResponse::initMimeTypes() {
 	types["tar"] = "application/x-tar";
 	types["gz"] = "application/gzip";
 	types["wasm"] = "application/wasm";
-	
+
 	// Polices
 	types["ttf"] = "font/ttf";
 	types["woff"] = "font/woff";
@@ -219,25 +174,12 @@ void HttpResponse::generateErrorResponse() {
 	_response = oss.str();
 }
 
-void HttpResponse::generatePostResponse(){
+void HttpResponse::generateGpResponse(){
 
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Server: " << _serverName << "/" << _serverVersion << "\r\n"
 		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
-		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n"
-		<< _body;
-	_response = oss.str();
-}
-
-void HttpResponse::generateGetResponse() {
-
-	std::ostringstream oss;
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
-		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
 		<< "Content-Length: " << _contentLength << "\r\n"
 		<< "Connection: " << _connectionType << "\r\n\r\n"
@@ -250,9 +192,7 @@ void HttpResponse::generateDeleteResponse() {
 	std::ostringstream oss;
 	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
 		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
-		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Server: " << _serverName << "/" << _serverVersion << "\r\n"
 		<< "Connection: " << _connectionType << "\r\n\r\n";
 	_response = oss.str();
 }
@@ -273,7 +213,7 @@ void HttpResponse::generateResponse(int statusCode) {
 
 	_method = _request.getMethodEnum();
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase(); //change to map
+	_reasonPhrase = getReasonPhrase();
 	_date = getTimeNow();
 
 	if(_statusCode >= 400){
@@ -290,9 +230,8 @@ void HttpResponse::generateResponse(int statusCode) {
 	switch (_method)
 	{
 	case POST:
-		generatePostResponse(); break;
 	case GET:
-		generateGetResponse(); break;
+		generateGpResponse(); break;
 	case DELETE:
 		generateDeleteResponse(); break;
 	default:
@@ -324,24 +263,3 @@ std::string HttpResponse::getContentType()const {return _contentType;}
 float HttpResponse::getVersion() const {return _serverVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 std::string HttpResponse::getResponse() const {return _response;}
-
-/*
-  HTTP/1.1 200 OK
-  Date: Tue, 24 Sep 2025 16:00:00 GMT
-  Server: WebServ/1.0
-  Content-Type: text/html
-  Content-Length: 1234
-  Connection: keep-alive
-
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Example Page</title>
-  </head>
-  <body>
-      <h1>Hello World</h1>
-      <p>This is the response body content.</p>
-  </body>
-  </html>
-
-*/
