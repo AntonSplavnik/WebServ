@@ -1,7 +1,7 @@
 #ifndef CGI_HPP
 #define CGI_HPP
 
-#define CGI_TIMEOUT 3  // seconds — how long CGI may run before it's killed TODO: increase
+#define CGI_TIMEOUT 20  // seconds — how long CGI may run before it's killed TODO: increase
 
 #include <string>
 #include <unistd.h>

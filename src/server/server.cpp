@@ -162,7 +162,7 @@ void Server::handleClientRead(int fd){
 		else {
 
 			updateClientActivity(fd);
-			
+
 			_clients[fd].requestData.append(buffer, bytes);
 
 			// Check if headers complete
@@ -357,28 +357,45 @@ void Server::handleEvent(int fd, short revents) {
 		if (revents & POLLIN) {
 			handleListenEvent(listenFdIndex);
 		}
-	} else {
-		// Client socket
-        if ((revents & POLLIN) && (_cgiMap.find(fd) != _cgiMap.end())) {
-          std::cout << "CGI output event on FD " << fd << std::endl;
-        	handleCgiCompletion(fd);
+		return;
+	}
+	// Client socket
+    if (_cgiMap.find(fd) != _cgiMap.end()) {
+		std::cout << "Event detected on CGI FD " << fd << std::endl;
+        if (revents & POLLIN) {
+            std::cout << "CGI POLLIN event on FD " << fd << std::endl;
+            handleCgiCompletion(fd);
             return;
         }
-		if (revents & POLLIN) {
-			handleClientRead(fd);
-		}
-		if (revents & POLLOUT) {
-			handleClientWrite(fd);
-		}
-		if (revents & POLLERR) {
-			handlePOLLERR(fd);
-			disconectClient(fd);
-		}
-		if (revents & POLLHUP) {
-			handlePOLLHUP(fd);
-			disconectClient(fd);
-		}
+        if (revents & POLLHUP) {
+            std::cout << "CGI POLLHUP event on FD " << fd << std::endl;
+            handleCgiCompletion(fd);  // final read + cleanup
+            disconectClient(fd);     // <- make sure this exists
+            close(fd);
+            return;
+        }
+        if (revents & POLLERR) {
+            std::cerr << "CGI POLLERR event on FD " << fd << std::endl;
+            disconectClient(fd);
+            close(fd);
+            return;
+        }
+    }
+	if (revents & POLLIN) {
+		handleClientRead(fd);
 	}
+	if (revents & POLLOUT) {
+		handleClientWrite(fd);
+	}
+	if (revents & POLLERR) {
+		handlePOLLERR(fd);
+		disconectClient(fd);
+	}
+	if (revents & POLLHUP) {
+		handlePOLLHUP(fd);
+		disconectClient(fd);
+	}
+
 }
 void Server::disconectClient(short fd){
 

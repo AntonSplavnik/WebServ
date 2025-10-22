@@ -211,6 +211,13 @@ bool Cgi::handleRead() {
     char buf[4096];
     ssize_t n = read(outFd, buf, sizeof(buf));
 
+	if (n == -1) {
+		HttpResponse errResp(request);
+   	 		errResp.generateResponse(500, false, "");
+    		_clients[_clientFd].responseData = errResp.getResponse();
+    		_clients[_clientFd].state = SENDING_RESPONSE;
+    		return false;
+	}
     if (n > 0) {
         buffer.append(buf, n);
         return true;
