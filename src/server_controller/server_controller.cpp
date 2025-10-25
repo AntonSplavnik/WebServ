@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/16 19:03:09 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/24 14:25:31 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ void ServerController::checkClientTimeouts(Server& server){
 			std::cout << "Client: " << currentFd << " timed out." << std::endl;
 			int fdToDisconnect = currentFd;
 			++it;
-			server.disconectClient(fdToDisconnect);
+			server.disconnectClient(fdToDisconnect);
 		}
 		else
 			++it;
@@ -74,7 +74,7 @@ Server* ServerController::findServerForFd(int fd){
 		std::map<int, ClientInfo>& clients = srv->getClients();
 		if (clients.find(fd) != clients.end()) return srv;
 
-		std::map<int, Cgi*>& cgis = srv->getCgiMap();
+		std::map<int, Cgi*>& cgis = srv->getCGI();
 		if (cgis.find(fd) != cgis.end()) return srv;
 	}
 	return NULL;
@@ -87,7 +87,6 @@ void ServerController::rebuildPollFds(){
 	for (size_t i = 0; i < _servers.size(); i++){
 
 		std::map<int, ClientInfo>& clients = _servers[i]->getClients();
-
 		std::map<int, ClientInfo>::iterator it = clients.begin();
 		for(; it != clients.end(); ++it)
 		{
@@ -97,22 +96,21 @@ void ServerController::rebuildPollFds(){
 			client.events = it->second.state == READING_REQUEST? POLLIN : POLLOUT;
 			client.revents = 0;
 			_pollFds.push_back(client);
-
 			std::cout << "Added client socket FD " << client.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
-		std::map<int, Cgi*>& cgis = _servers[i]->getCgiMap();
-		for (std::map<int, Cgi*>::iterator cit = cgis.begin(); cit != cgis.end(); ++cit) {
-			struct pollfd p;
-			p.fd = cit->first;
-			p.events = POLLIN; // Always monitor for output from CGI
-			p.revents = 0;
-			_pollFds.push_back(p);
-			std::cout << "Added CGI socket FD " << p.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		std::map<int, Cgi*>& cgis = _servers[i]->getCGI();
+		std::map<int, Cgi*>::iterator cit = cgis.begin();
+		for (; cit != cgis.end(); ++cit) {
+			struct pollfd cgiProcess;
+			cgiProcess.fd = cit->first;
+			cgiProcess.events = POLLIN; // Always monitor for output from CGI
+			cgiProcess.revents = 0;
+			_pollFds.push_back(cgiProcess);
+			std::cout << "Added CGI socket FD " << cgiProcess.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
 	}
 
 }
-
 
 void ServerController::initListeningSockets(){
 
@@ -158,18 +156,18 @@ void ServerController::run(){
 
 		//errno != EINTR check for interrupted poll
 		if (ret < 0){ //&& errno != EINTR) {
-			std::cerr << "Poll failed.\n";
+			std::cerr << "[DEBUG] Poll failed.\n";
 			break;
 		}
-		std::cout << "DEBUG: poll() completed." << std::endl;
+		std::cout << "[DEBUG] poll() completed." << std::endl;
 		if (ret > 0){
-			std::cout << "poll() returned " << ret << " (number of FDs with events)" << std::endl;
+			std::cout << "[DEBUG] poll() returned " << ret << " (number of FDs with events)" << std::endl;
 			for(size_t i = 0; i < _pollFds.size(); i++){
 
 				if (_pollFds[i].revents == 0)
 				continue;
 
-				std::cout << "DEBUG: Handling FD " << _pollFds[i].fd << " at index " << i << " with revents=" << _pollFds[i].revents << std::endl;
+				std::cout << "[DEBUG] Handling FD " << _pollFds[i].fd << " at index " << i << " with revents=" << _pollFds[i].revents << std::endl;
 
 				int fd = _pollFds[i].fd;
 				short revent = _pollFds[i].revents;
@@ -197,7 +195,7 @@ bool ServerController::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
 }
 
 void ServerController::checkCgiTimeouts(Server& server) {
-	std::map<int, Cgi*>& cgiMap = server.getCgiMap();
+	std::map<int, Cgi*>& cgiMap = server.getCGI();
 	std::map<int, Cgi*>::iterator it = cgiMap.begin();
 
 	while (it != cgiMap.end()) {

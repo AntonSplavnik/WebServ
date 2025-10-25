@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 20:42:13 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/25 20:13:30 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,22 +31,22 @@ class Server {
 		~Server();
 
 		void handleEvent(int fd, short revents);
-		void disconectClient(short fd);
+		void disconnectClient(short fd);
 		void shutdown();
 
 		const std::vector<Socket>& getListeningSockets() const;
 		std::map<int, ClientInfo>& getClients();
-        std::map<int, Cgi*>& getCgiMap();
+		std::map<int, Cgi*>& getCGI();
 
 	private:
-
-		void initializeListeningSockets();
+		void initListeningSockets();
 
 		int isListeningSocket(int fd) const;
-		void handlePOLLERR(int fd);
-		void handlePOLLHUP(int fd);
 		void handleListenEvent(int fd);
-		void handleClientRead(int indexOfLinstenSocket);
+
+		void handleCGIread(int fd);
+		void handleCGIwrite(int fd);
+		void handleClientRead(int fd);
 		void handleClientWrite(int fd);
 
 		void handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
@@ -56,17 +56,15 @@ class Server {
 		bool validatePath(const std::string& path);
 		void updateClientActivity(int fd);	// Reset timer on activity
 
-                // CGI handling
-		void handleCgiCompletion(int fd);
+		// CGI handling
 
 		// Utility
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
 
-		// Config _config;
-		std::vector<Socket>			 _listeningSockets;
+		std::vector<Socket>			_listeningSockets;
 		std::map<int, ClientInfo>	_clients;
-	    std::map<int, Cgi*>			_cgiMap;
+		std::map<int, Cgi*>			_cgi;
 		const ConfigData			_configData;
 };
 

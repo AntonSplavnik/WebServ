@@ -10,7 +10,6 @@ enum ClientState {
 	READING_REQUEST,   // Waiting to read HTTP request
 	SENDING_RESPONSE,   // Ready to send HTTP response
 	WAITING_CGI
-
 };
 
 // Structure to track client connection info

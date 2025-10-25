@@ -15,42 +15,50 @@
 #include "../config/config.hpp"
 
 
+enum CgiReadStatus{
+	CGI_CONTINUE,
+	CGI_READY,
+	CGI_ERROR
+};
+
 class Cgi {
-public:
-	Cgi(const std::string &path,
-		const HttpRequest &req,
-		std::map<int, ClientInfo> &clients,
-		int clientFd, const LocationConfig* loc, std::string cgiExt);
-	~Cgi();
+	public:
+		Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
+			int clientFd, const LocationConfig* loc, std::string cgiExt);
+		~Cgi();
 
-	bool	start();
-	bool	handleRead();
-	int		getClientFd() const { return _clientFd; };
-	void	setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
-	const LocationConfig* getMatchedLocation() const { return _matchedLoc; }
-    time_t getStartTime() const { return startTime; }
-    HttpRequest getRequest() const { return request; }
+		bool startCGI();
 
+		CgiReadStatus handleRead();
+		CgiReadStatus handleWrite();
 
-	pid_t	pid;
-	int		outFd;
-	bool 	finished;
+		void setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
 
-private:
-	const LocationConfig* _matchedLoc;
-	std::string ext;
-	int 		inFd;
-	std::string scriptPath;
-	HttpRequest request;
-	std::map<int, ClientInfo> &_clients;
-	int			_clientFd;
-	std::string buffer;
-	time_t 		startTime;
+		int getClientFd() const { return _clientFd; };
+		const LocationConfig* getMatchedLocation() const { return _matchedLoc; }
+		time_t getStartTime() const { return startTime; }
+		HttpRequest getRequest() const { return request; }
+		std::string getResponseData() const { return _resonseData; }
 
 
-	void	setEnv(const HttpRequest &request, const std::string &scriptPath);
-	bool chdirToScriptDir();
-    void executeCgiWithArgs();
+		pid_t	pid;
+		int		outFd;
+		bool	finished;
+
+	private:
+		std::string					ext;
+		std::string					scriptPath;
+		std::string					_resonseData;
+		int 						_inFd;
+		int							_clientFd;
+		HttpRequest					request;
+		std::map<int, ClientInfo>	&_clients;
+		const LocationConfig*		_matchedLoc;
+		time_t						startTime;
+
+		void setEnv(const HttpRequest &request, const std::string &scriptPath);
+		bool chdirToScriptDir();
+		void executeCGI();
 };
 
 

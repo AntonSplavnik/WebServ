@@ -9,29 +9,19 @@
 #include <poll.h>
 
 
-Cgi::Cgi(const std::string &path,
-         const HttpRequest &req,
-         std::map<int, ClientInfo> &clients,
-         int clientFd, const LocationConfig* loc, std::string cgiExt)
-    : pid(-1),
-      outFd(-1),
-      finished(false),
-      _matchedLoc(loc),
-      ext(cgiExt),
-      inFd(-1),
-      scriptPath(path),
-      request(req),
-      _clients(clients),
-      _clientFd(clientFd),
-      startTime(time(NULL))
-       {}
+Cgi::Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
+        int clientFd, const LocationConfig* loc, std::string cgiExt)
+    : pid(-1), outFd(-1), finished(false), _matchedLoc(loc), ext(cgiExt),
+    _inFd(-1), scriptPath(path), request(req), _clients(clients), _clientFd(clientFd),
+    startTime(time(NULL)){}
 
 
 Cgi::~Cgi() {
     if (outFd >= 0) close(outFd);
-    if (inFd >= 0) close(inFd);
+    if (_inFd >= 0) close(_inFd);
 }
 void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
+
     //  Base CGI variables
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
     setenv("SERVER_PROTOCOL", request.getVersion().c_str(), 1);
@@ -45,6 +35,7 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
         host = it->second;
     setenv("SERVER_NAME", host.c_str(), 1);
     setenv("SERVER_PORT", "8080", 1); // or from _matchedLoc / configData
+
     //  Request details
     setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
     setenv("QUERY_STRING", request.getQueryString().c_str(), 1);
@@ -54,8 +45,9 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
 	setenv("DOCUMENT_ROOT", _matchedLoc ? _matchedLoc->root.c_str() : ".", 1);
 	setenv("REDIRECT_STATUS", "200", 1); // required for php-cgi
 	setenv("REQUEST_URI", request.getNormalizedReqPath().c_str(), 1);
-    for (std::map<std::string, std::string>::const_iterator it = headers.begin();
-     	it != headers.end(); ++it)
+
+    std::map<std::string, std::string>::const_iterator it = headers.begin();
+    for (;it != headers.end(); ++it)
 	{
     	std::string key = "HTTP_" + it->first;
     	std::transform(key.begin(), key.end(), key.begin(), ::toupper);
@@ -63,8 +55,7 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
     	setenv(key.c_str(), it->second.c_str(), 1);
 	}
 
-
-    //  Content info (for POST, PUT)
+    // Content info (for POST, PUT)
     std::string body = request.getBody();
     std::string contentLength = "0";
     if (!body.empty()) {
@@ -73,18 +64,18 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
         contentLength = oss.str();
     }
     setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
-    setenv("CONTENT_TYPE", request.getContenType().c_str(), 1);
+    setenv("CONTENT_TYPE", request.getContentType().c_str(), 1);
 
     //  Client (REMOTE_ADDR / PORT)
     std::string remoteAddr = "127.0.0.1";
     std::string remotePort = "80";
-    #if 0
-if (_clients.find(_clientFd) != _clients.end()) {
-    remoteAddr = _clients[_clientFd].client_ip;
-    std::ostringstream port;
-    port << _clients[_clientFd].client_port;
-    remotePort = port.str();
-}
+#if 0
+    if (_clients.find(_clientFd) != _clients.end()) {
+        remoteAddr = _clients[_clientFd].client_ip;
+        std::ostringstream port;
+        port << _clients[_clientFd].client_port;
+        remotePort = port.str();
+    }
 #endif //TODO: add client ip and port to ClientInfo and set them on accept
     setenv("REMOTE_ADDR", remoteAddr.c_str(), 1);
     setenv("REMOTE_PORT", remotePort.c_str(), 1);
@@ -109,7 +100,7 @@ if (_clients.find(_clientFd) != _clients.end()) {
 }
 
 
-void Cgi::executeCgiWithArgs()
+void Cgi::executeCGI()
 {
     // --- Determine interpreter ---
     std::string interpreter;
@@ -136,11 +127,13 @@ void Cgi::executeCgiWithArgs()
 }
 
 
-bool Cgi::start() {
+bool Cgi::startCGI() {
 
-  //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
+    //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
     int inpipe[2];
     int outpipe[2];
+
+
     if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
         perror("pipe");
         return false;
@@ -159,8 +152,9 @@ bool Cgi::start() {
     if (pid == 0) {
         // --- CHILD ---
         dup2(inpipe[0], STDIN_FILENO);
-        dup2(outpipe[1], STDOUT_FILENO);
         close(inpipe[1]);
+
+        dup2(outpipe[1], STDOUT_FILENO);
         close(outpipe[0]);
 
         if (!chdirToScriptDir()) {
@@ -168,95 +162,89 @@ bool Cgi::start() {
         }
 
         setEnv(request, scriptPath);  // Ensure PATH is set
-        executeCgiWithArgs();
+        executeCGI();
     }
 
     // --- PARENT ---
     close(inpipe[0]);
     close(outpipe[1]);
-    inFd = inpipe[1];
+
+    _inFd = inpipe[1];
     outFd = outpipe[0];
 
+    fcntl(_inFd, F_SETFL, O_NONBLOCK);
     fcntl(outFd, F_SETFL, O_NONBLOCK);
+
+
     // If POST → write body to stdin of CGI
     if (request.getMethod() == "POST") {
-    	const std::string &body = request.getBody();
-    	ssize_t totalWritten = 0;
-    	ssize_t n;
+        const std::string &body = request.getBody();
+        ssize_t totalWritten = 0;
+        ssize_t n;
 
-    	while (totalWritten < (ssize_t)body.size()) {
-        	n = write(inFd, body.c_str() + totalWritten, body.size() - totalWritten);
-        	if (n < 0) {
-            	if (errno == EINTR) continue;      // retry on interrupt
-            	perror("[CGI] write error");
-            	break;
-        	}
-        	totalWritten += n;
-    	}
-		std::cout << "[CGI] Sending POST body to script: " << scriptPath;
+        while (totalWritten < (ssize_t)body.size()) {
+            n = write(_inFd, body.c_str() + totalWritten, body.size() - totalWritten);
+            if (n < 0) {
+                if (errno == EINTR) continue;      // retry on interrupt
+                perror("[CGI] write error");
+                break;
+            }
+            totalWritten += n;
+        }
+        std::cout << "[CGI] Sending POST body to script: " << scriptPath;
 
-    	std::cout << "[CGI] wrote " << totalWritten << " bytes to CGI stdin\n";
-	}
+        std::cout << "[CGI] wrote " << totalWritten << " bytes to CGI stdin\n";
+    }
 
-    close(inFd);  // always close stdin, so child gets EOF
+    close(_inFd);  // always close stdin, so child gets EOF
     return true;
 }
 
+CgiReadStatus Cgi::handleWrite(){
 
-bool Cgi::handleRead() {
-  std::cout << "Handling CGI read for pid=" << pid << std::endl;
+}
+
+CgiReadStatus Cgi::handleRead() {
+
+    std::cout << "[DEBUG] Handling CGI read for pid = " << pid << std::endl;
     if (finished || outFd < 0)
-        return false;
+        return CGI_READY;
 
     char buf[4096];
-    ssize_t n = read(outFd, buf, sizeof(buf));
+    ssize_t bytesRead = read(outFd, buf, sizeof(buf));
 
-	if (n == -1) {
-		HttpResponse errResp(request);
-   	 		errResp.generateResponse(500, false, "");
-    		_clients[_clientFd].responseData = errResp.getResponse();
-    		_clients[_clientFd].state = SENDING_RESPONSE;
-    		return false;
-	}
-    if (n > 0) {
-        buffer.append(buf, n);
-        return true;
+    if (bytesRead == -1) {
+        if (errno == EINTR) {
+            // Do we need to close FD here?
+            return CGI_CONTINUE;
+        }
+        perror("[CGI] read error");
+        // Do we need to close FD here?
+        return CGI_ERROR;
     }
 
-    if (n == 0) {
-        std::cout << "[CGI] EOF reached for outFd=" << outFd << std::endl;
+    if (bytesRead > 0) {
+        if (_resonseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
+            std::cerr << "[CGI] Output exceeds limit" << std::endl;
+            return CGI_ERROR;
+        }
+        _resonseData.append(buf, bytesRead);
+        return CGI_CONTINUE;
+    }
+
+    if (bytesRead == 0) {
+        std::cout << "[CGI] EOF reached for outFd = " << outFd << std::endl;
         // --- EOF: child finished writing ---
         finished = true;
         close(outFd);
         outFd = -1;
 
         int status;
-        waitpid(pid, &status, WNOHANG);  // reap zombie safely
+        waitpid(pid, &status, WNOHANG);  // reap zombie safely    // Ignoring return value???  No error handeling? We should  make a decision based on status.
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-    		HttpResponse errResp(request);
-   	 		errResp.generateResponse(500, false, "");
-    		_clients[_clientFd].responseData = errResp.getResponse();
-    		_clients[_clientFd].state = SENDING_RESPONSE;
-    		return false;
-		}
-        //std::string Path = request.getPath();
-        std::string mappedPath = request.getMappedPath();
-        std::cout << "mappedPath: " << mappedPath << std::endl;
-        HttpResponse response(request);
-        response.generateResponse(200, true, buffer);
-        _clients[_clientFd].responseData = response.getResponse();
-        _clients[_clientFd].state = SENDING_RESPONSE;
-
-
-        //debug
-        std::cout << "responseData: " << _clients[_clientFd].responseData << std::endl;
-        return false;
+            return CGI_ERROR;
+        }
+        std::cout << "[DEBUG] Sgi responseData: " << _resonseData << std::endl;
+        return CGI_READY;
     }
-    std::cout << "not a cgi" << std::endl;
-    if (errno == EAGAIN || errno == EWOULDBLOCK)
-        return true;
-
-    perror("read");
-    return false;
 }
-

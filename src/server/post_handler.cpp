@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 18:06:36 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/23 12:46:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,7 +158,7 @@ void PostHandler::handleMultipart(const HttpRequest& request, ClientInfo& client
 
 	*/
 
-	std::string contentType = request.getContenType();
+	std::string contentType = request.getContentType();
 	std::string requestBody = request.getBody();
 
 	std::string boundary = extractBoundary(contentType);

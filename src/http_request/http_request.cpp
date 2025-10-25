@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 15:16:36 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/23 12:46:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -275,7 +275,7 @@ bool HttpRequest::getStatus() const {return _isValid;}
 
 //content type
 // void HttpRequest::setContentType(std::string ContentType){}
-std::string HttpRequest::getContenType() const {
+std::string HttpRequest::getContentType() const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find("content-type");
 	if (it != _headers.end())
 		return it->second;
@@ -321,7 +321,7 @@ void HttpRequest::normalizeReqPath() {
 
 
 // wrong naming for the function
-// std::string HttpRequest::getContenType() {
+// std::string HttpRequest::getContentType() {
 // 	std::map<std::string, std::string>::const_iterator it = _headers.find("Connection");
 // 	if (it != _headers.end())
 // 		return it->second;

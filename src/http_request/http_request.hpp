@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 15:16:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/23 17:07:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ class HttpRequest{
 
 		void parseRequest(std::string requestData);
 		void partialParseRequest(const std::string requestData);
-		
+
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseBody();
@@ -64,7 +64,7 @@ class HttpRequest{
 		//parse (get, set)
 		std::string getMethod() const;
 		std::string getVersion() const;
-		std::string getContenType() const;
+		std::string getContentType() const;
 		const std::map<std::string, std::string>& getHeaders() const;
         std::string getNormalizedReqPath() const { return _normalizedReqPath; }
         std::string getMappedPath() const { return _mappedPath; }
@@ -88,23 +88,24 @@ class HttpRequest{
 		std::string	_method; // "GET"
 
 		Methods		_methodEnum; //  GET
-                //TODO: deliver all this vars correctly :
-        // http://localhost:8080/cgi/test_POST_GET.py/foo/bar?x=1&y=2
-		std::string	_requestedPath; 	// "/cgi/test_POST_GET.py/foo/bar?x=1&y=2"  (raw path + query as received)
-        std::string _normalizedReqPath; // "/cgi/test_POST_GET.py/foo/bar"         (normalized path, no query, no duplicate slashes)
-        std::string	_mappedPath; 		// "/var/www/cgi/test_POST_GET.py"         (filesystem mapping for the script/resource)
 
+		//TODO: deliver all this vars correctly :
+        // http://localhost:8080/cgi/test_POST_GET.py/foo/bar?x=1&y=2
+		//http request
+		std::string	_requestedPath; 	// "/cgi/test_POST_GET.py/foo/bar?x=1&y=2"  (raw path + query as received)
         std::string _queryString; 		// "x=1&y=2"                               (everything after '?')
 		std::string	_version;  			// "HTTP/1.1"
+        std::string _normalizedReqPath; // "/cgi/test_POST_GET.py/foo/bar"         (normalized path, no query, no duplicate slashes) ?????
+		//server
+        std::string	_mappedPath; 		// "/var/www/cgi/test_POST_GET.py"         (filesystem mapping for the script/resource)
         std::string _pathInfo;   		// "/foo/bar"                              (info after the script name for CGI)
         std::string _pathTranslated; 	// "/var/www/cgi/foo/bar"                  (pathInfo translated to filesystem)
 
-
 		//headers
 		std::map<std::string, std::string>	_headers;
-				//"Host": "example.com",
-				//"Content-Type": "application/json",
-				//"User-Agent": "curl/7.68.0"
+		//"Host": "example.com",
+		//"Content-Type": "application/json",
+		//"User-Agent": "curl/7.68.0"
 		bool _isValid;
         unsigned long	_contentLength; //  348
 

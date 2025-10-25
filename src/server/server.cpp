@@ -6,17 +6,18 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 18:14:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/25 20:19:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
-#include "../config/config.hpp"
-#include "../socket/socket.hpp"
-#include "../server/post_handler.hpp"
-#include "../http_response/http_response.hpp"
-#include "../helpers/helpers.hpp"
+#include "config.hpp"
+#include "socket.hpp"
+#include "post_handler.hpp"
+#include "http_response.hpp"
+#include "helpers.hpp"
 #include "../cgi/cgi.hpp"
+
 #include <iostream>
 #include <ctime>
 #include <fstream>
@@ -25,11 +26,7 @@
 #include <unistd.h>   // for access()
 #include <sys/stat.h> // for stat()
 
-/* - initialize() - Create and configure the listening socket using your
-   Socket class
-  - start() - Set up poll array, add listening socket to poll
-  - run() - Main event loop with poll()
-  - stop() - Cleanup */
+
 Server::Server(const ConfigData& config)
 	:_configData(config){
 
@@ -40,10 +37,8 @@ Server::Server(const ConfigData& config)
 Server::~Server(){
 	shutdown();
 }
-/**
- * Initialisatin of listening sockets
- */
-void Server::initializeListeningSockets(){
+
+void Server::initListeningSockets(){
 
 	//add logic for incoming listening sockets from the config file.
 	for(size_t i = 0; i < _configData.listeners.size(); i++){
@@ -76,25 +71,66 @@ void Server::initializeListeningSockets(){
 				  << i << std::endl;
 	}
 }
-void Server::handlePOLLERR(int fd){
 
-	std::cerr << "ERROR: Listening socket FD " << fd
-			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
-}
-void Server::handlePOLLHUP(int fd){
+void Server::handleEvent(int fd, short revents) {
 
-	std::cout << "Client FD " << fd << " hung up" << std::endl;
-}
-int Server::isListeningSocket(int fd) const {
-
-	for (size_t i = 0; i < _listeningSockets.size(); i++)
-	{
-		if (_listeningSockets[i].getFd() == fd){
-			return  i;
+	// Listening Socket
+	int listenFdIndex = isListeningSocket(fd);
+	if (listenFdIndex >= 0) {
+		if (revents & POLLIN) {
+			handleListenEvent(listenFdIndex);
 		}
+		return;
 	}
-	return -1;
+	// CGI socket
+	if (_cgi.find(fd) != _cgi.end()) {
+		std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
+		if (revents & POLLERR) {
+			std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
+			close(fd);
+		}
+		else if (revents & POLLHUP) {
+			std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+			if (revents & POLLIN) {
+				handleCGIread(fd);  // final read + cleanup
+			}
+			close(fd);
+		}
+		else if (revents & POLLIN) {
+			std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
+			handleCGIread(fd);
+		}
+		else if (revents & POLLOUT) {
+			std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
+			handleCGIwrite(fd);
+		}
+		return;
+	}
+	// Client socket
+	if (_clients.find(fd) != _clients.end()) {
+		if (revents & POLLERR) {
+			std::cerr << "[DEBUG] Listening socket FD " << fd
+			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
+			disconnectClient(fd);
+		}
+		else if (revents & POLLHUP) {
+			if (revents & POLLIN) { // half closed in case client is done sending and waiting for respose:   shutdown(fd, SHUT_WR); recv(fd, ...);
+				handleClientRead(fd);
+			}
+			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			disconnectClient(fd);
+		}
+		else if (revents & POLLIN) {
+			handleClientRead(fd);
+		}
+		else if (revents & POLLOUT) {
+			handleClientWrite(fd);
+		}
+		return;
+	}
+	std::cerr << "[WARNING] Event on unknown FD " << fd << std::endl;
 }
+
 void Server::handleListenEvent(int indexOfLinstenSocket){
 
 	std::cout << "Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
@@ -136,7 +172,7 @@ void Server::handleClientRead(int fd){
 			response before closing
 			3. Not an Error: This is normal behavior, not an error condition
 		*/
-		disconectClient(fd);
+		disconnectClient(fd);
 	}
 
 	if(_clients[fd].state == READING_REQUEST){
@@ -149,14 +185,14 @@ void Server::handleClientRead(int fd){
 		if (bytes <= 0) {
 			if (bytes == 0) {
 				std::cout << "Client FD " << fd << " disconnected" << std::endl;
-				disconectClient(fd);
+				disconnectClient(fd);
 			} else { // bytes < 0
 				if (errno == EAGAIN || errno == EWOULDBLOCK) {
 					// No data available - continue monitoring
 					return;
 				}
 				std::cout << "Error on FD " << fd << ": " << strerror(errno) << std::endl;
-  				disconectClient(fd);
+  				disconnectClient(fd);
 			}
 		}
 		else {
@@ -164,7 +200,7 @@ void Server::handleClientRead(int fd){
 			updateClientActivity(fd);
 
 			_clients[fd].requestData.append(buffer, bytes);
-
+			{
 			// Check if headers complete
 			size_t headerEnd = _clients[fd].requestData.find("\r\n\r\n");
 			if(headerEnd == std::string::npos)
@@ -185,7 +221,7 @@ void Server::handleClientRead(int fd){
 
 			if(bodyReceived < contentLength)
 				return;  // Keep receiving body
-
+			}
 
 			// Full request is received, prepare response
 			HttpRequest httpRequest;
@@ -209,15 +245,20 @@ void Server::handleClientRead(int fd){
 					HttpResponse resp(httpRequest);
 					resp.generateResponse(404, false , "");
 					_clients[fd].responseData = resp.getResponse();
+					_clients[fd].bytesSent = 0;
 					_clients[fd].state = SENDING_RESPONSE;
 					return;
 				}
+
+
 				std::string relative = httpRequest.getNormalizedReqPath().substr(matchedLoc->path.size());
 				std::string mapped = joinPath(matchedLoc->root, relative);
 				httpRequest.setMappedPath(mapped);
+
 				std::cout << "[INFO] Matched location for " << httpRequest.getNormalizedReqPath()
 						  << " → root=" << matchedLoc->root << std::endl;
-                std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath()     << std::endl;
+				std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath() << std::endl;
+
 				bool isCgi = false;
 					std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
 					std::string cgiExt;
@@ -236,8 +277,6 @@ void Server::handleClientRead(int fd){
 					// Step 2: Build script path using location root + request path
 					std::string scriptPath = httpRequest.getMappedPath();
 
-
-					// If location defines explicit cgi_path (like /usr/bin/python), use it
 					// If location defines explicit cgi_path (like /usr/bin/python), use it
 					if (!matchedLoc->cgi_path.empty()) {
 						std::cout << "[CGI] Using cgi_path(s): ";
@@ -256,20 +295,23 @@ void Server::handleClientRead(int fd){
 						HttpResponse resp(httpRequest);
 						resp.generateResponse(500, false , "");
 						_clients[fd].responseData = resp.getResponse();
+						_clients[fd].bytesSent = 0;
 						_clients[fd].state = SENDING_RESPONSE;
 						delete cgi;
 						return;
 					}
+
 					// Register CGI process
-					_cgiMap[cgi->outFd] = cgi;
-					_clients[fd].lastActivity = time(NULL);
+					_cgi[cgi->outFd] = cgi;
+					updateClientActivity(fd);
 					_clients[fd].state = WAITING_CGI;
-					std::cout << "Spawned CGI pid=" << cgi->pid
-							  << " outFd=" << cgi->outFd
-							  << " for client FD=" << fd << std::endl;
-					std::cout << "clients state: " << _clients[fd].state       << std::endl;
+					std::cout << "[DEBUG] Spawned CGI pid = " << cgi->pid
+							  << " outFd = " << cgi->outFd
+							  << " for client FD = " << fd << std::endl;
+					std::cout << "clients state: " << _clients[fd].state << std::endl;
 					return;
 				}
+
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
 					case GET: handleGET(httpRequest, _clients[fd], matchedLoc); break;
@@ -312,7 +354,7 @@ void Server::handleClientWrite(int fd){
 
 				if(_clients[fd].shouldClose){
 					std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
-					disconectClient(fd);
+					disconnectClient(fd);
 					return;
 				}
 
@@ -329,81 +371,46 @@ void Server::handleClientWrite(int fd){
 
 			// Send failed, close connection
 			std::cout << "Send failed for FD " << fd << ". Closing connection." << std::endl;
-			disconectClient(fd);
+			disconnectClient(fd);
 		}
 	}
 }
+void Server::handleCGIread(int fd) {
 
-void Server::handleCgiCompletion(int fd) {
-	Cgi* cgi = _cgiMap[fd];
-	if (!cgi->handleRead()) {
-		std::cout << "[Server] Erasing CGI FD " << fd << " from _cgiMap" << std::endl;
-		int clientFd = cgi->getClientFd();
-		_cgiMap.erase(fd);
-		delete cgi;
-		// Set client state to SENDING_RESPONSE if client still exists
-		if (_clients.find(clientFd) != _clients.end()) {
-			_clients[clientFd].state = SENDING_RESPONSE;
+	Cgi* cgi = _cgi[fd];
+	CgiReadStatus status = cgi->handleRead();
+
+	if(status == CGI_CONTINUE) return;
+
+	int clientFd = cgi->getClientFd();
+
+	if (_clients.find(clientFd) != _clients.end()) {
+		if(status == CGI_READY){
+			HttpResponse resonse(cgi->getRequest());
+			resonse.generateResponse(200, true, cgi->getResponseData());
 			std::cout << "[DEBUG] Switched client FD " << clientFd
-					  << " to POLLOUT mode after CGI complete" << std::endl;
+			<< " to POLLOUT mode after CGI complete" << std::endl;
 		}
-	}
-}
-
-void Server::handleEvent(int fd, short revents) {
-
-	int listenFdIndex = isListeningSocket(fd);
-	if (listenFdIndex >= 0) {
-		if (revents & POLLIN) {
-			handleListenEvent(listenFdIndex);
+		else if(status == CGI_ERROR){
+			HttpResponse resonse(cgi->getRequest());
+			resonse.generateResponse(500);
+			std::cout << "[DEBUG] Switched client FD " << clientFd
+			<< " to POLLOUT mode after CGI complete" << std::endl;
 		}
-		return;
-	}
-	// Client socket
-    if (_cgiMap.find(fd) != _cgiMap.end()) {
-		std::cout << "Event detected on CGI FD " << fd << std::endl;
-        if (revents & POLLIN) {
-            std::cout << "CGI POLLIN event on FD " << fd << std::endl;
-            handleCgiCompletion(fd);
-            return;
-        }
-        if (revents & POLLHUP) {
-            std::cout << "CGI POLLHUP event on FD " << fd << std::endl;
-            handleCgiCompletion(fd);  // final read + cleanup
-            disconectClient(fd);     // <- make sure this exists
-            close(fd);
-            return;
-        }
-        if (revents & POLLERR) {
-            std::cerr << "CGI POLLERR event on FD " << fd << std::endl;
-            disconectClient(fd);
-            close(fd);
-            return;
-        }
-    }
-	if (revents & POLLIN) {
-		handleClientRead(fd);
-	}
-	if (revents & POLLOUT) {
-		handleClientWrite(fd);
-	}
-	if (revents & POLLERR) {
-		handlePOLLERR(fd);
-		disconectClient(fd);
-	}
-	if (revents & POLLHUP) {
-		handlePOLLHUP(fd);
-		disconectClient(fd);
+		_clients[clientFd].bytesSent = 0;
+		_clients[clientFd].state = SENDING_RESPONSE;
 	}
 
+	std::cout << "[Server] Erasing CGI FD " << fd << " from _cgi" << std::endl;
+	_cgi.erase(fd);
+	delete cgi;
 }
-void Server::disconectClient(short fd){
+void Server::handleCGIwrite(int fd){
 
-	close(fd);
-	_clients.erase(fd);
+
 }
+
 void Server::handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc){
-
 	std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
 	std::string mappedPath = request.getMappedPath();
 	std::cout << "mappedPath: " << mappedPath << std::endl;
@@ -421,114 +428,13 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client, const Loc
 		response.generateResponse(404, false, "");
 		client.responseData = response.getResponse();
 	}
-
-	/*
-	The GET method finds the directory/file, reads it, and uses HttpResponse methods to
-	properly format the HTTP response with headers, status codes, etc.
-
-	1. Parse the request path → /index.html, /images/logo.png (done in httpRequest)
-	2. Map to file system path → /var/www/html/index.html
-	3. Check if file exists and is readable
-	4. Read file contents (if it exists)
-	5. Use HttpResponse to build response
-
-
-	//example of the get function
-
-	void Server::handleGET(const HttpRequest& request, ClientInfo& client) {
-	std::string requestedPath = request.getPath();  // "/index.html"
-	std::string filePath = _documentRoot + requestedPath;  // "/var/www/html/index.html"
-
-	HttpResponse response;
-
-	// Try to read file
-	std::ifstream file(filePath);
-	if (file.is_open()) {
-		// File exists - read content
-		std::string content((std::istreambuf_iterator<char>(file)),
-							std::istreambuf_iterator<char>());
-
-		response.setStatusCode(200);
-		response.setReasonPhrase("OK");
-		response.setContentType("text/html");  // or detect from extension
-		response.setBody(content);
-	} else {
-		// File not found
-		response.setStatusCode(404);
-		response.setReasonPhrase("Not Found");
-		response.setContentType("text/html");
-		response.setBody("<h1>404 - File Not Found</h1>");
-	}
-
-	client.responseData = response.toString();
-	}
-*/
 }
-/*
-	The POST method receives data from the client, processes it, and uses HttpResponse methods to
-	send back a result.
-
-	1. Extract data from request body → form data, JSON, file uploads
-	2. Process the data → save to database, execute CGI script, handle form submission
-	3. Generate appropriate response → success/failure message
-	4. Use HttpResponse to build response
-
-	  Unlike GET which reads files from server, POST accepts data from client:
-
-	- Form submissions → username=john&password=123
-	- File uploads → image/document data in request body
-	- API calls → JSON data for creating/updating resources
-	- CGI execution → pass data to scripts for processing
-
-
-	GET Method Can Handle:
-
-	1. Static Files:
-	- /index.html → read file from disk
-	- /images/logo.png → serve static content
-
-	2. Dynamic Content (CGI):
-	- /cgi-bin/search.py?q=webserv → execute script with query parameters
-	- /api/users?limit=10 → database query via CGI
-	- /weather.php?city=paris → dynamic page generation
-
-	3. Server-side Processing:
-	- Database queries (read-only)
-	- API calls to external services
-	- Template rendering
-
-	Key Differences:
-
-	GET with CGI:
-	- Parameters in URL query string: ?name=value&foo=bar
-	- No request body data
-	- Should be idempotent (safe to repeat)
-
-	POST with CGI:
-	- Data in request body: form data, JSON, files
-	- Can modify server state (create/update/delete)
-	- Not idempotent
-
-	Example GET with CGI:
-
-	void Server::handleGET(const HttpRequest& request, ClientInfo& client) {
-		std::string path = request.getPath();  // "/cgi-bin/search.py"
-
-		if (path.find("/cgi-bin/") == 0) {
-			// Execute CGI script with query parameters
-			executeCGI(path, request.getQuery(), "", client);  // No body for GET
-		} else {
-			// Serve static file
-			serveStaticFile(path, client);
-		}
-	}
-*/
 void Server::handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLocation){
 
 	HttpResponse response(request);
 	PostHandler post(matchedLocation->upload_store + '/');
 
-	std::string contentType = request.getContenType();
+	std::string contentType = request.getContentType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
 	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
@@ -544,78 +450,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, const Lo
 		client.responseData = response.getResponse();
 	}
 }
-/*
-	CGI for GET and POST
-
-	Without CGI (Static):
-	- GET /index.html → Server reads /var/www/index.html file and sends it
-	- POST /contact.html → Server processes form data itself and sends response
-
-	With CGI (Dynamic):
-	- GET /cgi-bin/weather.py?city=paris → Server executes Python script, script generates HTML
-	response
-	- POST /cgi-bin/contact.py → Server passes form data to Python script, script processes it and
-	generates response
-
-	CGI Role:
-
-	CGI = External program that generates web content
-
-	Instead of serving static files, the server:
-	1. Executes a program (Python, PHP, C++, etc.)
-	2. Passes request data to the program
-	3. Captures program's output
-	4. Sends that output as HTTP response
-
-	Examples:
-
-	GET with CGI:
-	Client: GET /cgi-bin/time.py
-	Server: executes time.py script
-	Script: prints "Current time: 2:30 PM"
-	Server: sends that as HTTP response
-
-	POST with CGI:
-	Client: POST /cgi-bin/save.py (with form data)
-	Server: executes save.py, passes form data to it
-	Script: processes data, prints "Data saved successfully"
-	Server: sends that as HTTP response
-
-	CGI turns your server into a platform that can run any program to generate web pages
-	dynamically.
-*/
-
-
-bool Server::validatePath(const std::string& path) {
-    char resolved[PATH_MAX];
-
-    // Try to resolve full absolute path
-    if (!realpath(path.c_str(), resolved)) {
-        std::cerr << "[SECURITY] Invalid path: " << path << std::endl;
-        return false;
-    }
-
-    std::string resolvedPath(resolved);
-    std::string root = _configData.root;
-
-    // Ensure root ends with '/'
-    if (!root.empty() && root[root.size() - 1] != '/')
-        root += '/';
-
-    //  Allow only files inside the configured root directory
-    if (resolvedPath.find(root) == 0)
-        return true;
-
-    std::cerr << "[SECURITY] Forbidden: " << resolvedPath
-              << " is outside root " << root << std::endl;
-    return false;
-}
-
-
-/**
- * This function only handles files, but not directories.
- */
- void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc) {
+void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc) {
 
    std::cout << "matchedLocPath: " << matchedLoc->path << std::endl;
 
@@ -720,6 +555,46 @@ bool Server::validatePath(const std::string& path) {
   HttpResponse class.
   */
 }
+
+int Server::isListeningSocket(int fd) const {
+
+	for (size_t i = 0; i < _listeningSockets.size(); i++)
+	{
+		if (_listeningSockets[i].getFd() == fd){
+			return  i;
+		}
+	}
+	return -1;
+}
+void Server::disconnectClient(short fd){
+
+	close(fd);
+	_clients.erase(fd);
+}
+bool Server::validatePath(const std::string& path) {
+	char resolved[PATH_MAX];
+
+	// Try to resolve full absolute path
+	if (!realpath(path.c_str(), resolved)) {
+		std::cerr << "[SECURITY] Invalid path: " << path << std::endl;
+		return false;
+	}
+
+	std::string resolvedPath(resolved);
+	std::string root = _configData.root;
+
+	// Ensure root ends with '/'
+	if (!root.empty() && root[root.size() - 1] != '/')
+		root += '/';
+
+	//  Allow only files inside the configured root directory
+	if (resolvedPath.find(root) == 0)
+		return true;
+
+	std::cerr << "[SECURITY] Forbidden: " << resolvedPath
+			  << " is outside root " << root << std::endl;
+	return false;
+}
 void Server::updateClientActivity(int fd){
 
 	_clients[fd].lastActivity = time(NULL);
@@ -742,6 +617,7 @@ void Server::shutdown(){
 
 	std::cout << "Server " << _configData.server_names[0] <<  " stopped" << std::endl;
 }
+
 const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
 std::map<int, ClientInfo>& Server::getClients() {return _clients;}
-std::map<int, Cgi*>& Server::getCgiMap() { return _cgiMap;}
+std::map<int, Cgi*>& Server::getCGI() { return _cgi;}
