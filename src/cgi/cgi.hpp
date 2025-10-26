@@ -29,34 +29,38 @@ class Cgi {
 
 		bool startCGI();
 
-		CgiReadStatus handleRead();
-		CgiReadStatus handleWrite();
+		CgiReadStatus handleReadFromCGI();
+		CgiReadStatus handleWriteToCGI();
 
-		void setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
+		void setMatchedLocation(const LocationConfig* loc);
 
-		int getClientFd() const { return _clientFd; };
-		const LocationConfig* getMatchedLocation() const { return _matchedLoc; }
-		time_t getStartTime() const { return startTime; }
-		HttpRequest getRequest() const { return request; }
-		std::string getResponseData() const { return _resonseData; }
-
-
-		pid_t	pid;
-		int		outFd;
-		bool	finished;
+		int getInFd() const;
+		int getOutFd() const;
+		int getPid() const;
+		int getClientFd() const;
+		time_t getStartTime() const;
+		std::string getResponseData() const;
+		HttpRequest getRequest() const;
+		const LocationConfig* getMatchedLocation() const;
 
 	private:
-		std::string					ext;
-		std::string					scriptPath;
+		std::string					_ext;
+		std::string					_scriptPath;
 		std::string					_resonseData;
-		int 						_inFd;
-		int							_clientFd;
-		HttpRequest					request;
-		std::map<int, ClientInfo>	&_clients;
-		const LocationConfig*		_matchedLoc;
-		time_t						startTime;
+		time_t						_startTime;
 
-		void setEnv(const HttpRequest &request, const std::string &scriptPath);
+		size_t						_bytesWrittenToCgi;
+		pid_t						_pid;
+		int							_inFd;
+		int							_outFd;
+		int							_clientFd;
+		bool						_finished;
+
+		HttpRequest					_request;
+		std::map<int, ClientInfo>&	_clients;
+		const LocationConfig*		_matchedLoc;
+
+		void prepEnv(const HttpRequest &request, const std::string &scriptPath);
 		bool chdirToScriptDir();
 		void executeCGI();
 };

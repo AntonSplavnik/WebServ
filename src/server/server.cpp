@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/25 20:19:34 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/26 23:04:41 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@
 #include <limits.h>   // for realpath
 #include <unistd.h>   // for access()
 #include <sys/stat.h> // for stat()
-
 
 Server::Server(const ConfigData& config)
 	:_configData(config){
@@ -114,7 +113,7 @@ void Server::handleEvent(int fd, short revents) {
 			disconnectClient(fd);
 		}
 		else if (revents & POLLHUP) {
-			if (revents & POLLIN) { // half closed in case client is done sending and waiting for respose:   shutdown(fd, SHUT_WR); recv(fd, ...);
+			if (revents & POLLIN) { // half closed in case client is done sending and waiting for respose: shutdown(fd, SHUT_WR); recv(fd, ...);
 				handleClientRead(fd);
 			}
 			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
@@ -229,7 +228,6 @@ void Server::handleClientRead(int fd){
 			if(!httpRequest.getStatus()){
 				HttpResponse errorResponse(httpRequest);
 				errorResponse.generateResponse(400, false, "");
-
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
 				_clients[fd].shouldClose = true;
@@ -250,7 +248,6 @@ void Server::handleClientRead(int fd){
 					return;
 				}
 
-
 				std::string relative = httpRequest.getNormalizedReqPath().substr(matchedLoc->path.size());
 				std::string mapped = joinPath(matchedLoc->root, relative);
 				httpRequest.setMappedPath(mapped);
@@ -260,16 +257,18 @@ void Server::handleClientRead(int fd){
 				std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath() << std::endl;
 
 				bool isCgi = false;
-					std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
-					std::string cgiExt;
-                    for (std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin(); it != matchedLoc->cgi_ext.end(); ++it) {
-	                    if (normalizedReqPath.size() >= it->size() &&
-		                normalizedReqPath.compare(normalizedReqPath.size() - it->size(), it->size(), *it) == 0) {
-		                    isCgi = true;
-		                    cgiExt = *it;
-		                    break;
-	                    }
-                    }
+				std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
+				std::string cgiExt;
+				std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin();
+				for (; it != matchedLoc->cgi_ext.end(); ++it) {
+					if (normalizedReqPath.size() >= it->size() &&
+					normalizedReqPath.compare(normalizedReqPath.size() - it->size(), it->size(), *it) == 0) {
+						isCgi = true;
+						cgiExt = *it;
+						break;
+					}
+				}
+
 				if (isCgi)
 				{
 					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getNormalizedReqPath() << std::endl;
@@ -290,25 +289,27 @@ void Server::handleClientRead(int fd){
 
 					std::cout << "[CGI] Final script path: " << scriptPath << std::endl;
 					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd, matchedLoc, cgiExt);
-					if (!cgi->start()) {
-						// Failed to start CGI → send 500
+					if (!cgi->startCGI()) {
+						std::cout << "[DEBUG] Failed to start CGI" << std::endl;
 						HttpResponse resp(httpRequest);
 						resp.generateResponse(500, false , "");
 						_clients[fd].responseData = resp.getResponse();
 						_clients[fd].bytesSent = 0;
 						_clients[fd].state = SENDING_RESPONSE;
 						delete cgi;
-						return;
 					}
-
-					// Register CGI process
-					_cgi[cgi->outFd] = cgi;
-					updateClientActivity(fd);
-					_clients[fd].state = WAITING_CGI;
-					std::cout << "[DEBUG] Spawned CGI pid = " << cgi->pid
-							  << " outFd = " << cgi->outFd
-							  << " for client FD = " << fd << std::endl;
-					std::cout << "clients state: " << _clients[fd].state << std::endl;
+					else{
+						updateClientActivity(fd);
+						// Register CGI process
+						_cgi[cgi->getOutFd()] = cgi;
+						if (cgi->getInFd() >= 0) _cgi[cgi->getInFd()] = cgi;
+						_clients[fd].state = WAITING_CGI;
+						std::cout << "[DEBUG] Spawned CGI pid = " << cgi->getPid()
+								  << " inFd = " << cgi->getInFd()
+								  << " outFd = " << cgi->getOutFd()
+								  << " for client FD = " << fd << std::endl;
+						std::cout << "clients state: " << _clients[fd].state << std::endl;
+					}
 					return;
 				}
 
@@ -335,8 +336,9 @@ void Server::handleClientWrite(int fd){
 		// Send remaining response data
 		const char* data = _clients[fd].responseData.c_str() + _clients[fd].bytesSent;
 		size_t remainingLean = _clients[fd].responseData.length() - _clients[fd].bytesSent;
+		size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE));
 
-		int bytes_sent = send(fd, data, remainingLean, 0);
+		int bytes_sent = send(fd, data, bytesToWrite, 0);
 		std::cout << "send() returned " << bytes_sent << " bytes to FD " << fd << std::endl;
 
 		if (bytes_sent > 0) {
@@ -378,7 +380,7 @@ void Server::handleClientWrite(int fd){
 void Server::handleCGIread(int fd) {
 
 	Cgi* cgi = _cgi[fd];
-	CgiReadStatus status = cgi->handleRead();
+	CgiReadStatus status = cgi->handleReadFromCGI();
 
 	if(status == CGI_CONTINUE) return;
 
@@ -388,26 +390,36 @@ void Server::handleCGIread(int fd) {
 		if(status == CGI_READY){
 			HttpResponse resonse(cgi->getRequest());
 			resonse.generateResponse(200, true, cgi->getResponseData());
+			_clients[fd].responseData = cgi->getResponseData();
 			std::cout << "[DEBUG] Switched client FD " << clientFd
-			<< " to POLLOUT mode after CGI complete" << std::endl;
+					  << " to POLLOUT mode after CGI complete" << std::endl;
 		}
 		else if(status == CGI_ERROR){
 			HttpResponse resonse(cgi->getRequest());
 			resonse.generateResponse(500);
 			std::cout << "[DEBUG] Switched client FD " << clientFd
-			<< " to POLLOUT mode after CGI complete" << std::endl;
+					  << " to POLLOUT mode after CGI complete" << std::endl;
 		}
 		_clients[clientFd].bytesSent = 0;
 		_clients[clientFd].state = SENDING_RESPONSE;
 	}
 
 	std::cout << "[Server] Erasing CGI FD " << fd << " from _cgi" << std::endl;
-	_cgi.erase(fd);
+	_cgi.erase(cgi->getInFd());
+	_cgi.erase(cgi->getOutFd());
 	delete cgi;
 }
 void Server::handleCGIwrite(int fd){
 
+	Cgi* cgi = _cgi[fd];
+	CgiReadStatus status = cgi->handleWriteToCGI();
 
+	if(status == CGI_CONTINUE) return;
+
+	if(status == CGI_READY){
+		close(_cgi[fd]->getInFd());
+		_cgi.erase(fd);
+	}
 }
 
 void Server::handleGET(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc){

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/24 14:25:31 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/26 23:00:30 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,52 +34,6 @@ void ServerController::stop(){
 	_pollFds.clear();
 }
 
-bool ServerController::isClientTimedOut(std::map<int, ClientInfo>& clients, int fd){
-
-	time_t now = time(NULL);
-	return (now - clients[fd].lastActivity > clients[fd].keepAliveTimeout) ;
-}
-
-void ServerController::checkClientTimeouts(Server& server){
-
-	std::map<int, ClientInfo>& clients = server.getClients();
-	std::map<int, ClientInfo>::iterator it = clients.begin();
-
-	for (; it != clients.end();){
-
-		int currentFd = it->first;
-		if(isClientTimedOut(clients, currentFd)){
-			std::cout << "Client: " << currentFd << " timed out." << std::endl;
-			int fdToDisconnect = currentFd;
-			++it;
-			server.disconnectClient(fdToDisconnect);
-		}
-		else
-			++it;
-	}
-}
-
-Server* ServerController::findServerForFd(int fd){
-
-	for(size_t si = 0; si < _servers.size(); ++si){
-
-		Server* srv = _servers[si];
-
-		const std::vector<Socket>& listeners = srv->getListeningSockets();
-		for (size_t li = 0; li < listeners.size(); ++li)
-		{
-			if(listeners[li].getFd() == fd) return srv;
-		}
-
-		std::map<int, ClientInfo>& clients = srv->getClients();
-		if (clients.find(fd) != clients.end()) return srv;
-
-		std::map<int, Cgi*>& cgis = srv->getCGI();
-		if (cgis.find(fd) != cgis.end()) return srv;
-	}
-	return NULL;
-}
-
 void ServerController::rebuildPollFds(){
 
 	_pollFds.resize(_listeningSocketCount);
@@ -98,15 +52,22 @@ void ServerController::rebuildPollFds(){
 			_pollFds.push_back(client);
 			std::cout << "Added client socket FD " << client.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
+
 		std::map<int, Cgi*>& cgis = _servers[i]->getCGI();
 		std::map<int, Cgi*>::iterator cit = cgis.begin();
 		for (; cit != cgis.end(); ++cit) {
-			struct pollfd cgiProcess;
-			cgiProcess.fd = cit->first;
-			cgiProcess.events = POLLIN; // Always monitor for output from CGI
-			cgiProcess.revents = 0;
-			_pollFds.push_back(cgiProcess);
-			std::cout << "Added CGI socket FD " << cgiProcess.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+
+			struct pollfd cgiFd;
+			cgiFd.fd = cit->first;
+
+			if(cit->first == cit->second->getInFd())
+				cgiFd.events = POLLOUT;
+			else if(cit->first == cit->second->getOutFd())
+				cgiFd.events = POLLIN;
+
+			cgiFd.revents = 0;
+			_pollFds.push_back(cgiFd);
+			std::cout << "Added CGI socket FD " << cgiFd.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
 	}
 
@@ -185,6 +146,51 @@ void ServerController::run(){
 	}
 }
 
+Server* ServerController::findServerForFd(int fd){
+
+	for(size_t si = 0; si < _servers.size(); ++si){
+
+		Server* srv = _servers[si];
+
+		const std::vector<Socket>& listeners = srv->getListeningSockets();
+		for (size_t li = 0; li < listeners.size(); ++li)
+		{
+			if(listeners[li].getFd() == fd) return srv;
+		}
+
+		std::map<int, ClientInfo>& clients = srv->getClients();
+		if (clients.find(fd) != clients.end()) return srv;
+
+		std::map<int, Cgi*>& cgis = srv->getCGI();
+		if (cgis.find(fd) != cgis.end()) return srv;
+	}
+	return NULL;
+}
+
+bool ServerController::isClientTimedOut(std::map<int, ClientInfo>& clients, int fd){
+
+	time_t now = time(NULL);
+	return (now - clients[fd].lastActivity > clients[fd].keepAliveTimeout) ;
+}
+void ServerController::checkClientTimeouts(Server& server){
+
+	std::map<int, ClientInfo>& clients = server.getClients();
+	std::map<int, ClientInfo>::iterator it = clients.begin();
+
+	for (; it != clients.end();){
+
+		int currentFd = it->first;
+		if(isClientTimedOut(clients, currentFd)){
+			std::cout << "Client: " << currentFd << " timed out." << std::endl;
+			int fdToDisconnect = currentFd;
+			++it;
+			server.disconnectClient(fdToDisconnect);
+		}
+		else
+			++it;
+	}
+}
+
 bool ServerController::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
 	time_t now = time(NULL);
 	std::map<int, Cgi*>::iterator it = cgiMap.find(fd);
@@ -193,7 +199,6 @@ bool ServerController::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
 	Cgi* cgi = it->second;
 	return (now - cgi->getStartTime() > CGI_TIMEOUT);
 }
-
 void ServerController::checkCgiTimeouts(Server& server) {
 	std::map<int, Cgi*>& cgiMap = server.getCGI();
 	std::map<int, Cgi*>::iterator it = cgiMap.begin();

@@ -1,26 +1,84 @@
+#include "server.hpp"
 #include "cgi.hpp"
-#include "../http_response/http_response.hpp"
-#include "../logging/logger.hpp"
+#include "http_response.hpp"
+#include "logger.hpp"
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <iostream>
 #include <poll.h>
+#include <algorithm>
 
+// #define MAX_CGI_OUTPUT 10000000
 
 Cgi::Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
         int clientFd, const LocationConfig* loc, std::string cgiExt)
-    : pid(-1), outFd(-1), finished(false), _matchedLoc(loc), ext(cgiExt),
-    _inFd(-1), scriptPath(path), request(req), _clients(clients), _clientFd(clientFd),
-    startTime(time(NULL)){}
-
-
+        : _pid(-1), _outFd(-1), _finished(false), _matchedLoc(loc), _ext(cgiExt),
+        _inFd(-1), _scriptPath(path), _request(req), _clients(clients), _clientFd(clientFd),
+        _startTime(time(NULL)), _bytesWrittenToCgi(0){}
 Cgi::~Cgi() {
-    if (outFd >= 0) close(outFd);
+    if (_outFd >= 0) close(_outFd);
     if (_inFd >= 0) close(_inFd);
 }
-void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
+
+bool Cgi::startCGI() {
+
+    //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
+    int inpipe[2];
+    int outpipe[2];
+
+
+    if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
+        perror("pipe");
+        return false;
+    }
+
+	if (access(_scriptPath.c_str(), X_OK) != 0) {
+    	perror("access");
+    	return false; // will trigger 500
+	}
+    _pid = fork();
+    if (_pid < 0) {
+        perror("fork");
+        return false;
+    }
+
+    if (_pid == 0) {
+        // --- CHILD ---
+        dup2(inpipe[0], STDIN_FILENO);
+        close(inpipe[1]);
+
+        dup2(outpipe[1], STDOUT_FILENO);
+        close(outpipe[0]);
+
+        if (!chdirToScriptDir()) {
+            _exit(126);  // non-zero => parent will treat as 500
+        }
+
+        prepEnv(_request, _scriptPath);  // Ensure PATH is set
+        executeCGI();
+    }
+
+    // --- PARENT ---
+    close(inpipe[0]);
+    close(outpipe[1]);
+
+    _inFd = inpipe[1];
+    _outFd = outpipe[0];
+
+    fcntl(_inFd, F_SETFL, O_NONBLOCK);
+    fcntl(_outFd, F_SETFL, O_NONBLOCK);
+
+    if(_request.getMethod() != "POST"){
+        close(_inFd);
+        _inFd = -1;
+    }
+
+    return true;
+}
+void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
 
     //  Base CGI variables
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
@@ -98,21 +156,19 @@ void Cgi::setEnv(const HttpRequest &request, const std::string &scriptPath) {
     	setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
 	}
 }
-
-
 void Cgi::executeCGI()
 {
     // --- Determine interpreter ---
     std::string interpreter;
-    if (ext == ".py")
+    if (_ext == ".py")
         interpreter = "/usr/bin/python3";
-    else if (ext == ".php")
+    else if (_ext == ".php")
         interpreter = "/usr/bin/php-cgi";
 
     // --- Prepare args ---
     char *argv[3];
     argv[0] = const_cast<char*>(interpreter.c_str());
-    argv[1] = const_cast<char*>(scriptPath.c_str());
+    argv[1] = const_cast<char*>(_scriptPath.c_str());
     argv[2] = NULL;
 
     // --- Build environment array ---
@@ -126,103 +182,18 @@ void Cgi::executeCGI()
     _exit(1);
 }
 
+CgiReadStatus Cgi::handleReadFromCGI() {
 
-bool Cgi::startCGI() {
-
-    //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
-    int inpipe[2];
-    int outpipe[2];
-
-
-    if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
-        perror("pipe");
-        return false;
-    }
-
-	if (access(scriptPath.c_str(), X_OK) != 0) {
-    	perror("access");
-    	return false; // will trigger 500
-	}
-    pid = fork();
-    if (pid < 0) {
-        perror("fork");
-        return false;
-    }
-
-    if (pid == 0) {
-        // --- CHILD ---
-        dup2(inpipe[0], STDIN_FILENO);
-        close(inpipe[1]);
-
-        dup2(outpipe[1], STDOUT_FILENO);
-        close(outpipe[0]);
-
-        if (!chdirToScriptDir()) {
-            _exit(126);  // non-zero => parent will treat as 500
-        }
-
-        setEnv(request, scriptPath);  // Ensure PATH is set
-        executeCGI();
-    }
-
-    // --- PARENT ---
-    close(inpipe[0]);
-    close(outpipe[1]);
-
-    _inFd = inpipe[1];
-    outFd = outpipe[0];
-
-    fcntl(_inFd, F_SETFL, O_NONBLOCK);
-    fcntl(outFd, F_SETFL, O_NONBLOCK);
-
-
-    // If POST → write body to stdin of CGI
-    if (request.getMethod() == "POST") {
-        const std::string &body = request.getBody();
-        ssize_t totalWritten = 0;
-        ssize_t n;
-
-        while (totalWritten < (ssize_t)body.size()) {
-            n = write(_inFd, body.c_str() + totalWritten, body.size() - totalWritten);
-            if (n < 0) {
-                if (errno == EINTR) continue;      // retry on interrupt
-                perror("[CGI] write error");
-                break;
-            }
-            totalWritten += n;
-        }
-        std::cout << "[CGI] Sending POST body to script: " << scriptPath;
-
-        std::cout << "[CGI] wrote " << totalWritten << " bytes to CGI stdin\n";
-    }
-
-    close(_inFd);  // always close stdin, so child gets EOF
-    return true;
-}
-
-CgiReadStatus Cgi::handleWrite(){
-
-}
-
-CgiReadStatus Cgi::handleRead() {
-
-    std::cout << "[DEBUG] Handling CGI read for pid = " << pid << std::endl;
-    if (finished || outFd < 0)
+    std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;
+    if (_finished || _outFd < 0)
         return CGI_READY;
 
     char buf[4096];
-    ssize_t bytesRead = read(outFd, buf, sizeof(buf));
+    ssize_t bytesRead = read(_outFd, buf, sizeof(buf));
 
     if (bytesRead == -1) {
-        if (errno == EINTR) {
-            // Do we need to close FD here?
-            return CGI_CONTINUE;
-        }
-        perror("[CGI] read error");
-        // Do we need to close FD here?
-        return CGI_ERROR;
+        return CGI_CONTINUE;
     }
-
     if (bytesRead > 0) {
         if (_resonseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
             std::cerr << "[CGI] Output exceeds limit" << std::endl;
@@ -231,20 +202,59 @@ CgiReadStatus Cgi::handleRead() {
         _resonseData.append(buf, bytesRead);
         return CGI_CONTINUE;
     }
-
     if (bytesRead == 0) {
-        std::cout << "[CGI] EOF reached for outFd = " << outFd << std::endl;
+        std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
         // --- EOF: child finished writing ---
-        finished = true;
-        close(outFd);
-        outFd = -1;
+        _finished = true;
+        close(_outFd);
+        _outFd = -1;
 
         int status;
-        waitpid(pid, &status, WNOHANG);  // reap zombie safely    // Ignoring return value???  No error handeling? We should  make a decision based on status.
-        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+        int returnValue = waitpid(_pid, &status, WNOHANG);  // reap zombie safely    // Ignoring return value???  No error handeling? We should  make a decision based on status.
+        if(returnValue == -1){
+            perror("waitpid");
             return CGI_ERROR;
+        }
+        else if (returnValue == 0){
+              return CGI_READY;
+        }
+        else{
+            if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) return CGI_ERROR;
         }
         std::cout << "[DEBUG] Sgi responseData: " << _resonseData << std::endl;
         return CGI_READY;
     }
 }
+CgiReadStatus Cgi::handleWriteToCGI(){
+
+    // If POST → write body to stdin of CGI
+    if (_request.getBody().size() == _bytesWrittenToCgi){
+        return CGI_READY;
+    }
+
+    const char* body = _request.getBody().c_str() + _bytesWrittenToCgi;
+    size_t bytesLeft = _request.getBody().size() - _bytesWrittenToCgi;
+    size_t bytesToWrite = std::min(bytesLeft, static_cast<size_t>(BUFFER_SIZE));
+    ssize_t bytesWritten = write(_inFd, body, bytesToWrite);
+
+    if (bytesWritten < 0) {
+        return CGI_CONTINUE;
+    }
+    if (bytesWritten > 0){
+        _bytesWrittenToCgi += bytesWritten;
+        std::cout << "[CGI] Sending POST body to script: " << _scriptPath;
+        std::cout << "[CGI] wrote " << bytesWritten << " bytes to CGI stdin\n";
+        return CGI_CONTINUE;
+    }
+}
+
+void Cgi::setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
+
+int Cgi::getInFd() const { return _inFd; }
+int Cgi::getOutFd() const { return _outFd; }
+int Cgi::getPid() const { return _pid; }
+int Cgi::getClientFd() const { return _clientFd; };
+const LocationConfig* Cgi::getMatchedLocation() const { return _matchedLoc; }
+time_t Cgi::getStartTime() const { return _startTime; }
+HttpRequest Cgi::getRequest() const { return _request; }
+std::string Cgi::getResponseData() const { return _resonseData; }

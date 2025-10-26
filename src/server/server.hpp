@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/25 20:13:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/26 22:59:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,12 @@
 #include "../config/config.hpp"
 #include "../http_response/http_response.hpp"
 #include "../cgi/cgi.hpp"
+
+// #define BUFFER_SIZE 4096    // 4 KB
+// #define BUFFER_SIZE 8192    // 8 KB
+// #define BUFFER_SIZE 16384   // 16 KB
+#define BUFFER_SIZE 32768   // 32 KB
+// #define BUFFER_SIZE 65536   // 64 KB
 
 class Server {
 

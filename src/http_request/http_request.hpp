@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/23 17:07:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/25 21:19:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,10 +65,11 @@ class HttpRequest{
 		std::string getMethod() const;
 		std::string getVersion() const;
 		std::string getContentType() const;
-		const std::map<std::string, std::string>& getHeaders() const;
+
         std::string getNormalizedReqPath() const { return _normalizedReqPath; }
         std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
+		const std::map<std::string, std::string>& getHeaders() const;
 
 
 		void setMethod(std::string method);
@@ -106,11 +107,12 @@ class HttpRequest{
 		//"Host": "example.com",
 		//"Content-Type": "application/json",
 		//"User-Agent": "curl/7.68.0"
+
 		bool _isValid;
-        unsigned long	_contentLength; //  348
+		unsigned long	_contentLength; //  348
 
 		void extractQueryString();
-        void normalizeReqPath();
+		void normalizeReqPath();
 };
 
 #endif
