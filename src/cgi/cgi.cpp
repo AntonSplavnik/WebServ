@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cgi.cpp                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/10/27 23:29:07 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "server.hpp"
 #include "cgi.hpp"
 #include "http_response.hpp"
@@ -19,8 +31,8 @@ Cgi::Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientIn
         _inFd(-1), _scriptPath(path), _request(req), _clients(clients), _clientFd(clientFd),
         _startTime(time(NULL)), _bytesWrittenToCgi(0){}
 Cgi::~Cgi() {
-    if (_outFd >= 0) close(_outFd);
     if (_inFd >= 0) close(_inFd);
+    if (_outFd >= 0) close(_outFd);
 }
 
 bool Cgi::startCGI() {
@@ -227,7 +239,7 @@ CgiReadStatus Cgi::handleReadFromCGI() {
 }
 CgiReadStatus Cgi::handleWriteToCGI(){
 
-    // If POST → write body to stdin of CGI
+    // POST → write body to stdin of CGI
     if (_request.getBody().size() == _bytesWrittenToCgi){
         return CGI_READY;
     }
@@ -237,7 +249,7 @@ CgiReadStatus Cgi::handleWriteToCGI(){
     size_t bytesToWrite = std::min(bytesLeft, static_cast<size_t>(BUFFER_SIZE));
     ssize_t bytesWritten = write(_inFd, body, bytesToWrite);
 
-    if (bytesWritten < 0) {
+    if (bytesWritten < 0) { // the only error could be curnell buffer is full, so we do real error checks after POLL
         return CGI_CONTINUE;
     }
     if (bytesWritten > 0){
@@ -258,3 +270,5 @@ const LocationConfig* Cgi::getMatchedLocation() const { return _matchedLoc; }
 time_t Cgi::getStartTime() const { return _startTime; }
 HttpRequest Cgi::getRequest() const { return _request; }
 std::string Cgi::getResponseData() const { return _resonseData; }
+size_t Cgi::getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
+bool Cgi::isFinished() const {return _finished;}

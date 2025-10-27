@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/10/14 18:39:55 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/27 16:28:43 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,19 +36,21 @@ class HttpResponse {
 
 	public:
 		HttpResponse(HttpRequest request);
+		// HttpResponse(HttpRequest request, const std::string& cgiOutput);
 		~HttpResponse();
 
 		void generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput);
+
 		void generateGetResponse();
 		void generateDeleteResponse();
 		void generateCgiResponse(const std::string &cgiOutput);
-        void generateErrorResponse();
+		void generateErrorResponse();
 
 		std::string extractBody();
-		std::string	getTimeNow();
-		fileExtentions	extractFileExtension(std::string filePath);
-		std::string	getReasonPhrase();
-		std::string	getContentType();
+		std::string getTimeNow();
+		fileExtentions extractFileExtension(std::string filePath);
+		std::string getReasonPhrase();
+		std::string getContentType();
 
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
@@ -57,11 +59,11 @@ class HttpResponse {
 		void setHeader(std::string header);
 		void setPath(std::string path);
 
-		std::string		getBody() const;
-		std::string		getPath() const;
-		float			getVersion() const;
-		int				getStatusCode() const;
-		unsigned long	getContentLength() const;
+		std::string getBody() const;
+		std::string getPath() const;
+		float getVersion() const;
+		int getStatusCode() const;
+		unsigned long getContentLength() const;
 		std::string		getResponse() const;
 
 

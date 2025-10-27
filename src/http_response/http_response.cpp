@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 14:11:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/27 16:24:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,9 +60,7 @@
 HttpResponse::HttpResponse(HttpRequest request)
 	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
 	_serverName("WebServ"), _serverVersion(1.0f){}
-
 HttpResponse::~HttpResponse(){}
-
 
 fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 
@@ -82,7 +80,6 @@ fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 
 	else return UNKNOWN;
 }
-
 std::string HttpResponse::getContentType() {
 
 	fileExtentions extention = extractFileExtension(_filePath);
@@ -97,7 +94,6 @@ std::string HttpResponse::getContentType() {
 		default: return "application/octet-stream";
 	}
 }
-
 std::string HttpResponse::getReasonPhrase() {
 
 	switch (_statusCode) {
@@ -121,7 +117,6 @@ std::string HttpResponse::getReasonPhrase() {
 		default: return "Unknown";
 	}
 }
-
 std::string HttpResponse::getTimeNow() {
 
 	time_t now = time(0);
@@ -131,7 +126,6 @@ std::string HttpResponse::getTimeNow() {
 	std::string httpTime = buffer;
 	return httpTime;
 }
-
 void HttpResponse::generatePostResponse(){
 
 	std::ostringstream oss;
@@ -144,7 +138,6 @@ void HttpResponse::generatePostResponse(){
 		<< _body;
 	_response = oss.str();
 }
-
 void HttpResponse::generateGetResponse() {
 
 	std::ostringstream oss;
@@ -157,7 +150,6 @@ void HttpResponse::generateGetResponse() {
 		<< _body;
 	_response = oss.str();
 }
-
 void HttpResponse::generateDeleteResponse() {
 
 	std::ostringstream oss;
@@ -169,11 +161,10 @@ void HttpResponse::generateDeleteResponse() {
 		<< "Connection: " << _connectionType << "\r\n\r\n";
 	_response = oss.str();
 }
-
-void HttpResponse::generateErrorResponse() //TODO: load a custom HTML file per error code (like error_pages/404.html, error_pages/500.html), and fall back to this default if not found
-    //TODO: check if it works with sattic
+void HttpResponse::generateErrorResponse()
 {
-
+	//TODO: load a custom HTML file per error code (like error_pages/404.html, error_pages/500.html), and fall back to this default if not found
+    //TODO: check if it works with sattic
     std::ostringstream body;
 
     // Simple HTML body for the error
@@ -199,8 +190,6 @@ void HttpResponse::generateErrorResponse() //TODO: load a custom HTML file per e
 
     _response = oss.str();
 }
-
-
 void HttpResponse::generateCgiResponse(const std::string &cgiOutput)
 {
     // --- 1️⃣ Find headers/body separator ---
@@ -281,8 +270,6 @@ void HttpResponse::generateCgiResponse(const std::string &cgiOutput)
 
     _response = oss.str();
 }
-
-
 void HttpResponse::generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput)
 {
 	_method = _request.getMethodEnum();
@@ -335,8 +322,6 @@ void HttpResponse::generateResponse(int statusCode, bool isCgi, const std::strin
 			break;
 	}
 }
-
-
 std::string HttpResponse::extractBody() {
 	std::ifstream file(_filePath.c_str(), std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -344,13 +329,11 @@ std::string HttpResponse::extractBody() {
 	return content;
 }
 
-
 void HttpResponse::setBody(std::string body) {_body = body;}
 void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}
 void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(std::string path) {_filePath = path;}
-
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 std::string HttpResponse::getBody() const {return _body;}

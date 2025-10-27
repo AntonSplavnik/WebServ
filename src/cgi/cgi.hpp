@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cgi.hpp                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/10/27 20:18:43 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef CGI_HPP
 #define CGI_HPP
 
@@ -41,7 +53,9 @@ class Cgi {
 		time_t getStartTime() const;
 		std::string getResponseData() const;
 		HttpRequest getRequest() const;
+		size_t getBytesWrittenToCgi() const;
 		const LocationConfig* getMatchedLocation() const;
+		bool isFinished() const;
 
 	private:
 		std::string					_ext;

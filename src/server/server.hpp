@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/26 22:59:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/27 23:12:20 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class Server {
 
 		void handleEvent(int fd, short revents);
 		void disconnectClient(short fd);
+		void terminateCGI(int fd);
 		void shutdown();
 
 		const std::vector<Socket>& getListeningSockets() const;
@@ -47,11 +48,12 @@ class Server {
 	private:
 		void initListeningSockets();
 
-		int isListeningSocket(int fd) const;
 		void handleListenEvent(int fd);
 
+		void handleCGIerror(int fd);
 		void handleCGIread(int fd);
 		void handleCGIwrite(int fd);
+
 		void handleClientRead(int fd);
 		void handleClientWrite(int fd);
 
@@ -59,10 +61,9 @@ class Server {
 		void handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 
+		int isListeningSocket(int fd) const;
 		bool validatePath(const std::string& path);
-		void updateClientActivity(int fd);	// Reset timer on activity
-
-		// CGI handling
+		void updateClientActivity(int fd);
 
 		// Utility
 		// void logConnection(const Client& client);
@@ -75,34 +76,3 @@ class Server {
 };
 
 #endif
-
-		// Server lifecycle
-
-		// Connection management
-		// void acceptNewClient();
-		// void disconnectClient(int client_fd);
-		// void addToPoll(int fd, short events);
-		// void removeFromPoll(int fd);
-
-		// Client handling
-		// void handleClientData(int client_fd);
-		// void handleClientWrite(int client_fd);
-		// void processClientRequest(int client_fd);
-
-		// Methods handeling
-
-		// Configuration
-		// void setPort(int port);
-		// void setHost(const std::string& host);
-		// void setMaxClients(int max_clients);
-
-		// Getters
-		// int getPort() const;
-		// std::string getHost() const;
-		// bool isRunning() const;
-		// size_t getClientCount() const;
-
-		// Utility
-		// void cleanup();
-		// void logConnection(const Client& client);
-		// void logDisconnection(int client_fd);
