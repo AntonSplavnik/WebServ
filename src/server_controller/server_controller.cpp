@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/26 23:00:30 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 00:03:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,13 +18,12 @@ extern volatile sig_atomic_t g_shutdown;
 
 ServerController::ServerController(Config& config)
 	:_configs(config.getServers()), _listeningSocketCount(), _running(true){}
-
-ServerController::~ServerController(){
+ServerController::~ServerController() {
 
 	stop();
 }
 
-void ServerController::stop(){
+void ServerController::stop() {
 
 	for (size_t i = 0; i < _servers.size(); i++){
 		delete(_servers[i]);
@@ -34,7 +33,7 @@ void ServerController::stop(){
 	_pollFds.clear();
 }
 
-void ServerController::rebuildPollFds(){
+void ServerController::rebuildPollFds() {
 
 	_pollFds.resize(_listeningSocketCount);
 
@@ -73,7 +72,7 @@ void ServerController::rebuildPollFds(){
 
 }
 
-void ServerController::initListeningSockets(){
+void ServerController::initListeningSockets() {
 
 	for (size_t i = 0; i < _servers.size(); i++){
 
@@ -85,9 +84,7 @@ void ServerController::initListeningSockets(){
 			listeningSocket.fd = listeningSockets[j].getFd();
 			listeningSocket.events = POLLIN;
 			listeningSocket.revents = 0;
-
 			_pollFds.push_back(listeningSocket);
-
 			_listeningSocketCount++;
 
 			std::cout << "Added listening socket FD " << listeningSocket.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
@@ -95,16 +92,16 @@ void ServerController::initListeningSockets(){
 	}
 }
 
-void ServerController::addServers(){
+void ServerController::addServers() {
 
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
-		Server* server = new Server(_configs[i]);
+		Server* server = new Server(_configs[i], *this);
 		_servers.push_back(server);
 	}
 }
 
-void ServerController::run(){
+void ServerController::run() {
 
 	addServers();
 	initListeningSockets();
@@ -143,10 +140,11 @@ void ServerController::run(){
 			checkClientTimeouts(*(_servers[i]));
 			checkCgiTimeouts(*(_servers[i]));
 		}
+		reapZombieProcesses();
 	}
 }
 
-Server* ServerController::findServerForFd(int fd){
+Server* ServerController::findServerForFd(int fd) {
 
 	for(size_t si = 0; si < _servers.size(); ++si){
 
@@ -167,12 +165,12 @@ Server* ServerController::findServerForFd(int fd){
 	return NULL;
 }
 
-bool ServerController::isClientTimedOut(std::map<int, ClientInfo>& clients, int fd){
+bool ServerController::isClientTimedOut(std::map<int, ClientInfo>& clients, int fd) {
 
 	time_t now = time(NULL);
 	return (now - clients[fd].lastActivity > clients[fd].keepAliveTimeout) ;
 }
-void ServerController::checkClientTimeouts(Server& server){
+void ServerController::checkClientTimeouts(Server& server) {
 
 	std::map<int, ClientInfo>& clients = server.getClients();
 	std::map<int, ClientInfo>::iterator it = clients.begin();
@@ -193,54 +191,48 @@ void ServerController::checkClientTimeouts(Server& server){
 
 bool ServerController::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
 	time_t now = time(NULL);
-	std::map<int, Cgi*>::iterator it = cgiMap.find(fd);
-	if (it == cgiMap.end() || !it->second)
+	std::map<int, Cgi*>::iterator cgiIt = cgiMap.find(fd);
+	if (cgiIt == cgiMap.end() || !cgiIt->second)
 		return false;
-	Cgi* cgi = it->second;
-	return (now - cgi->getStartTime() > CGI_TIMEOUT);
+	return (now - cgiIt->second->getStartTime() > CGI_TIMEOUT);
 }
 void ServerController::checkCgiTimeouts(Server& server) {
+
 	std::map<int, Cgi*>& cgiMap = server.getCGI();
-	std::map<int, Cgi*>::iterator it = cgiMap.begin();
+	std::map<int, Cgi*>::iterator cgiIt = cgiMap.begin();
 
-	while (it != cgiMap.end()) {
-		int currentFd = it->first;
-		Cgi* cgi = it->second;
+	while (cgiIt != cgiMap.end()) {
 
-		if (!cgi) {
-			++it;
-			continue;
-		}
+		if (isCgiTimedOut(cgiMap, cgiIt->first)) {
 
-		if (isCgiTimedOut(cgiMap, currentFd)) {
-			std::cout << "[CGI TIMEOUT] Process pid=" << cgi->pid
+			std::cout << "[CGI TIMEOUT] Process pid=" << cgiIt->second->getPid()
 					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
 
-			//  Kill the process
-			kill(cgi->pid, SIGKILL);
-
-			//  Clean up process (avoid zombie)
-			waitpid(cgi->pid, NULL, 0);
-
-			//  Prepare 504 Gateway Timeout response
-			HttpResponse resp(cgi->getRequest());
-			resp.generateResponse(504, false, ""); // standard HTTP timeout code
-
-			int clientFd = cgi->getClientFd();
-			if (server.getClients().find(clientFd) != server.getClients().end()) {
-				server.getClients()[clientFd].responseData = resp.getResponse();
-				server.getClients()[clientFd].state = SENDING_RESPONSE;
-			}
-
-			// 4️⃣ Close pipes & clean up memory
-			if (cgi->outFd >= 0) close(cgi->outFd);
-			delete cgi;
-			cgiMap.erase(it++);
-
-			std::cout << "[CGI TIMEOUT] Response 504 sent to client FD=" << clientFd << std::endl;
+			server.handleCGItimeout(cgiIt->second);
+			cgiIt = cgiMap.begin();
 			continue;
 		}
-
-		++it;
+		++cgiIt;
 	}
 }
+
+void ServerController::reapZombieProcesses() {
+
+	if (_killedPids.empty()) return;
+
+	for(size_t i = 0; i < _killedPids.size();) {
+		int result = waitpid(_killedPids[i], NULL, WNOHANG);
+		int pid = _killedPids[i];
+		if (result > 0 ){
+			std::cout << "[DEBUG] Reaped zombie process " << pid << std::endl;
+			_killedPids.erase(_killedPids.begin() + i);
+		} else if (result == 0) {
+			i++;
+		} else {
+			std::cerr << "[WARNING] waitpid failed for pid " << pid << std::endl;
+			_killedPids.erase(_killedPids.begin() + i);
+		}
+		//do we need i++ here?
+	}
+}
+void ServerController::addKilledPid(pid_t pid) { _killedPids.push_back(pid);}

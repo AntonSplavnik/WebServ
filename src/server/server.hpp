@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/27 23:12:20 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/28 23:22:44 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,22 +24,23 @@
 #include "../http_response/http_response.hpp"
 #include "../cgi/cgi.hpp"
 
-// #define BUFFER_SIZE 4096    // 4 KB
-// #define BUFFER_SIZE 8192    // 8 KB
-// #define BUFFER_SIZE 16384   // 16 KB
-#define BUFFER_SIZE 32768   // 32 KB
-// #define BUFFER_SIZE 65536   // 64 KB
+class ServerController;
+
+#define BUFFER_SIZE_4 4096    // 4 KB
+// #define BUFFER_SIZE_8 8192    // 8 KB
+// #define BUFFER_SIZE_16 16384   // 16 KB
+#define BUFFER_SIZE_32 32768   // 32 KB
+// #define BUFFER_SIZE_65 65536   // 64 KB
 
 class Server {
 
 	public:
-		Server(const ConfigData& config);
+		Server(const ConfigData& config, ServerController& controller);
 		~Server();
 
 		void handleEvent(int fd, short revents);
 		void disconnectClient(short fd);
-		void terminateCGI(int fd);
-		void shutdown();
+		void handleCGItimeout(Cgi* cgi);
 
 		const std::vector<Socket>& getListeningSockets() const;
 		std::map<int, ClientInfo>& getClients();
@@ -61,6 +62,8 @@ class Server {
 		void handlePOST(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client, const LocationConfig* matchedLoc);
 
+		void shutdown();
+		void terminateCGI(Cgi* cgi);
 		int isListeningSocket(int fd) const;
 		bool validatePath(const std::string& path);
 		void updateClientActivity(int fd);
@@ -73,6 +76,7 @@ class Server {
 		std::map<int, ClientInfo>	_clients;
 		std::map<int, Cgi*>			_cgi;
 		const ConfigData			_configData;
+		ServerController&			_controller;
 };
 
 #endif

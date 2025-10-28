@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/27 23:32:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/28 23:42:51 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,8 @@
 #include <sys/stat.h> // for stat()
 #include <signal.h>
 
-Server::Server(const ConfigData& config)
-	:_configData(config) {
+Server::Server(const ConfigData& config, ServerController& controller)
+	:_configData(config), _controller(controller) {
 
 	_listeningSockets.clear();
 	initListeningSockets();
@@ -95,7 +95,7 @@ void Server::handleEvent(int fd, short revents) {
 				if (revents & POLLIN) {
 					handleCGIread(fd);  // final read + cleanup
 				}
-				terminateCGI(fd);
+				terminateCGI(cgiIt->second);
 			} else if (revents & POLLIN) {
 				std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
 				handleCGIread(fd);
@@ -105,7 +105,7 @@ void Server::handleEvent(int fd, short revents) {
 			}
 			return;
 		} else {
-			terminateCGI(fd);
+			terminateCGI(cgiIt->second);
 			return;
 		}
 	}
@@ -187,13 +187,9 @@ void Server::handleCGIerror(int fd) {
 		}
 
 		if(cgi->getPid() > 0){
-			int pid = cgi->getPid();
-			kill(pid, SIGKILL);
-			waitpid(pid, NULL, WNOHANG);
+			cgi->terminate();
 		}
-
-		if(inFd >= 0) close(inFd);
-		if(outFd >= 0) close(outFd);
+		cgi->cleanup();
 
 		if(inFd >= 0) _cgi.erase(inFd);
 		if(outFd >= 0) _cgi.erase(outFd);
@@ -205,9 +201,7 @@ void Server::handleCGIerror(int fd) {
 
 		if(cgi->getRequest().getBody().size() != cgi->getBytesWrittenToCgi()) {
 
-			int pid = cgi->getPid();
-			kill(pid, SIGKILL);
-			waitpid(pid, NULL, WNOHANG);
+			cgi->terminate();
 
 			if (_clients.find(clientFd) != _clients.end()){
 				HttpResponse resp(cgi->getRequest());
@@ -217,8 +211,7 @@ void Server::handleCGIerror(int fd) {
 				_clients[clientFd].state = SENDING_RESPONSE;
 			}
 
-			if(inFd >= 0) close(inFd);
-			if(outFd >= 0) close(outFd);
+			cgi->cleanup();
 
 			if(inFd >= 0) _cgi.erase(inFd);
 			if(outFd >= 0) _cgi.erase(outFd);
@@ -226,7 +219,7 @@ void Server::handleCGIerror(int fd) {
 			delete cgi;
 		} else {
 
-			close(inFd);
+			cgi->closeInFd();
 			_cgi.erase(inFd);
 		}
 	}
@@ -234,7 +227,7 @@ void Server::handleCGIerror(int fd) {
 void Server::handleCGIread(int fd) {
 
 	Cgi* cgi = _cgi[fd];
-	CgiReadStatus status = cgi->handleReadFromCGI();
+	CgiStatus status = cgi->handleReadFromCGI();
 
 	if(status == CGI_CONTINUE) return;
 
@@ -268,12 +261,13 @@ void Server::handleCGIread(int fd) {
 void Server::handleCGIwrite(int fd) {
 
 	Cgi* cgi = _cgi[fd];
-	CgiReadStatus status = cgi->handleWriteToCGI();
+	CgiStatus status = cgi->handleWriteToCGI();
 
 	if(status == CGI_CONTINUE) return;
 
 	if(status == CGI_READY){
 		int inFd = cgi->getInFd();
+		cgi->closeInFd();
 		if (inFd >= 0) _cgi.erase(inFd);
 	}
 }
@@ -295,9 +289,9 @@ void Server::handleClientRead(int fd) {
 
 	if(_clients[fd].state == READING_REQUEST){
 
-		char buffer[BUFFER_SIZE];
-		std::memset(buffer, 0, BUFFER_SIZE);
-		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
+		char buffer[BUFFER_SIZE_32];
+		std::memset(buffer, 0, BUFFER_SIZE_32);
+		int bytes = recv(fd, buffer, BUFFER_SIZE_32 - 1, 0);
 		std::cout << "recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 		if (bytes <= 0) {
@@ -407,7 +401,7 @@ void Server::handleClientRead(int fd) {
 
 
 					std::cout << "[CGI] Final script path: " << scriptPath << std::endl;
-					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd, matchedLoc, cgiExt);
+					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd, matchedLoc, cgiExt, _controller);
 					if (!cgi->startCGI()) {
 						std::cout << "[DEBUG] Failed to start CGI" << std::endl;
 						HttpResponse resp(httpRequest);
@@ -420,12 +414,15 @@ void Server::handleClientRead(int fd) {
 					else{
 						updateClientActivity(fd);
 						// Register CGI process
-						_cgi[cgi->getOutFd()] = cgi;
-						if (cgi->getInFd() >= 0) _cgi[cgi->getInFd()] = cgi;
+						int inFd = cgi->getInFd();
+						int outFd = cgi->getOutFd();
+						if (inFd >= 0) _cgi[inFd] = cgi;
+						_cgi[outFd] = cgi;
 						_clients[fd].state = WAITING_CGI;
+
 						std::cout << "[DEBUG] Spawned CGI pid = " << cgi->getPid()
-								  << " inFd = " << cgi->getInFd()
-								  << " outFd = " << cgi->getOutFd()
+								  << " inFd = " << inFd
+								  << " outFd = " << outFd
 								  << " for client FD = " << fd << std::endl;
 						std::cout << "clients state: " << _clients[fd].state << std::endl;
 					}
@@ -455,7 +452,7 @@ void Server::handleClientWrite(int fd) {
 		// Send remaining response data
 		const char* data = _clients[fd].responseData.c_str() + _clients[fd].bytesSent;
 		size_t remainingLean = _clients[fd].responseData.length() - _clients[fd].bytesSent;
-		size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE));
+		size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
 		int bytes_sent = send(fd, data, bytesToWrite, 0);
 		std::cout << "send() returned " << bytes_sent << " bytes to FD " << fd << std::endl;
@@ -658,20 +655,25 @@ void Server::disconnectClient(short fd) {
 	close(fd);
 	_clients.erase(fd);
 }
-void Server::terminateCGI(int fd) {
+void Server::handleCGItimeout(Cgi* cgi) {
 
-	Cgi* cgi = _cgi[fd];
+	int clientFd = cgi->getClientFd();
+	//  Prepare 504 Gateway Timeout response
+	HttpResponse resp(cgi->getRequest());
+	resp.generateResponse(504, false, "");
+	if (_clients.find(clientFd) != _clients.end()) {
+		_clients[clientFd].responseData = resp.getResponse();
+		_clients[clientFd].state = SENDING_RESPONSE;
+	}
+	std::cout << "[CGI TIMEOUT] Response 504 sent to client FD = " << clientFd << std::endl;
+	terminateCGI(cgi);
+}
+void Server::terminateCGI(Cgi* cgi) {
 
-	int pid = cgi->getPid();
-	kill(pid, SIGKILL);
-	waitpid(pid, NULL, WNOHANG);
-
+	cgi->terminate();
+	cgi->cleanup();
 	int inFd = cgi->getInFd();
 	int outFd = cgi->getOutFd();
-
-	if (inFd >= 0) close(inFd);
-	if (outFd >= 0) close(outFd);
-
 	if (inFd >= 0) _cgi.erase(inFd);
 	if (outFd >= 0) _cgi.erase(outFd);
 	delete cgi;

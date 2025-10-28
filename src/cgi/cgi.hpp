@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/27 20:18:43 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/28 23:42:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,13 @@
 #include <vector>
 #include <iostream>
 #include <map>
-#include "../http_request/http_request.hpp"
-#include "../server/client_info.hpp"
-#include "../config/config.hpp"
 
+#include "http_request.hpp"
+#include "client_info.hpp"
+#include "config.hpp"
+#include "server_controller.hpp"
 
-enum CgiReadStatus{
+enum CgiStatus{
 	CGI_CONTINUE,
 	CGI_READY,
 	CGI_ERROR
@@ -36,13 +37,18 @@ enum CgiReadStatus{
 class Cgi {
 	public:
 		Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
-			int clientFd, const LocationConfig* loc, std::string cgiExt);
+			int clientFd, const LocationConfig* loc, std::string cgiExt, ServerController& controller);
 		~Cgi();
 
 		bool startCGI();
 
-		CgiReadStatus handleReadFromCGI();
-		CgiReadStatus handleWriteToCGI();
+		CgiStatus handleReadFromCGI();
+		CgiStatus handleWriteToCGI();
+
+		void cleanup();
+		void closeInFd();
+		void closeOutFd();
+		void terminate();
 
 		void setMatchedLocation(const LocationConfig* loc);
 
@@ -73,6 +79,7 @@ class Cgi {
 		HttpRequest					_request;
 		std::map<int, ClientInfo>&	_clients;
 		const LocationConfig*		_matchedLoc;
+		ServerController&			_controller;
 
 		void prepEnv(const HttpRequest &request, const std::string &scriptPath);
 		bool chdirToScriptDir();

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/27 23:29:07 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 00:11:51 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,17 +22,18 @@
 #include <iostream>
 #include <poll.h>
 #include <algorithm>
+#include <signal.h>
+
 
 // #define MAX_CGI_OUTPUT 10000000
 
 Cgi::Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
-        int clientFd, const LocationConfig* loc, std::string cgiExt)
+        int clientFd, const LocationConfig* loc, std::string cgiExt, ServerController& controller)
         : _pid(-1), _outFd(-1), _finished(false), _matchedLoc(loc), _ext(cgiExt),
         _inFd(-1), _scriptPath(path), _request(req), _clients(clients), _clientFd(clientFd),
-        _startTime(time(NULL)), _bytesWrittenToCgi(0){}
+        _startTime(time(NULL)), _bytesWrittenToCgi(0), _controller(controller){}
 Cgi::~Cgi() {
-    if (_inFd >= 0) close(_inFd);
-    if (_outFd >= 0) close(_outFd);
+    cleanup();
 }
 
 bool Cgi::startCGI() {
@@ -84,8 +85,7 @@ bool Cgi::startCGI() {
     fcntl(_outFd, F_SETFL, O_NONBLOCK);
 
     if(_request.getMethod() != "POST"){
-        close(_inFd);
-        _inFd = -1;
+        closeInFd();
     }
 
     return true;
@@ -184,8 +184,8 @@ void Cgi::executeCGI()
     argv[2] = NULL;
 
     // --- Build environment array ---
-    extern char **environ; // use current env as base
-    // You can later extend this if you build your own envp
+    // use current env as base. You can later extend this if you build your own envp
+    extern char **environ;
 
     execve(argv[0], argv, environ);
 
@@ -194,50 +194,42 @@ void Cgi::executeCGI()
     _exit(1);
 }
 
-CgiReadStatus Cgi::handleReadFromCGI() {
+CgiStatus Cgi::handleReadFromCGI() {
 
     std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;
     if (_finished || _outFd < 0)
         return CGI_READY;
 
-    char buf[4096];
+    char buf[BUFFER_SIZE_32];
     ssize_t bytesRead = read(_outFd, buf, sizeof(buf));
 
-    if (bytesRead == -1) {
+    if (bytesRead == -1) { //EAGAIN/EWOULDBLOCK
         return CGI_CONTINUE;
     }
+
     if (bytesRead > 0) {
         if (_resonseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
             std::cerr << "[CGI] Output exceeds limit" << std::endl;
+            terminate();
+            closeOutFd();
             return CGI_ERROR;
         }
         _resonseData.append(buf, bytesRead);
         return CGI_CONTINUE;
     }
+
+    // --- EOF: child finished writing ---
     if (bytesRead == 0) {
         std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
-        // --- EOF: child finished writing ---
-        _finished = true;
-        close(_outFd);
-        _outFd = -1;
+        std::cout << "[DEBUG] SGI responseData: " << _resonseData << std::endl;
 
-        int status;
-        int returnValue = waitpid(_pid, &status, WNOHANG);  // reap zombie safely    // Ignoring return value???  No error handeling? We should  make a decision based on status.
-        if(returnValue == -1){
-            perror("waitpid");
-            return CGI_ERROR;
-        }
-        else if (returnValue == 0){
-              return CGI_READY;
-        }
-        else{
-            if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) return CGI_ERROR;
-        }
-        std::cout << "[DEBUG] Sgi responseData: " << _resonseData << std::endl;
+        _finished = true;
+        closeOutFd();
+        terminate();
         return CGI_READY;
     }
 }
-CgiReadStatus Cgi::handleWriteToCGI(){
+CgiStatus Cgi::handleWriteToCGI(){
 
     // POST → write body to stdin of CGI
     if (_request.getBody().size() == _bytesWrittenToCgi){
@@ -246,7 +238,7 @@ CgiReadStatus Cgi::handleWriteToCGI(){
 
     const char* body = _request.getBody().c_str() + _bytesWrittenToCgi;
     size_t bytesLeft = _request.getBody().size() - _bytesWrittenToCgi;
-    size_t bytesToWrite = std::min(bytesLeft, static_cast<size_t>(BUFFER_SIZE));
+    size_t bytesToWrite = std::min(bytesLeft, static_cast<size_t>(BUFFER_SIZE_32));
     ssize_t bytesWritten = write(_inFd, body, bytesToWrite);
 
     if (bytesWritten < 0) { // the only error could be curnell buffer is full, so we do real error checks after POLL
@@ -258,6 +250,24 @@ CgiReadStatus Cgi::handleWriteToCGI(){
         std::cout << "[CGI] wrote " << bytesWritten << " bytes to CGI stdin\n";
         return CGI_CONTINUE;
     }
+}
+
+void Cgi::terminate() {
+    kill(_pid, SIGKILL);
+    waitpid(_pid, NULL, WNOHANG);
+    _controller.addKilledPid(_pid);
+}
+void Cgi::cleanup() {
+    closeInFd();
+    closeOutFd();
+}
+void Cgi::closeInFd() {
+    if(_inFd >= 0) close(_inFd);
+    _inFd = -1;
+}
+void Cgi::closeOutFd() {
+    if(_outFd >= 0) close(_outFd);
+    _outFd = -1;
 }
 
 void Cgi::setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
