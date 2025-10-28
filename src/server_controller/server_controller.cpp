@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/29 00:03:12 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 00:35:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,20 @@ void ServerController::rebuildPollFds() {
 			// Add client socket to poll array
 			struct pollfd client;
 			client.fd = it->first;
-			client.events = it->second.state == READING_REQUEST? POLLIN : POLLOUT;
 			client.revents = 0;
+			switch (it->second.state)
+			{
+			case READING_REQUEST:
+				client.events = POLLIN;
+				break;
+			case SENDING_RESPONSE:
+				client.events = POLLOUT;
+			case WAITING_CGI:
+				continue;
+			default:
+				continue;
+			}
+			client.events = it->second.state == READING_REQUEST? POLLIN : POLLOUT;
 			_pollFds.push_back(client);
 			std::cout << "Added client socket FD " << client.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 		}
