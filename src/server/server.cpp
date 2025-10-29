@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/21 17:32:45 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 19:25:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,10 @@
 #include "socket.hpp"
 #include <ctime>
 #include <fstream>
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 Server::Server(const ConfigData& config)
 	:_configData(config){
 
@@ -26,6 +29,7 @@ Server::Server(const ConfigData& config)
 Server::~Server(){
 	shutdown();
 }
+
 void Server::initializeListeningSockets(){
 
 	//add logic for incoming listening sockets from the config file.
@@ -59,30 +63,40 @@ void Server::initializeListeningSockets(){
 				  << i << std::endl;
 	}
 }
-void Server::handlePOLLERR(int fd){
 
-	std::cerr << "ERROR: Listening socket FD " << fd
+void Server::handleEvent(int fd, short revents) {
+
+	int listenFdIndex = isListeningSocket(fd);
+	if (listenFdIndex >= 0) {
+		if (revents & POLLIN) {
+			handleListenEvent(listenFdIndex);
+		}
+	} else {
+		// Client socket
+		if (revents & POLLIN) {
+			handleClientRead(fd);
+		}
+		if (revents & POLLOUT) {
+			handleClientWrite(fd);
+		}
+		if (revents & POLLERR) {
+			std::cerr << "ERROR: Listening socket FD " << fd
 			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
-}
-void Server::handlePOLLHUP(int fd){
-
-	std::cout << "Client FD " << fd << " hung up" << std::endl;
-}
-int Server::isListeningSocket(int fd) const {
-
-	for (size_t i = 0; i < _listeningSockets.size(); i++)
-	{
-		if (_listeningSockets[i].getFd() == fd){
-			return  i;
+			disconectClient(fd);
+		}
+		if (revents & POLLHUP) {
+			std::cout << "Client FD " << fd << " hung up" << std::endl;
+			disconectClient(fd);
 		}
 	}
-	return -1;
 }
+
 void Server::handleListenEvent(int indexOfLinstenSocket){
 
-	std::cout << "Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
+	std::cout << "[DEBUG] Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
 
-	short client_fd = _listeningSockets[indexOfLinstenSocket].accepting();
+	sockaddr_in client_addr;
+	short client_fd = _listeningSockets[indexOfLinstenSocket].accepting(client_addr);
 
 	if (client_fd >= 0 && _clients.size() < static_cast<size_t>(_configData.max_clients)) {
 
@@ -91,21 +105,23 @@ void Server::handleListenEvent(int indexOfLinstenSocket){
 		_clients[client_fd].lastActivity = time(NULL);
 		_clients[client_fd].maxRequests = _configData.keepalive_max_requests;
 		_clients[client_fd].requestCount = 0;
+		_clients[client_fd].ip = inet_ntoa(client_addr.sin_addr);
+		_clients[client_fd].port = ntohs(client_addr.sin_port);
 
-		std::cout << "New connection accepted! Client FD: " << client_fd
+
+		std::cout << "[DEBUG] New connection accepted! Client FD: " << client_fd
 				  << "Timeout: " << _clients[client_fd].keepAliveTimeout
 				  << "Max Max Requests: " << _clients[client_fd].maxRequests
 				  << std::endl;
 
 		// Make client socket non-blocking
 		_clients[client_fd].socket.setNonBlocking();
-		std::cout << "Making socket FD " << client_fd << " non-blocking" << std::endl;
+		std::cout << "[DEBUG] Making socket FD " << client_fd << " non-blocking" << std::endl;
 
 	}
 	else if (client_fd >= 0){
 		close(client_fd);
 	}
-
 }
 void Server::handleClientRead(int fd){
 
@@ -194,7 +210,7 @@ void Server::handleClientRead(int fd){
 					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
 					return;
 				}
-				if(!validatePath(httpRequest, matchedLocation)) {
+				if(!validateMethod(httpRequest, matchedLocation)) {
 					std::cout << "[DEBUG] Path validation failed (method not allowed or missing root)" << std::endl;
 					response.generateResponse(403);
 					_clients[fd].responseData = response.getResponse();
@@ -252,11 +268,10 @@ void Server::handleClientWrite(int fd){
 
 			updateClientActivity(fd);
 
-			// Check if entire response was sent
-			std::cout << "Bytes setn: " << _clients[fd].bytesSent
-					<< "    ResponseData length: " << _clients[fd].responseData.length()
-					<< std::endl;
 
+			std::cout << "Bytes setn: " << _clients[fd].bytesSent << "    ResponseData length: " << _clients[fd].responseData.length() << std::endl;
+
+			// Check if entire response was sent
 			if (_clients[fd].bytesSent == _clients[fd].responseData.length()) {
 
 				if(_clients[fd].shouldClose){
@@ -270,7 +285,7 @@ void Server::handleClientWrite(int fd){
 				_clients[fd].bytesSent = 0;
 				_clients[fd].responseData.clear();
 				_clients[fd].requestData.clear();
-				updateClientActivity(fd);  // Reset timeout for keep-alive
+				updateClientActivity(fd);
 
 			} else {
 				std::cout << "Partial send: " << _clients[fd].bytesSent << "/" << _clients[fd].responseData.length() << " bytes sent" << std::endl;
@@ -283,138 +298,7 @@ void Server::handleClientWrite(int fd){
 		}
 	}
 }
-void Server::handleEvent(int fd, short revents) {
 
-	int listenFdIndex = isListeningSocket(fd);
-	if (listenFdIndex >= 0) {
-		if (revents & POLLIN) {
-			handleListenEvent(listenFdIndex);
-		}
-	} else {
-		// Client socket
-		if (revents & POLLIN) {
-			handleClientRead(fd);
-		}
-		if (revents & POLLOUT) {
-			handleClientWrite(fd);
-		}
-		if (revents & POLLERR) {
-			handlePOLLERR(fd);
-			disconectClient(fd);
-		}
-		if (revents & POLLHUP) {
-			handlePOLLHUP(fd);
-			disconectClient(fd);
-		}
-	}
-}
-void Server::disconectClient(short fd){
-
-	close(fd);
-	_clients.erase(fd);
-}
-bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot){
-
-	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
-		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
-		return false;
-	}
-
-	if(mappedPath.find('\0') != std::string::npos){
-		std::cout << "[SECURITY] Null byte injection detected" << std::endl;
-		return false;
-	}
-
-	// Canonical path check (strongest defense)
-	char resolvedPath[PATH_MAX];
-	char resolvedRoot[PATH_MAX];
-
-	// Resolve the mapped path to canonical form
-	// Note: realpath() returns NULL if file doesn't exist yet (important for POST/upload)
-	if (realpath(mappedPath.c_str(), resolvedPath) == NULL) {
-
-		// File doesn't exist - for POST this is expected
-		// Validate the parent directory instead
-		std::string parentDir = mappedPath.substr(0, mappedPath.find_last_of('/'));
-		if (parentDir.empty()) parentDir = ".";
-
-		if (realpath(parentDir.c_str(), resolvedPath) == NULL) {
-			std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
-			return false;
-		}
-		// Add back the filename for comparison
-		std::string filename = mappedPath.substr(mappedPath.find_last_of('/'));
-		std::string fullPath = std::string(resolvedPath) + filename;
-		strncpy(resolvedPath, fullPath.c_str(), PATH_MAX - 1);
-		resolvedPath[PATH_MAX - 1] = '\0';
-	}
-
-	// Resolve the allowed root
-	if (realpath(allowedRoot.c_str(), resolvedRoot) == NULL) {
-		std::cout << "[SECURITY] Invalid allowed root: " << allowedRoot << std::endl;
-		return false;
-	}
-
-	// Check if resolved path starts with resolved root
-	std::string canonicalPath(resolvedPath);
-	std::string canonicalRoot(resolvedRoot);
-
-	if (canonicalPath.compare(0, canonicalRoot.length(), canonicalRoot) != 0) {
-		std::cout << "[SECURITY] Path escape attempt!" << std::endl;
-		std::cout << "[SECURITY] Requested: " << mappedPath << std::endl;
-		std::cout << "[SECURITY] Resolved:  " << canonicalPath << std::endl;
-		std::cout << "[SECURITY] Root:      " << canonicalRoot << std::endl;
-		return false;
-	}
-	return true;
-}
-bool Server::validatePath(const HttpRequest& request, const LocationConfig*& location){
-
-	if (!location || location->root.empty()) {
-		std::cout << "[DEBUG] No matching location found" << request.getPath() << std::endl;
-		return false;
-	}
-
-	bool methodAllowed = false;
-	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
-		if (location->allow_methods[i] == request.getMethod()) {
-			methodAllowed = true;
-			break;
-		}
-	}
-
-	if (!methodAllowed) {
-		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
-		return false;
-	}
-
-	return true;
-}
-std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation){
-
-	std::string locationRoot = matchedLocation->root;
-	std::string locationPath = matchedLocation->path;
-	std::string requestPath = request.getPath();
-	std::string relativePath;
-
-	if(requestPath.compare(0, locationPath.length(), locationPath) == 0)
-		relativePath = requestPath.substr(locationPath.length());
-	else{
-		std::cerr << "[ERROR] mapPath called with non-matching paths!" << std::endl;
-		relativePath = requestPath;  // Fallback
-	}
-
-	if(!locationRoot.empty() && locationRoot[locationRoot.length() - 1 ] == '/'
-		&& !relativePath.empty() && relativePath[0] == '/')
-		relativePath = relativePath.substr(1);
-
-	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
-	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
-	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
-	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
-	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
-	return locationRoot + relativePath;
-}
 void Server::handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath){
 
 	std::ifstream file(mappedPath.c_str());
@@ -590,6 +474,120 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, std::s
   validate → perform operation → generate HTTP response using
   HttpResponse class.
   */
+}
+
+bool Server::validateMethod(const HttpRequest& request, const LocationConfig*& location){
+
+	bool methodAllowed = false;
+	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
+		if (location->allow_methods[i] == request.getMethod()) {
+			methodAllowed = true;
+			break;
+		}
+	}
+
+	if (!methodAllowed) {
+		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation){
+
+	std::string locationRoot = matchedLocation->root;
+	std::string locationPath = matchedLocation->path;
+	std::string requestPath = request.getPath();
+	std::string relativePath;
+
+	if(requestPath.compare(0, locationPath.length(), locationPath) == 0)
+		relativePath = requestPath.substr(locationPath.length());
+	else{
+		std::cerr << "[ERROR] mapPath called with non-matching paths!" << std::endl;
+		relativePath = requestPath;  // Fallback
+	}
+
+	if(!locationRoot.empty() && locationRoot[locationRoot.length() - 1 ] == '/'
+		&& !relativePath.empty() && relativePath[0] == '/')
+		relativePath = relativePath.substr(1);
+
+	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
+	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
+	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
+	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
+	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+	return locationRoot + relativePath;
+}
+bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot){
+
+	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
+		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
+		return false;
+	}
+
+	if(mappedPath.find('\0') != std::string::npos){
+		std::cout << "[SECURITY] Null byte injection detected" << std::endl;
+		return false;
+	}
+
+	// Canonical path check (strongest defense)
+	char resolvedPath[PATH_MAX];
+	char resolvedRoot[PATH_MAX];
+
+	// Resolve the mapped path to canonical form
+	// Note: realpath() returns NULL if file doesn't exist yet (important for POST/upload)
+	if (realpath(mappedPath.c_str(), resolvedPath) == NULL) {
+
+		// File doesn't exist - for POST this is expected
+		// Validate the parent directory instead
+		std::string parentDir = mappedPath.substr(0, mappedPath.find_last_of('/'));
+		if (parentDir.empty()) parentDir = ".";
+
+		if (realpath(parentDir.c_str(), resolvedPath) == NULL) {
+			std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+			return false;
+		}
+		// Add back the filename for comparison
+		std::string filename = mappedPath.substr(mappedPath.find_last_of('/'));
+		std::string fullPath = std::string(resolvedPath) + filename;
+		strncpy(resolvedPath, fullPath.c_str(), PATH_MAX - 1);
+		resolvedPath[PATH_MAX - 1] = '\0';
+	}
+
+	// Resolve the allowed root
+	if (realpath(allowedRoot.c_str(), resolvedRoot) == NULL) {
+		std::cout << "[SECURITY] Invalid allowed root: " << allowedRoot << std::endl;
+		return false;
+	}
+
+	// Check if resolved path starts with resolved root
+	std::string canonicalPath(resolvedPath);
+	std::string canonicalRoot(resolvedRoot);
+
+	if (canonicalPath.compare(0, canonicalRoot.length(), canonicalRoot) != 0) {
+		std::cout << "[SECURITY] Path escape attempt!" << std::endl;
+		std::cout << "[SECURITY] Requested: " << mappedPath << std::endl;
+		std::cout << "[SECURITY] Resolved:  " << canonicalPath << std::endl;
+		std::cout << "[SECURITY] Root:      " << canonicalRoot << std::endl;
+		return false;
+	}
+	return true;
+}
+
+void Server::disconectClient(short fd){
+
+	close(fd);
+	_clients.erase(fd);
+}
+int Server::isListeningSocket(int fd) const {
+
+	for (size_t i = 0; i < _listeningSockets.size(); i++)
+	{
+		if (_listeningSockets[i].getFd() == fd){
+			return  i;
+		}
+	}
+	return -1;
 }
 void Server::updateClientActivity(int fd){
 

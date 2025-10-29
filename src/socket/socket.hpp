@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/15 18:11:22 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 19:24:24 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ class Socket{
 		void createCustom(int domain, int type, int protocol);
 		void binding(int port);
 		void listening(int backlog);
-		int accepting();
+		int accepting(sockaddr_in& client_addr);
 		void closing(short fd);
 
 		// Getters
@@ -55,8 +55,7 @@ class Socket{
 		void setNonBlocking(void);
 
 	private:
-		short _fd;
-		struct sockaddr_in _address;
+		short	_fd;
 		// bool _is_created;
 		// bool _is_bound;
 		// bool _is_listening;

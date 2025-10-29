@@ -11,24 +11,34 @@ enum ClientState {
 	SENDING_RESPONSE   // Ready to send HTTP response
 };
 
+
 // Structure to track client connection info
 struct ClientInfo {
 
 	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
 	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
 
-	Socket socket;
-	ClientState state;
-	size_t bytesSent;
-	std::string requestData;
-	std::string responseData;
+	//connection data
+	Socket		socket;
+	std::string	ip;
+	int			port;
+
+	//state
+	ClientState	state;
+	size_t		bytesSent;
+	std::string	requestData;
+	std::string	responseData;
 
 	//timeout data
-	time_t lastActivity;        // Last time client sent data
-	int keepAliveTimeout;       // Timeout in seconds (default 15)
-	int maxRequests;            // Max requests per connection
-	int requestCount;           // Current request count
-	bool shouldClose;           // Close on error
+	time_t		lastActivity;        // Last time client sent data
+	int			keepAliveTimeout;       // Timeout in seconds (default 15)
+
+	//request limits
+	int			maxRequests;            // Max requests per connection
+	int			requestCount;           // Current request count
+
+	//flag to send data
+	bool		shouldClose;           // Close on error
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/17 17:34:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 16:18:27 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,11 +40,8 @@ class Server {
 
 	private:
 
-		void initializeListeningSockets();
-		int isListeningSocket(int fd) const;
-		bool isPathSafe(const std::string& mappedPath, const std::string& allowedRoot);
-		void handlePOLLERR(int fd);
-		void handlePOLLHUP(int fd);
+
+
 		void handleListenEvent(int fd);
 		void handleClientRead(int indexOfLinstenSocket);
 		void handleClientWrite(int fd);
@@ -53,49 +50,20 @@ class Server {
 		void handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
 		void handleDELETE(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
 
-		bool validatePath(const HttpRequest& request, const LocationConfig*& location);
+		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
-		void updateClientActivity(int fd);	// Reset timer on activity
+		bool isPathSafe(const std::string& mappedPath, const std::string& allowedRoot);
 
+		void initializeListeningSockets();
+		int isListeningSocket(int fd) const;
+		void updateClientActivity(int fd);
 		// Utility
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
 
-		// Config _config;
-		std::vector<Socket>			 _listeningSockets;
+		std::vector<Socket>			_listeningSockets;
 		std::map<int, ClientInfo>	_clients;
 		const ConfigData			_configData;
 };
 
 #endif
-
-		// Server lifecycle
-
-		// Connection management
-		// void acceptNewClient();
-		// void disconnectClient(int client_fd);
-		// void addToPoll(int fd, short events);
-		// void removeFromPoll(int fd);
-
-		// Client handling
-		// void handleClientData(int client_fd);
-		// void handleClientWrite(int client_fd);
-		// void processClientRequest(int client_fd);
-
-		// Methods handeling
-
-		// Configuration
-		// void setPort(int port);
-		// void setHost(const std::string& host);
-		// void setMaxClients(int max_clients);
-
-		// Getters
-		// int getPort() const;
-		// std::string getHost() const;
-		// bool isRunning() const;
-		// size_t getClientCount() const;
-
-		// Utility
-		// void cleanup();
-		// void logConnection(const Client& client);
-		// void logDisconnection(int client_fd);
