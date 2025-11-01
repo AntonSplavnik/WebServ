@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 
+#define SERVER_SOFTWARE_NAME "Webserv42/1.0"
 const int MAX_BACKLOG = 1024;
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
 

@@ -8,15 +8,25 @@
 // Client connection states
 enum ClientState {
 	READING_REQUEST,   // Waiting to read HTTP request
-	SENDING_RESPONSE   // Ready to send HTTP response
+	SENDING_RESPONSE,   // Ready to send HTTP response
+	WAITING_CGI
 };
 
 
 // Structure to track client connection info
 struct ClientInfo {
 
-	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
+	ClientInfo()
+		: socket(),
+		  state(READING_REQUEST),
+		  bytesSent(0),
+		  shouldClose(false) {}
+
+	ClientInfo(int fd)
+		: socket(fd),
+		  state(READING_REQUEST),
+		  bytesSent(0),
+		  shouldClose(false) {}
 
 	//connection data
 	Socket		socket;

@@ -6,31 +6,25 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/29 19:25:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/31 14:32:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
-#include "config.hpp"
-#include "socket.hpp"
-#include <ctime>
-#include <fstream>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-Server::Server(const ConfigData& config)
-	:_configData(config){
+
+Server::Server(const ConfigData& config, ServerController& controller)
+	:_configData(config),
+	_controller(controller){
 
 	_listeningSockets.clear();
-	initializeListeningSockets();
 	_clients.clear();
+	initListeningSockets();
 }
-Server::~Server(){
+Server::~Server() {
 	shutdown();
 }
 
-void Server::initializeListeningSockets(){
+void Server::initListeningSockets() {
 
 	//add logic for incoming listening sockets from the config file.
 	for(size_t i = 0; i < _configData.listeners.size(); i++){
@@ -40,25 +34,26 @@ void Server::initializeListeningSockets(){
 		listenSocket.createDefault();
 
 		if (listenSocket.getFd() < 0) {
-			throw std::runtime_error("Failed to create socket");
+			throw std::runtime_error("[DEBUG] Failed to create socket");
 		}
 
 		listenSocket.setReuseAddr(true);
+
 		listenSocket.binding(_configData.listeners[i].second);
 		if (listenSocket.getFd() < 0) {
-			throw std::runtime_error("Failed to bind socket (port may be in use)");
+			throw std::runtime_error("[DEBUG] Failed to bind socket (port may be in use)");
 		}
 
 		listenSocket.listening(_configData.backlog);
 		if (listenSocket.getFd() < 0) {
-			throw std::runtime_error("Failed to listen on socket");
+			throw std::runtime_error("[DEBUG] Failed to listen on socket");
 		}
 
 		listenSocket.setNonBlocking();
 
 		_listeningSockets.push_back(listenSocket);
 
-		std::cout << "Susesfully added listening socket fd: "
+		std::cout << "[DEBUG] Susesfully added listening socket fd: "
 				  << listenSocket.getFd() << " at vector position: "
 				  << i << std::endl;
 	}
@@ -66,32 +61,63 @@ void Server::initializeListeningSockets(){
 
 void Server::handleEvent(int fd, short revents) {
 
+	// Listening Socket
 	int listenFdIndex = isListeningSocket(fd);
 	if (listenFdIndex >= 0) {
 		if (revents & POLLIN) {
 			handleListenEvent(listenFdIndex);
 		}
-	} else {
-		// Client socket
-		if (revents & POLLIN) {
-			handleClientRead(fd);
+		return;
+	}
+	// CGI socket
+	std::map<int, Cgi*>::iterator cgiIt = _cgi.find(fd);
+	if (cgiIt != _cgi.end()){
+		if (_clients.find(cgiIt->second->getClientFd()) != _clients.end()) {
+			std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
+			if (revents & POLLERR) {
+				std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
+				handleCGIerror(fd);
+			} else if (revents & POLLHUP) {
+				std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+				if (revents & POLLIN) {
+					handleCGIread(fd);  // final read + cleanup
+				}
+				terminateCGI(cgiIt->second);
+			} else if (revents & POLLIN) {
+				std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
+				handleCGIread(fd);
+			} else if (revents & POLLOUT) {
+				std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
+				handleCGIwrite(fd);
+			}
+			return;
+		} else {
+			terminateCGI(cgiIt->second);
+			return;
 		}
-		if (revents & POLLOUT) {
+	}
+	// Client socket
+	if (_clients.find(fd) != _clients.end()) {
+		if (revents & POLLERR) {
+			std::cerr << "[DEBUG] Listening socket FD " << fd
+			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
+			disconnectClient(fd);
+		} else if (revents & POLLHUP) {
+			if (revents & POLLIN) { // half closed in case client is done sending and waiting for respose: shutdown(fd, SHUT_WR); recv(fd, ...);
+				handleClientRead(fd);
+			}
+			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			disconnectClient(fd);
+		} else if (revents & POLLIN) {
+			handleClientRead(fd);
+		} else if (revents & POLLOUT) {
 			handleClientWrite(fd);
 		}
-		if (revents & POLLERR) {
-			std::cerr << "ERROR: Listening socket FD " << fd
-			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
-			disconectClient(fd);
-		}
-		if (revents & POLLHUP) {
-			std::cout << "Client FD " << fd << " hung up" << std::endl;
-			disconectClient(fd);
-		}
+		return;
 	}
 }
 
-void Server::handleListenEvent(int indexOfLinstenSocket){
+void Server::handleListenEvent(int indexOfLinstenSocket) {
 
 	std::cout << "[DEBUG] Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
 
@@ -108,7 +134,6 @@ void Server::handleListenEvent(int indexOfLinstenSocket){
 		_clients[client_fd].ip = inet_ntoa(client_addr.sin_addr);
 		_clients[client_fd].port = ntohs(client_addr.sin_port);
 
-
 		std::cout << "[DEBUG] New connection accepted! Client FD: " << client_fd
 				  << "Timeout: " << _clients[client_fd].keepAliveTimeout
 				  << "Max Max Requests: " << _clients[client_fd].maxRequests
@@ -117,13 +142,125 @@ void Server::handleListenEvent(int indexOfLinstenSocket){
 		// Make client socket non-blocking
 		_clients[client_fd].socket.setNonBlocking();
 		std::cout << "[DEBUG] Making socket FD " << client_fd << " non-blocking" << std::endl;
-
 	}
 	else if (client_fd >= 0){
 		close(client_fd);
 	}
 }
-void Server::handleClientRead(int fd){
+
+void Server::handleCGIerror(int fd) {
+
+	Cgi* cgi = _cgi[fd];
+	int clientFd = cgi->getClientFd();
+	int inFd = cgi->getInFd();
+	int outFd = cgi->getOutFd();
+
+	if (fd == outFd) {
+
+		std::cerr << "[WARNING] CGI OutFd error" << std::endl;
+
+		if (_clients.find(clientFd) != _clients.end()) {
+			HttpResponse response (cgi->getRequest());
+			if(cgi->isFinished()){
+				std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
+				response.generateResponse(200, true, cgi->getResponseData());
+				_clients[clientFd].responseData = response.getResponse();
+			} else {
+				std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
+				response.generateResponse(500);
+				_clients[clientFd].responseData = response.getResponse();
+			}
+			_clients[clientFd].bytesSent = 0;
+			_clients[clientFd].state = SENDING_RESPONSE;
+		}
+
+		if(cgi->getPid() > 0){
+			cgi->terminate();
+		}
+		cgi->cleanup();
+
+		if(inFd >= 0) _cgi.erase(inFd);
+		if(outFd >= 0) _cgi.erase(outFd);
+
+		delete cgi;
+	} else if (fd == inFd) {
+
+		std::cerr << "[WARNING] CGI inFd error" << std::endl;
+
+		if(cgi->getRequest().getBody().size() != cgi->getBytesWrittenToCgi()) {
+
+			cgi->terminate();
+
+			if (_clients.find(clientFd) != _clients.end()){
+				HttpResponse resp(cgi->getRequest());
+				resp.generateResponse(500, false, "");
+				_clients[clientFd].responseData = resp.getResponse();
+				_clients[clientFd].bytesSent = 0;
+				_clients[clientFd].state = SENDING_RESPONSE;
+			}
+
+			cgi->cleanup();
+
+			if(inFd >= 0) _cgi.erase(inFd);
+			if(outFd >= 0) _cgi.erase(outFd);
+
+			delete cgi;
+		} else {
+
+			cgi->closeInFd();
+			_cgi.erase(inFd);
+		}
+	}
+}
+void Server::handleCGIread(int fd) {
+
+	Cgi* cgi = _cgi[fd];
+	CgiStatus status = cgi->handleReadFromCGI();
+
+	if(status == CGI_CONTINUE) return;
+
+	int clientFd = cgi->getClientFd();
+
+	if(status == CGI_READY){
+		HttpResponse response(cgi->getRequest());
+		response.generateResponse(200, true, cgi->getResponseData());
+		_clients[clientFd].responseData = response.getResponse();
+		std::cout << "[DEBUG] Switched client FD " << clientFd
+					<< " to POLLOUT mode after CGI complete" << std::endl;
+	}
+	else if(status == CGI_ERROR){
+		HttpResponse resonse(cgi->getRequest());
+		resonse.generateResponse(500);
+		std::cout << "[DEBUG] Switched client FD " << clientFd
+					<< " to POLLOUT mode after CGI complete" << std::endl;
+	}
+	_clients[clientFd].bytesSent = 0;
+	_clients[clientFd].state = SENDING_RESPONSE;
+
+
+	std::cout << "[Server] Erasing CGI FD " << fd << " from _cgi" << std::endl;
+
+	int inFd = cgi->getInFd();
+	int outFd = cgi->getOutFd();
+	if (inFd >= 0) _cgi.erase(inFd);
+	if (outFd >= 0) _cgi.erase(outFd);
+	delete cgi;
+}
+void Server::handleCGIwrite(int fd) {
+
+	Cgi* cgi = _cgi[fd];
+	CgiStatus status = cgi->handleWriteToCGI();
+
+	if(status == CGI_CONTINUE) return;
+
+	if(status == CGI_READY){
+		int inFd = cgi->getInFd();
+		cgi->closeInFd();
+		if (inFd >= 0) _cgi.erase(inFd);
+	}
+}
+
+void Server::handleClientRead(int fd) {
 
 	std::cout << "\n#######  HANDLE CLIENT READ DATA #######" << std::endl;
 
@@ -137,24 +274,24 @@ void Server::handleClientRead(int fd){
 			response before closing
 			3. Not an Error: This is normal behavior, not an error condition
 		*/
-		disconectClient(fd);
+		disconnectClient(fd);
 	}
 
 	if(_clients[fd].state == READING_REQUEST){
 
-		char buffer[BUFFER_SIZE];
-		std::memset(buffer, 0, BUFFER_SIZE);
-		int bytes = recv(fd, buffer, BUFFER_SIZE - 1, 0);
+		char buffer[BUFFER_SIZE_32];
+		std::memset(buffer, 0, BUFFER_SIZE_32);
+		int bytes = recv(fd, buffer, BUFFER_SIZE_32 - 1, 0);
 		std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << fd << std::endl;
 
 		if (bytes <= 0) {
 			if (bytes == 0) {
 				std::cout << "[DEBUG] Client FD " << fd << " disconnected" << std::endl;
-				disconectClient(fd);
+				disconnectClient(fd);
 			} else { // bytes < 0
 
 				std::cout << "[DEBUG] Error on FD " << fd << ": " << strerror(errno) << std::endl;
-				disconectClient(fd);
+				disconnectClient(fd);
 			}
 		}
 		else {
@@ -232,6 +369,19 @@ void Server::handleClientRead(int fd){
 				std::cout << "#################################\n" << std::endl;
 
 				//if cgi -> cgi
+				if (!isCGIrequest()) {
+					std::cout << "[DEBUG] Failed to start CGI" << std::endl;
+					HttpResponse resp(httpRequest);
+					resp.generateResponse(500);
+					_clients[fd].responseData = resp.getResponse();
+					_clients[fd].bytesSent = 0;
+					_clients[fd].state = SENDING_RESPONSE;
+					return;
+				} else {
+					handleCGI();
+					updateClientActivity(fd);
+					return;
+				}
 
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
@@ -246,10 +396,10 @@ void Server::handleClientRead(int fd){
 			}
 		}
 	}
-		std::cout << "#################################\n" << std::endl;
+	std::cout << "#################################\n" << std::endl;
 
 }
-void Server::handleClientWrite(int fd){
+void Server::handleClientWrite(int fd) {
 
 	if (_clients[fd].state == SENDING_RESPONSE){
 
@@ -258,8 +408,9 @@ void Server::handleClientWrite(int fd){
 		// Send remaining response data
 		const char* data = _clients[fd].responseData.c_str() + _clients[fd].bytesSent;
 		size_t remainingLean = _clients[fd].responseData.length() - _clients[fd].bytesSent;
+		size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
-		int bytes_sent = send(fd, data, remainingLean, 0);
+		int bytes_sent = send(fd, data, bytesToWrite, 0);
 		std::cout << "send() returned " << bytes_sent << " bytes to FD " << fd << std::endl;
 
 		if (bytes_sent > 0) {
@@ -276,7 +427,7 @@ void Server::handleClientWrite(int fd){
 
 				if(_clients[fd].shouldClose){
 					std::cout << "Complete response sent to FD " << fd << ". Closing connection." << std::endl;
-					disconectClient(fd);
+					disconnectClient(fd);
 					return;
 				}
 
@@ -294,12 +445,29 @@ void Server::handleClientWrite(int fd){
 
 			// Send failed, close connection
 			std::cout << "Send failed for FD " << fd << ". Closing connection." << std::endl;
-			disconectClient(fd);
+			disconnectClient(fd);
 		}
 	}
 }
 
-void Server::handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath){
+void Server::handleCGI() {
+
+	Cgi* cgi = new Cgi(_controller, httpRequest, _clients[fd], mappedPath, matchedLoc, cgiExt);
+	// Register CGI process
+	int inFd = cgi->getInFd();
+	int outFd = cgi->getOutFd();
+	if (inFd >= 0) _cgi[inFd] = cgi;
+	_cgi[outFd] = cgi;
+	_clients[fd].state = WAITING_CGI;
+
+	std::cout << "[DEBUG] Spawned CGI pid = " << cgi->getPid()
+			<< " inFd = " << inFd
+			<< " outFd = " << outFd
+			<< " for client FD = " << fd << std::endl;
+	std::cout << "clients state: " << _clients[fd].state << std::endl;
+}
+
+void Server::handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath) {
 
 	std::ifstream file(mappedPath.c_str());
 
@@ -358,14 +526,14 @@ void Server::handleGET(const HttpRequest& request, ClientInfo& client, std::stri
 	}
 */
 }
-void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath){
+void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath) {
 
 	HttpResponse response(request);
 
 	std::cout << "[DEBUG] UploadPath: " << mappedPath << std::endl;
 	PostHandler post(mappedPath);
 
-	std::string contentType = request.getContenType();
+	std::string contentType = request.getContentType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
 	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
@@ -476,7 +644,7 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, std::s
   */
 }
 
-bool Server::validateMethod(const HttpRequest& request, const LocationConfig*& location){
+bool Server::validateMethod(const HttpRequest& request, const LocationConfig*& location) {
 
 	bool methodAllowed = false;
 	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
@@ -493,7 +661,7 @@ bool Server::validateMethod(const HttpRequest& request, const LocationConfig*& l
 
 	return true;
 }
-std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation){
+std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation) {
 
 	std::string locationRoot = matchedLocation->root;
 	std::string locationPath = matchedLocation->path;
@@ -518,7 +686,7 @@ std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& m
 	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
 	return locationRoot + relativePath;
 }
-bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot){
+bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot) {
 
 	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
 		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
@@ -574,13 +742,11 @@ bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowe
 	return true;
 }
 
-void Server::disconectClient(short fd){
-
+void Server::disconnectClient(short fd) {
 	close(fd);
 	_clients.erase(fd);
 }
 int Server::isListeningSocket(int fd) const {
-
 	for (size_t i = 0; i < _listeningSockets.size(); i++)
 	{
 		if (_listeningSockets[i].getFd() == fd){
@@ -589,11 +755,11 @@ int Server::isListeningSocket(int fd) const {
 	}
 	return -1;
 }
-void Server::updateClientActivity(int fd){
+void Server::updateClientActivity(int fd) {
 
 	_clients[fd].lastActivity = time(NULL);
 }
-void Server::shutdown(){
+void Server::shutdown() {
 
 	//Close all of listening sockets
 	for (size_t i = 0; i < _listeningSockets.size(); i++)
@@ -610,6 +776,29 @@ void Server::shutdown(){
 	_clients.clear();
 
 	std::cout << "Server " << _configData.server_names[0] <<  " stopped" << std::endl;
+}
+void Server::terminateCGI(Cgi* cgi) {
+
+	cgi->terminate();
+	cgi->cleanup();
+	int inFd = cgi->getInFd();
+	int outFd = cgi->getOutFd();
+	if (inFd >= 0) _cgi.erase(inFd);
+	if (outFd >= 0) _cgi.erase(outFd);
+	delete cgi;
+}
+void Server::handleCGItimeout(Cgi* cgi) {
+
+	int clientFd = cgi->getClientFd();
+	//  Prepare 504 Gateway Timeout response
+	HttpResponse resp(cgi->getRequest());
+	resp.generateResponse(504, false, "");
+	if (_clients.find(clientFd) != _clients.end()) {
+		_clients[clientFd].responseData = resp.getResponse();
+		_clients[clientFd].state = SENDING_RESPONSE;
+	}
+	std::cout << "[CGI TIMEOUT] Response 504 sent to client FD = " << clientFd << std::endl;
+	terminateCGI(cgi);
 }
 const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
 std::map<int, ClientInfo>& Server::getClients() {return _clients;}

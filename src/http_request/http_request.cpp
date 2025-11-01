@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/21 17:21:26 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 21:57:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,18 @@ Critical HTTP parsing test scenarios
 */
 
 HttpRequest::HttpRequest()
-	: _requestLine(), _body(), _method(), _path(), _version(), _contentLength(),_headers(), _isValid(true){
+	: _requestLine(),
+	  _body(),
+	  _method(),
+	  _path(),
+	  _version(),
+	  _contentLength(),
+	  _headers(),
+	  _isValid(true){
 }
 HttpRequest::~HttpRequest(){}
 
-void HttpRequest::parseRequest(const std::string requestData){
+void HttpRequest::parseRequest(const std::string requestData) {
 
 	std::cout << "\n#######  HTTP PARSE REQUEST DATA #######" << std::endl;
 
@@ -43,7 +50,7 @@ void HttpRequest::parseRequest(const std::string requestData){
 
 	std::cout << "#################################\n" << std::endl;
 }
-void HttpRequest::ParsePartialRequest(const std::string requestData){
+void HttpRequest::ParsePartialRequest(const std::string requestData) {
 
 	std::cout << "\n#######  HTTP PARTIAL PARSE REQUEST DATA #######" << std::endl;
 
@@ -55,11 +62,9 @@ void HttpRequest::ParsePartialRequest(const std::string requestData){
 	if (!_isValid) return;
 
 	std::cout << "#################################\n" << std::endl;
-
 }
 
 void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
-
 
 	//STEP 1 -> Extract request line
 	size_t firstCRLF = rawData.find("\r\n");
@@ -83,13 +88,14 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		_body = rawData.substr(headerBodySeparator + 4);
 	}
 }
+
 Methods stringToEnum(const std::string& method) {
 	if (method == "GET") return GET;
 	if (method == "POST") return POST;
 	if (method == "DELETE") return DELETE;
 	throw std::invalid_argument("Unknown method");
 }
-void HttpRequest::parseRequestLine(){
+void HttpRequest::parseRequestLine() {
 
 	if (_requestLine.empty()) {
 		std::cout << " Error: Request line is empty" << std::endl;
@@ -122,8 +128,16 @@ void HttpRequest::parseRequestLine(){
 		return;
 	}
 	_methodEnum = stringToEnum(_method);
+
+	size_t queryPos = _path.find('?');
+	if (queryPos != std::string::npos) {
+		_query = _path.substr(queryPos + 1);  // "q=test"
+		_path = _path.substr(0, queryPos);   // "/cgi-bin/script.py"
+	} else {
+		_query = "";
+	}
 }
-void HttpRequest::parseHeaders(){
+void HttpRequest::parseHeaders() {
 
 /*
 	Todo:
@@ -174,7 +188,7 @@ void HttpRequest::parseHeaders(){
 		_contentLength = 0;  // No Content-Length header
 	}
 }
-void HttpRequest::parseBody(){
+void HttpRequest::parseBody() {
 
 	if (_body.empty()) {
 		return;
@@ -210,6 +224,7 @@ void HttpRequest::setContentLength(unsigned long contentLength){_contentLength =
 std::string HttpRequest::getMethod() const { return _method;}
 Methods HttpRequest::getMethodEnum() const {return _methodEnum;}
 std::string HttpRequest::getPath() const {return _path;}
+std::string HttpRequest::getQuery() const { return _query; }
 std::string HttpRequest::getVersion() const {return _version;}
 unsigned long HttpRequest::getContentLength() const {return _contentLength;}
 const std::map<std::string, std::string>& HttpRequest::getHeaders() const {return _headers;}
@@ -217,15 +232,14 @@ const std::map<std::string, std::string>& HttpRequest::getHeaders() const {retur
 bool HttpRequest::getStatus() const {return _isValid;}
 
 // content type
-// void HttpRequest::setContentType(std::string ContentType){}
-std::string HttpRequest::getContenType() const {
+// void HttpRequest::setContentType(std::string ContentType) {}
+std::string HttpRequest::getContentType() const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find("content-type");
 	if (it != _headers.end())
 		return it->second;
 	else
 		return "";
 }
-
 std::string HttpRequest::getConnectionType() const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find("connection");
 	if (it != _headers.end())

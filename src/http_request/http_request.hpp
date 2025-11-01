@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/21 17:13:12 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 20:52:46 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,15 +37,12 @@ class HttpRequest{
 		void ParsePartialRequest(const std::string requestData);
 
 		void extractLineHeaderBodyLen(const std::string rawData);
+
+		//parse
 		void parseRequestLine();
 		void parseBody();
 		void parseHeaders();
-
-		//parse
-		void parseMethod();
-		void parsePath();
 		void parseQuery();
-		void parseVersion();
 
 		//extract (get, set)
 		std::string getRequstLine() const;
@@ -62,8 +59,9 @@ class HttpRequest{
 		//parse (get, set)
 		std::string getMethod() const;
 		std::string getPath() const;
+		std::string getQuery() const;
 		std::string getVersion() const;
-		std::string getContenType() const;
+		std::string getContentType() const;
 		std::string getConnectionType() const;
 
 		const std::map<std::string, std::string>& getHeaders() const;
@@ -85,13 +83,14 @@ class HttpRequest{
 		std::string		_method;
 		Methods			_methodEnum;
 		std::string		_path;
+		std::string		_query;
 		std::string		_version;
 		unsigned long	_contentLength;
 
 		//headers
 		std::map<std::string, std::string>	_headers;
 		// std::string query;
-		bool _isValid;
+		bool	_isValid;
 };
 #endif
 

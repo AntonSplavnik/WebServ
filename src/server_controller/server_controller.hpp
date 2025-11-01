@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 16:21:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 19:54:42 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 #include "server.hpp"
 #include "config.hpp"
+#include "cgi.hpp"
 
 class ServerController{
 
@@ -22,24 +23,28 @@ class ServerController{
 		ServerController(Config& config);
 		~ServerController();
 
-		void addServers();
 		void run();
+		void addKilledPid(pid_t pid);
 
 	private:
-
 		void stop();
-		Server* findServerForFd(int fd);
+		void addServers();
 		void initListeningSockets();
 		void rebuildPollFds();
-		void checkClientTimeouts(Server& server);
+		Server* findServerForFd(int fd);
 		bool isClientTimedOut(std::map<int, ClientInfo>& clients, int fd);
+		void checkClientTimeouts(Server& server);
+		bool isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd);
+		void checkCgiTimeouts(Server& server);
+		void reapZombieProcesses();
 
-		std::vector<Server*> _servers;
-		std::vector<struct pollfd> _pollFds;
-		std::vector<ConfigData> _configs;
+		std::vector<Server*>		_servers;
+		std::vector<struct pollfd>	_pollFds;
+		std::vector<ConfigData>		_configs;
+		std::vector<int>			_killedPids;
 
-		size_t _listeningSocketCount;
-		bool _running;
+		size_t						_listeningSocketCount;
+		bool						_running;
 };
 
 #endif

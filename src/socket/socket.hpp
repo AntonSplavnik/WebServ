@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/29 19:24:24 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 19:28:26 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,13 +22,7 @@
 #include <netinet/in.h>
 #include <fcntl.h>
 
-#define PORT 8080
-// #define BUFFER_SIZE 8192    // 8 KB - good balance
-// #define BUFFER_SIZE 16384   // 16 KB - faster
-#define BUFFER_SIZE 65536   // 64 KB - very fast
-#define MAX_CON_BACKLOG 10
-
-
+// #define MAX_CON_BACKLOG 10  <==== ????
 
 class Socket{
 
