@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/29 00:35:12 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 15:59:40 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@ extern volatile sig_atomic_t g_shutdown;
 ServerController::ServerController(Config& config)
 	:_configs(config.getServers()), _listeningSocketCount(), _running(true){}
 ServerController::~ServerController() {
-
 	stop();
 }
 

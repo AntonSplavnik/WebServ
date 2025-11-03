@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/29 00:11:51 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 14:41:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,20 @@
 
 // #define MAX_CGI_OUTPUT 10000000
 
-Cgi::Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
-        int clientFd, const LocationConfig* loc, std::string cgiExt, ServerController& controller)
-        : _pid(-1), _outFd(-1), _finished(false), _matchedLoc(loc), _ext(cgiExt),
-        _inFd(-1), _scriptPath(path), _request(req), _clients(clients), _clientFd(clientFd),
-        _startTime(time(NULL)), _bytesWrittenToCgi(0), _controller(controller){}
+Cgi::Cgi(ServerController& controller, const HttpRequest &req, const ClientInfo& clientInfo,
+		const std::string &path, const LocationConfig* loc, std::string cgiExt)
+        : _pid(-1),
+          _outFd(-1),
+          _finished(false),
+          _matchedLoc(loc), // ??
+          _ext(cgiExt),
+          _inFd(-1),
+          _controller(controller),
+          _request(req),
+          _client(clientInfo),
+          _scriptPath(path),
+          _startTime(time(NULL)),
+          _bytesWrittenToCgi(0) {}
 Cgi::~Cgi() {
     cleanup();
 }
@@ -41,7 +50,6 @@ bool Cgi::startCGI() {
     //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
     int inpipe[2];
     int outpipe[2];
-
 
     if (pipe(inpipe) < 0 || pipe(outpipe) < 0) {
         perror("pipe");
@@ -155,7 +163,7 @@ void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
     std::string pathInfo = ""; // TODO: extract from request path
     std::string pathTranslated = ""; // TODO: map to filesystem
     std::string reqPath = request.getNormalizedReqPath();
-    std::string scriptName = request.getMappedPath();
+    // std::string scriptName = request.getMappedPath();            <=====================this is definately wrong
 
     std::string urlPath = request.getNormalizedReqPath();
 	std::string locPath = _matchedLoc ? _matchedLoc->path : "";
@@ -270,13 +278,11 @@ void Cgi::closeOutFd() {
     _outFd = -1;
 }
 
-void Cgi::setMatchedLocation(const LocationConfig* loc) { _matchedLoc = loc; }
-
 int Cgi::getInFd() const { return _inFd; }
 int Cgi::getOutFd() const { return _outFd; }
 int Cgi::getPid() const { return _pid; }
-int Cgi::getClientFd() const { return _clientFd; };
-const LocationConfig* Cgi::getMatchedLocation() const { return _matchedLoc; }
+int Cgi::getClientFd() const { return _client.socket.getFd(); };
+
 time_t Cgi::getStartTime() const { return _startTime; }
 HttpRequest Cgi::getRequest() const { return _request; }
 std::string Cgi::getResponseData() const { return _resonseData; }

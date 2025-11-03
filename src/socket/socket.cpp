@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:46 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/11 14:47:06 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 19:30:31 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ void Socket::createCustom(int domain, int type, int protocol){
 
 	_fd = socket(domain, type, protocol);
 	if(_fd < 0)
-		std::cout << "socket creation error" << std::endl;
+		std::cout << "[DEBUG] socket creation error" << std::endl;
 
 	// _is_created = true;
 }
@@ -31,7 +31,7 @@ void Socket::createDefault(){
 
 	_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(_fd < 0)
-		std::cout << "socket creation error" << std::endl;
+		std::cout << "[DEBUG] socket creation error" << std::endl;
 
 	// _is_created = true;
 }
@@ -41,7 +41,6 @@ void Socket::setReuseAddr(bool enable){
 	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
 	std::cout << "Set SO_REUSEADDR option on FD " << _fd << std::endl;
 }
-
 
 void Socket::binding(int port){
 
@@ -96,7 +95,6 @@ void Socket::closing(short fd){
 		// _is_created = false;
 	}
 }
-
 
 int Socket::getFd() const {
 

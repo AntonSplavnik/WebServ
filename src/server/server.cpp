@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/28 23:42:51 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/01 19:57:25 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,8 @@
 #include <signal.h>
 
 Server::Server(const ConfigData& config, ServerController& controller)
-	:_configData(config), _controller(controller) {
+	:_configData(config),
+	_controller(controller){
 
 	_listeningSockets.clear();
 	initListeningSockets();
@@ -362,16 +363,17 @@ void Server::handleClientRead(int fd) {
 				}
 
 				std::string relative = httpRequest.getNormalizedReqPath().substr(matchedLoc->path.size());
-				std::string mapped = joinPath(matchedLoc->root, relative);
-				httpRequest.setMappedPath(mapped);
+				std::string mappedPath = joinPath(matchedLoc->root, relative);
+
 
 				std::cout << "[INFO] Matched location for " << httpRequest.getNormalizedReqPath()
 						  << " → root=" << matchedLoc->root << std::endl;
-				std::cout << "[INFO] Mapped path: " << httpRequest.getMappedPath() << std::endl;
+				std::cout << "[INFO] Mapped path: " << mappedPath << std::endl;
 
 				bool isCgi = false;
 				std::string normalizedReqPath = httpRequest.getNormalizedReqPath();
 				std::string cgiExt;
+
 				std::vector<std::string>::const_iterator it = matchedLoc->cgi_ext.begin();
 				for (; it != matchedLoc->cgi_ext.end(); ++it) {
 					if (normalizedReqPath.size() >= it->size() &&
@@ -386,9 +388,6 @@ void Server::handleClientRead(int fd) {
 				{
 					std::cout << "[CGI] Detected CGI request for path: " << httpRequest.getNormalizedReqPath() << std::endl;
 
-					// Step 2: Build script path using location root + request path
-					std::string scriptPath = httpRequest.getMappedPath();
-
 					// If location defines explicit cgi_path (like /usr/bin/python), use it
 					if (!matchedLoc->cgi_path.empty()) {
 						std::cout << "[CGI] Using cgi_path(s): ";
@@ -399,9 +398,8 @@ void Server::handleClientRead(int fd) {
 						std::cout << std::endl;
 					}
 
-
-					std::cout << "[CGI] Final script path: " << scriptPath << std::endl;
-					Cgi *cgi = new Cgi(scriptPath, httpRequest, _clients, fd, matchedLoc, cgiExt, _controller);
+					std::cout << "[CGI] Final script path: " << mappedPath << std::endl;
+					Cgi *cgi = new Cgi(_controller, httpRequest, _clients[fd], mappedPath, matchedLoc, cgiExt);
 					if (!cgi->startCGI()) {
 						std::cout << "[DEBUG] Failed to start CGI" << std::endl;
 						HttpResponse resp(httpRequest);
@@ -431,9 +429,9 @@ void Server::handleClientRead(int fd) {
 
 				Methods method = httpRequest.getMethodEnum();
 				switch (method){
-					case GET: handleGET(httpRequest, _clients[fd], matchedLoc); break;
-					case POST: handlePOST(httpRequest, _clients[fd], matchedLoc); break;
-					case DELETE: handleDELETE(httpRequest, _clients[fd], matchedLoc); break;
+					case GET: handleGET(httpRequest, _clients[fd], mappedPath); break;
+					case POST: handlePOST(httpRequest, _clients[fd], mappedPath); break;
+					case DELETE: handleDELETE(httpRequest, _clients[fd], mappedPath); break;
 				}
 
 				_clients[fd].bytesSent = 0;
@@ -651,7 +649,6 @@ int Server::isListeningSocket(int fd) const {
 	return -1;
 }
 void Server::disconnectClient(short fd) {
-
 	close(fd);
 	_clients.erase(fd);
 }

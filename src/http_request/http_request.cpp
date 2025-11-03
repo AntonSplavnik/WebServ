@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/23 12:46:34 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 16:33:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,6 @@ HttpRequest::HttpRequest()
    _isValid(true),
    _contentLength(0)
 {}
-
 HttpRequest::~HttpRequest(){}
 
 /*
@@ -98,7 +97,6 @@ void HttpRequest::parseRequest(const std::string requestData){
 	parseBody();
 	if (!_isValid) return;
 }
-
 void HttpRequest::partialParseRequest(const std::string requestData){
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
@@ -132,7 +130,6 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		_body = rawData.substr(headerBodySeparator + 4);
 	}
 }
-
 Methods stringToEnum(const std::string& method) {
 	if (method == "GET") return GET;
 	if (method == "POST") return POST;
@@ -177,7 +174,6 @@ void HttpRequest::parseRequestLine(){
 	normalizeReqPath();
 
 }
-
 void HttpRequest::parseHeaders(){
 
 /*
@@ -229,7 +225,6 @@ void HttpRequest::parseHeaders(){
 		_contentLength = 0;  // No Content-Length header
 	}
 }
-
 void HttpRequest::parseBody(){
 
 	if (_body.empty()) {
@@ -256,7 +251,6 @@ std::string HttpRequest::getRequstLine() const {return _requestLine;}
 std::string HttpRequest::getBody() const {return _body;}
 std::string HttpRequest::getRawHeaders() const {return _rawHeaders;}
 unsigned long HttpRequest::getBodyLength() const {return _body.length();}
-
 
 //parse
 void HttpRequest::setMethod(std::string method) {_method = method;}
@@ -290,7 +284,6 @@ void HttpRequest::extractQueryString(){
 	}
 	std::cout << "_queryString: " << _queryString << std::endl;
 }
-
 void HttpRequest::normalizeReqPath() {
     // 1️⃣ Remove everything after '?'
     std::string::size_type qpos = _requestedPath.find('?');
@@ -328,4 +321,3 @@ void HttpRequest::normalizeReqPath() {
 // 	else
 // 		return "Keep-alive";
 // }
-

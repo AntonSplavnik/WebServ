@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/25 21:19:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/29 23:58:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ class HttpRequest{
 		void setBody(std::string body);
 		void setRawHeaders(std::string rawHeaders);
 		void setContentLength(unsigned long contentLength);
-        void setMappedPath(const std::string& mapped) { _mappedPath = mapped; }
+        // void setMappedPath(const std::string& mapped) { _mappedPath = mapped; }
 
 		//parse (get, set)
 		std::string getMethod() const;
@@ -67,7 +67,7 @@ class HttpRequest{
 		std::string getContentType() const;
 
         std::string getNormalizedReqPath() const { return _normalizedReqPath; }
-        std::string getMappedPath() const { return _mappedPath; }
+        // std::string getMappedPath() const { return _mappedPath; }
         std::string getQueryString() const { return _queryString; }
 		const std::map<std::string, std::string>& getHeaders() const;
 

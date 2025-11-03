@@ -15,8 +15,17 @@ enum ClientState {
 // Structure to track client connection info
 struct ClientInfo {
 
-	ClientInfo() : socket(), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
-	ClientInfo(int fd) : socket(fd), state(READING_REQUEST), bytesSent(0), shouldClose(false) {}
+	ClientInfo()
+		: socket(),
+		state(READING_REQUEST),
+		bytesSent(0),
+		shouldClose(false) {}
+
+	ClientInfo(int fd)
+		: socket(fd),
+		  state(READING_REQUEST),
+		  bytesSent(0),
+		  shouldClose(false) {}
 
 	Socket socket;
 	ClientState state;

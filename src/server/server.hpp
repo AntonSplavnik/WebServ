@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/28 23:22:44 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/01 19:57:30 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ class Server {
 		const std::vector<Socket>& getListeningSockets() const;
 		std::map<int, ClientInfo>& getClients();
 		std::map<int, Cgi*>& getCGI();
-
+		void testFunction();
 	private:
 		void initListeningSockets();
 

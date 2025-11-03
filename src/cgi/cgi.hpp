@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/28 23:42:16 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/10/30 13:18:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,8 +36,8 @@ enum CgiStatus{
 
 class Cgi {
 	public:
-		Cgi(const std::string &path, const HttpRequest &req, std::map<int, ClientInfo> &clients,
-			int clientFd, const LocationConfig* loc, std::string cgiExt, ServerController& controller);
+		Cgi(ServerController& controller, const HttpRequest &req, const ClientInfo& clientInfo,
+			const std::string &path, const LocationConfig* loc, std::string cgiExt);
 		~Cgi();
 
 		bool startCGI();
@@ -50,17 +50,14 @@ class Cgi {
 		void closeOutFd();
 		void terminate();
 
-		void setMatchedLocation(const LocationConfig* loc);
-
 		int getInFd() const;
 		int getOutFd() const;
 		int getPid() const;
 		int getClientFd() const;
-		time_t getStartTime() const;
-		std::string getResponseData() const;
 		HttpRequest getRequest() const;
+		std::string getResponseData() const;
+		time_t getStartTime() const;
 		size_t getBytesWrittenToCgi() const;
-		const LocationConfig* getMatchedLocation() const;
 		bool isFinished() const;
 
 	private:
@@ -73,11 +70,10 @@ class Cgi {
 		pid_t						_pid;
 		int							_inFd;
 		int							_outFd;
-		int							_clientFd;
 		bool						_finished;
 
 		HttpRequest					_request;
-		std::map<int, ClientInfo>&	_clients;
+		const ClientInfo&			_client;
 		const LocationConfig*		_matchedLoc;
 		ServerController&			_controller;
 
