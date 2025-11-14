@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:46 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 19:32:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/05 21:02:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ void Socket::binding(int port) {
 		_fd = -1;
 		return;
 	}
+	_port = port;
 	std::cout << "[DEBUG] Bound socket FD " << _fd << " to port " << address.sin_port << std::endl;
 }
 
@@ -76,11 +77,11 @@ int Socket::accepting(sockaddr_in& client_addr) {
 	return client_fd;
 }
 
-void Socket::setNonBlocking(void) {
+void Socket::setNonBlocking(int fd) {
 
-	std::cout << "[DEBUG] Making socket FD " << _fd << " non-blocking" << std::endl;
-	int flags = fcntl(_fd, F_GETFL, 0);
-	fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
+	std::cout << "[DEBUG] Making socket FD " << fd << " non-blocking" << std::endl;
+	int flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
 void Socket::closing(short fd) {

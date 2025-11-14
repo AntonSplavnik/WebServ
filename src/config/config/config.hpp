@@ -6,6 +6,7 @@
 
 #define SERVER_SOFTWARE_NAME "Webserv42/1.0"
 const int MAX_BACKLOG = 1024;
+const size_t MAX_CLIENTS = 1024;  // Global connection limit
 const size_t MAX_CLIENT_BODY_SIZE = 1024 * 1024 * 1024; // 1GB
 
 // Valid CGI extensions
@@ -31,7 +32,7 @@ static const size_t LOCATION_DIRECTIVES_COUNT = sizeof(LOCATION_DIRECTIVES) / si
 
 //Valid server directives (used in config.cpp)
 static const char *SERVER_DIRECTIVES[] = {
-	"location", "listen", "server_name", "backlog", "max_clients",
+	"location", "listen", "server_name", "backlog",
 	"access_log", "error_log", "autoindex", "index", "root",
 	"allow_methods", "error_page", "cgi_ext", "cgi_path",
 	"client_max_body_size", "keepalive_timeout", "keepalive_max_requests"
@@ -94,7 +95,6 @@ struct ConfigData
 
 	// Network configuration
 	int backlog; // listen_backlog;
-	int max_clients;
 
 	// Keep-Alive configuration
 	int keepalive_timeout; // seconds
@@ -172,8 +172,6 @@ private:
 	void parseListenDirective(ConfigData &config, const std::string &value);
 
 	void parseBacklogDirective(ConfigData &config, const std::string &value);
-
-	void parseMaxClientsDirective(ConfigData &config, const std::string &value);
 
 	void parseKeepaliveTimeoutDirective(ConfigData &config, const std::string &value);
 

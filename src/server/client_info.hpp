@@ -29,7 +29,7 @@ struct ClientInfo {
 		  shouldClose(false) {}
 
 	//connection data
-	Socket		socket;
+	int			fd;
 	std::string	ip;
 	int			port;
 

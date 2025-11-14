@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 23:17:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/05 17:49:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@
 #include "post_handler.hpp"
 #include "cgi.hpp"
 
-class ServerController;
+class EventLoop;
 
 #define BUFFER_SIZE_4 4096    // 4 KB
 // #define BUFFER_SIZE_8 8192    // 8 KB
@@ -44,7 +44,7 @@ class ServerController;
 class Server {
 
 	public:
-		Server(const ConfigData& config, ServerController& controller);
+		Server(const ConfigData& config, EventLoop& controller);
 		~Server();
 
 		void handleEvent(int fd, short revents);
@@ -91,7 +91,7 @@ class Server {
 		std::map<int, ClientInfo>	_clients;
 		std::map<int, Cgi*>			_cgi;
 		const ConfigData&			_configData;
-		ServerController&			_controller;
+		EventLoop&					_controller;
 };
 
 #endif

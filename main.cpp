@@ -6,14 +6,13 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 14:23:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/14 21:25:02 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/07 15:07:59 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "src/server/server.hpp"
-#include "src/config/config.hpp"
-#include "src/exceptions/config_exceptions.hpp"
-#include "server_controller.hpp"
+#include "src/event_loop/event_loop.hpp"
+#include "src/config/config/config.hpp"
+#include "src/config/config_exceptions/config_exceptions.hpp"
 #include <iostream>
 #include <string>
 #include <csignal>
@@ -41,8 +40,8 @@ int main(int argc, char *argv[]){
 		Config config;
 		config.parseConfig(argv[1]);
 		std::cout << "Config file loaded successfully" << std::endl;
-		
-		ServerController controller(config);
+
+		EventLoop controller(config);
 		controller.run();
 	}
 	catch(const std::exception& e){

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/31 14:10:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/07 16:38:50 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,9 +24,9 @@
 #include <algorithm>
 #include <signal.h>
 
-// #define MAX_CGI_OUTPUT 10000000
+#define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 
-Cgi::Cgi(ServerController& controller, const HttpRequest& req, const ClientInfo& clientInfo,
+Cgi::Cgi(EventLoop& controller, const HttpRequest& req, const ClientInfo& clientInfo,
 		ConfigData& congig, const LocationConfig* loc, std::string& path, std::string cgiExt)
         : _pid(-1),
           _inFd(-1),
@@ -73,6 +73,22 @@ bool Cgi::startCGI() {
 
         dup2(outpipe[1], STDOUT_FILENO);
         close(outpipe[0]);
+
+        /*
+            - RLIMIT_AS limits the total address space (virtual memory) the process can allocate
+            - If the CGI tries to allocate more, malloc/new will fail and the script will crash (not your
+            server)
+            - The child exits with error → parent detects it via POLLHUP/POLLERR → returns 500 to client
+        */
+        // Limit memory usage BEFORE execution
+        struct rlimit mem_limit;
+        mem_limit.rlim_cur = 50 * 1024 * 1024;
+        mem_limit.rlim_max = 100 * 1024 * 1024;
+
+        if (setrlimit(RLIMIT_AS, &mem_limit) != 0) {
+            perror("setrlimit");
+            _exit(126);
+        }
 
         if (!chdirToScriptDir()) {
             _exit(126);  // non-zero => parent will treat as 500

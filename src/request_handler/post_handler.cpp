@@ -6,12 +6,13 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 20:23:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/09 12:51:47 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "post_handler.hpp"
-#include "server.hpp"
+#include "http_request.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -42,21 +43,17 @@ bool PostHandler::saveRawContent(const std::string& filePath, const std::string&
     }
 }
 
-void PostHandler::handleFile(const HttpRequest& request, ClientInfo& client, const std::string& contentType) {
+int PostHandler::handleFile(const HttpRequest& request, const std::string& contentType) {
     std::string extension = getExtensionFromContentType(contentType);
 
-    std::string filename = generateFilename(extension);
-    std::string filePath = _uploadPath + filename;
+    std::string fileName = generateFilename(extension);
+    std::string filePath = _uploadPath + fileName;
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     if (saveRawContent(filePath, request.getBody())) {
-        HttpResponse response(request);
-        response.generateResponse(200);
-        client.responseData = response.getResponse();
+        return 200;
     } else {
-        HttpResponse response(request);
-        response.generateResponse(500);
-        client.responseData = response.getResponse();
+        return 500;
     }
 }
 
@@ -64,16 +61,15 @@ std::string PostHandler::generateFilename(const std::string& extension) {
     static int counter = 0;
     counter++;
 
-    std::ostringstream filename;
-    filename << "file_" << time(0) << "_" << counter;
+    std::ostringstream fileName;
+    fileName << "file_" << time(0) << "_" << counter;
 
     if (!extension.empty()) {
-        filename << "." << extension;
+        fileName << "." << extension;
     }
 
-    return filename.str();
+    return fileName.str();
 }
-
 std::string PostHandler::getExtensionFromContentType(const std::string& contentType) {
     if (contentType.find("text/html") != std::string::npos) {
         return "html";
@@ -115,7 +111,6 @@ std::string PostHandler::getExtensionFromContentType(const std::string& contentT
         return "unknown";
     }
 }
-
 bool PostHandler::isSupportedContentType(const std::string& contentType)
 {
 		return (contentType.find("text/plain") != std::string::npos ||
@@ -128,48 +123,43 @@ bool PostHandler::isSupportedContentType(const std::string& contentType)
 				contentType.find("application/octet-stream") != std::string::npos);
 }
 
-void PostHandler::handleMultipart(const HttpRequest& request, ClientInfo& client) {
+int PostHandler::handleMultipart(const HttpRequest& request) {
+    /*
+        POST /upload HTTP/1.1
+        Host: localhost:8080
+        Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+        Content-Length: 1234
 
-	/*
-		POST /upload HTTP/1.1
-		Host: localhost:8080
-		Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-		Content-Length: 1234
+        ------WebKitFormBoundary7MA4YWxkTrZu0gW
+        Content-Disposition: form-data; name="username"
 
-		------WebKitFormBoundary7MA4YWxkTrZu0gW
-		Content-Disposition: form-data; name="username"
+        john_doe
+        ------WebKitFormBoundary7MA4YWxkTrZu0gW
+        Content-Disposition: form-data; name="email"
 
-		john_doe
-		------WebKitFormBoundary7MA4YWxkTrZu0gW
-		Content-Disposition: form-data; name="email"
+        john@example.com
+        ------WebKitFormBoundary7MA4YWxkTrZu0gW
+        Content-Disposition: form-data; name="avatar"; filename="photo.jpg"
+        Content-Type: image/jpeg
 
-		john@example.com
-		------WebKitFormBoundary7MA4YWxkTrZu0gW
-		Content-Disposition: form-data; name="avatar"; filename="photo.jpg"
-		Content-Type: image/jpeg
+        [BINARY DATA OF IMAGE]
+        ------WebKitFormBoundary7MA4YWxkTrZu0gW
+        Content-Disposition: form-data; name="document"; filename="resume.pdf"
+        Content-Type: application/pdf
 
-		[BINARY DATA OF IMAGE]
-		------WebKitFormBoundary7MA4YWxkTrZu0gW
-		Content-Disposition: form-data; name="document"; filename="resume.pdf"
-		Content-Type: application/pdf
+        [BINARY DATA OF PDF]
+        ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
-		[BINARY DATA OF PDF]
-		------WebKitFormBoundary7MA4YWxkTrZu0gW--
+    */
 
-	*/
+    std::string contentType = request.getContentType();
+    std::string requestBody = request.getBody();
 
-	std::string contentType = request.getContentType();
-	std::string requestBody = request.getBody();
-
-	std::string boundary = extractBoundary(contentType);
-	std::vector<MultipartPart> parts = parseMultipartData(requestBody, boundary);
-	processMultipartParts(parts, request, client);
-
-	HttpResponse response(request);
-	response.generateResponse(200);
-	client.responseData = response.getResponse();
+    std::string boundary = extractBoundary(contentType);
+    std::vector<MultipartPart> parts = parseMultipartData(requestBody, boundary);
+    int statusCode = processMultipartParts(parts);
+    return statusCode;
 }
-
 std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& body, const std::string& boundary) {
 	std::vector<MultipartPart> parts;
 
@@ -202,7 +192,6 @@ std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& bo
     }
     return parts;
 }
-
 MultipartPart PostHandler::parseMultipartPart(const std::string& partData) {
 	MultipartPart part;
 
@@ -231,8 +220,8 @@ MultipartPart PostHandler::parseMultipartPart(const std::string& partData) {
         }
 
 		if (headerLine.find("Content-Disposition:") == 0) {
-		// Extraire name et filename
-			parseContentDisposition(headerLine, part.name, part.filename);
+		// Extraire name et fileName
+			parseContentDisposition(headerLine, part.name, part.fileName);
 		}
 		else if (headerLine.find("Content-Type:") == 0) {
             // Extraire content type
@@ -242,30 +231,28 @@ MultipartPart PostHandler::parseMultipartPart(const std::string& partData) {
 	part.content = content;
     return part;
 }
+void PostHandler::parseContentDisposition(const std::string& headerLine, std::string& name, std::string& fileName) {
+    // Exemple: Content-Disposition: form-data; name="avatar"; filename="photo.jpg"
 
-void PostHandler::parseContentDisposition(const std::string& headerLine, std::string& name, std::string& filename) {
-	// Exemple: Content-Disposition: form-data; name="avatar"; filename="photo.jpg"
+    size_t namePos = headerLine.find("name=\"");
+    if (namePos != std::string::npos) {
+        namePos += 6; // Longueur de "name=\""
+        size_t nameEnd = headerLine.find("\"", namePos);
+        if (nameEnd != std::string::npos) {
+            name = headerLine.substr(namePos, nameEnd - namePos);
+        }
+    }
 
-	size_t namePos = headerLine.find("name=\"");
-	if (namePos != std::string::npos) {
-		namePos += 6; // Longueur de "name=\""
-		size_t nameEnd = headerLine.find("\"", namePos);
-		if (nameEnd != std::string::npos) {
-			name = headerLine.substr(namePos, nameEnd - namePos);
-		}
-	}
-
-	// Chercher filename="..." (optionnel)
-	size_t filenamePos = headerLine.find("filename=\"");
-	if (filenamePos != std::string::npos) {
-		filenamePos += 10; // Longueur de "filename=\""
-		size_t filenameEnd = headerLine.find("\"", filenamePos);
-		if (filenameEnd != std::string::npos) {
-			filename = headerLine.substr(filenamePos, filenameEnd - filenamePos);
-		}
+    // Chercher fileName="..." (optionnel)
+    size_t filenamePos = headerLine.find("filename=\"");
+    if (filenamePos != std::string::npos) {
+        filenamePos += 10; // Longueur de "filename=\""
+        size_t filenameEnd = headerLine.find("\"", filenamePos);
+        if (filenameEnd != std::string::npos) {
+            fileName = headerLine.substr(filenamePos, filenameEnd - filenamePos);
+        }
     }
 }
-
 std::string PostHandler::extractContentTypeFromHeader(const std::string& headerLine) {
     // Exemple: Content-Type: image/jpeg
     size_t colonPos = headerLine.find(":");
@@ -280,41 +267,44 @@ std::string PostHandler::extractContentTypeFromHeader(const std::string& headerL
     }
     return "";
 }
-
-void PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts, const HttpRequest& request, ClientInfo& client) {
+int PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts) {
 
     std::string uploadDir = _uploadPath;
     std::cout << "[DEBUG] Upload directory: '" << uploadDir << "'" << std::endl;
-
-    // Create folder if doesnt existe
-    system(("mkdir -p " + uploadDir).c_str());
 
     // Save every part
     for (size_t i = 0; i < parts.size(); i++) {
         const MultipartPart& part = parts[i];
 
         std::cout << "[DEBUG] Part " << i << ": name='" << part.name
-                  << "', filename='" << part.filename
-                  << "', contentType='" << part.contentType
-                  << "', content size=" << part.content.size() << " bytes" << std::endl;
+                << "', fileName='" << part.fileName
+                << "', contentType='" << part.contentType
+                << "', content size=" << part.content.size() << " bytes" << std::endl;
 
-        if (!part.filename.empty()) {
-            std::string filePath = uploadDir + part.filename;
+        if (!part.fileName.empty()) {
+
+            std::string safeFilename = sanitizeFilename(part.fileName);
+
+            if (safeFilename.empty()) {
+                std::cout << "[SECURITY ERROR] Invalid filename rejected: " << part.fileName << std::endl;
+                return 400;
+            }
+
+            std::string filePath = uploadDir + safeFilename;
 
             if (saveFileFromMultipart(filePath, part.content)) {
-                std::cout << "File saved: " << part.filename
-                         << " (" << part.content.size() << " bytes)" << std::endl;
+                std::cout << "[DEBUG]File saved: " << part.fileName
+                        << " (" << part.content.size() << " bytes)" << std::endl;
             } else {
-                std::cout << "ERROR: Failed to save file: " << part.filename << std::endl;
+                std::cout << "[ERROR]: Failed to save file: " << part.fileName << std::endl;
+                return 500;
             }
         } else {
-            std::cout << "Form field: " << part.name << " = " << part.content << std::endl;
+            std::cout << "[DEBUG] Form field: " << part.name << " = " << part.content << std::endl;
             saveFormFieldToLog(part.name, part.content);
         }
     }
-    HttpResponse response(request);
-    response.generateResponse(200);
-    client.responseData = response.getResponse();
+    return 200;
 }
 
 bool PostHandler::saveFileFromMultipart(const std::string& filePath, const std::string& content) {
@@ -329,7 +319,12 @@ bool PostHandler::saveFileFromMultipart(const std::string& filePath, const std::
 }
 
 void PostHandler::saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue) {
-    std::string logFile = _uploadPath + "form_data.log";
+
+    std::string logFile = _uploadPath;
+    if (!logFile.empty() && logFile[logFile.size() - 1] != '/') {
+        logFile += '/';
+    }
+    logFile += "form_data.log";
 
     std::ofstream file(logFile.c_str(), std::ios::app);
     if (file.is_open()) {
@@ -345,4 +340,44 @@ std::string PostHandler::extractBoundary(const std::string& contentType) {
 		boundary = "--" + contentType.substr(boundaryPos + 9);
 	}
 	return boundary;
+}
+
+std::string PostHandler::sanitizeFilename(const std::string& filename) {
+    if (filename.empty()) {
+        return "";  // Signal invalid
+    }
+
+    // Extract basename
+    size_t lastSlash = filename.find_last_of("/\\");
+    std::string basename = (lastSlash != std::string::npos)
+        ? filename.substr(lastSlash + 1)
+        : filename;
+
+    // SECURITY: Detect path traversal attempt
+    if (basename != filename) {
+        std::cout << "[SECURITY WARNING] Path traversal attempt detected: "
+                << filename << std::endl;
+        return "";  // Signal attack attempt
+    }
+
+    // SECURITY: Detect directory traversal patterns
+    if (basename.find("..") != std::string::npos) {
+        std::cout << "[SECURITY WARNING] Directory traversal pattern detected: "
+                << filename << std::endl;
+        return "";  // Signal attack attempt
+    }
+
+    std::string safe;
+    // Remove null bytes and control characters
+    for (size_t i = 0; i < basename.size(); i++) {
+        unsigned char c = static_cast<unsigned char>(basename[i]);
+        if (c == 0 || c < 32) {
+            std::cout << "[SECURITY WARNING] Control character detected in filename"
+                    << std::endl;
+            return "";  // Signal attack attempt
+        }
+        safe += basename[i];
+    }
+
+    return safe.empty() ? "" : safe;
 }

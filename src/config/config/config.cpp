@@ -44,7 +44,6 @@ ConfigData::ConfigData()
       index(""),
       autoindex(),
       backlog(0),
-      max_clients(0),
       keepalive_timeout(15),
       keepalive_max_requests(100),
       allow_methods(),
@@ -290,8 +289,6 @@ void Config::parseServerConfigField(ConfigData& config, const std::string& key, 
         addUnique(config.server_names, tokens[0]);
     else if (key == "backlog")
         parseBacklogDirective(config, tokens[0]);
-    else if (key == "max_clients")
-        parseMaxClientsDirective(config, tokens[0]);
     else if (key == "keepalive_timeout")
         parseKeepaliveTimeoutDirective(config, tokens[0]);
     else if (key == "keepalive_max_requests")

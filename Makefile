@@ -17,50 +17,91 @@ NAME		= webserv
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
-INCLUDES	= -Isrc/server -Isrc/socket -Isrc/config -Isrc/http_request -Isrc/http_response \
-			  -Isrc/helpers -Isrc/server_controller -Isrc/logging -Isrc/exceptions
+INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connection_pool \
+			  -Isrc/network/listening_socket_manager -Isrc/http/http_request -Isrc/http/http_response \
+			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
+			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
+			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
+			  -Isrc/request_router -Isrc/server -Isrc/logging
 
 # Directories
 SRC_DIR		= src
 OBJ_DIR		= obj
-SERVER_DIR	= $(SRC_DIR)/server
-SOCKET_DIR	= $(SRC_DIR)/socket
-CONFIG_DIR	= $(SRC_DIR)/config
-HELPERS_DIR	= $(SRC_DIR)/helpers
-HTTP_REQ_DIR	= $(SRC_DIR)/http_request
-HTTP_RES_DIR	= $(SRC_DIR)/http_response
-SERVER_MGR_DIR	= $(SRC_DIR)/server_controller
+
+# Network layer
+SOCKET_DIR	= $(SRC_DIR)/network/socket
+CONNECTION_DIR	= $(SRC_DIR)/network/connection
+CONN_POOL_DIR	= $(SRC_DIR)/network/connection_pool
+LISTEN_MGR_DIR	= $(SRC_DIR)/network/listening_socket_manager
+
+# HTTP layer
+HTTP_REQ_DIR	= $(SRC_DIR)/http/http_request
+HTTP_RES_DIR	= $(SRC_DIR)/http/http_response
+
+# Core
+EVENT_LOOP_DIR	= $(SRC_DIR)/event_loop
 LOGGING_DIR	= $(SRC_DIR)/logging
-EXCEPTIONS_DIR	= $(SRC_DIR)/exceptions
+
+# Config
+CONFIG_DIR	= $(SRC_DIR)/config/config
+CONFIG_PARSER_DIR = $(SRC_DIR)/config/config_parser
+CONFIG_HELPERS_DIR = $(SRC_DIR)/config/config_helpers
+CONFIG_EXCEPT_DIR = $(SRC_DIR)/config/config_exceptions
+
+# CGI
+CGI_DIR		= $(SRC_DIR)/cgi/cgi
+CGI_EXEC_DIR	= $(SRC_DIR)/cgi/cgi_executor
+
+# Request handling
+REQ_HANDLER_DIR	= $(SRC_DIR)/request_handler
+REQ_ROUTER_DIR	= $(SRC_DIR)/request_router
+
+# Server (legacy - to be removed)
+SERVER_DIR	= $(SRC_DIR)/server
 
 # Source files
 SRC_FILES	= main.cpp \
-			  $(SERVER_DIR)/server.cpp \
-			  $(SERVER_DIR)/post_handler.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
-			  $(CONFIG_DIR)/config.cpp \
-			  $(CONFIG_DIR)/directives_parsers.cpp \
+			  $(CONNECTION_DIR)/connection.cpp \
+			  $(CONN_POOL_DIR)/connection_pool_manager.cpp \
+			  $(LISTEN_MGR_DIR)/listening_socket_manager.cpp \
 			  $(HTTP_REQ_DIR)/http_request.cpp \
 			  $(HTTP_RES_DIR)/http_response.cpp \
-			  $(SERVER_MGR_DIR)/server_controller.cpp \
-			  $(LOGGING_DIR)/logger.cpp \
-			  $(HELPERS_DIR)/helpers.cpp
+			  $(EVENT_LOOP_DIR)/event_loop.cpp \
+			  $(CONFIG_DIR)/config.cpp \
+			  $(CONFIG_PARSER_DIR)/directives_parsers.cpp \
+			  $(CONFIG_HELPERS_DIR)/helpers.cpp \
+			  $(CGI_DIR)/cgi.cpp \
+			  $(CGI_DIR)/cgi_helpers.cpp \
+			  $(CGI_EXEC_DIR)/cgi_executor.cpp \
+			  $(REQ_HANDLER_DIR)/request_handler.cpp \
+			  $(REQ_ROUTER_DIR)/request_router.cpp \
+			  $(SERVER_DIR)/server.cpp \
+			  $(SERVER_DIR)/post_handler.cpp \
+			  $(LOGGING_DIR)/logger.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
 # Header files for dependencies
-HEADERS		= $(SERVER_DIR)/server.hpp \
-			  $(SERVER_DIR)/post_handler.hpp \
-			  $(SERVER_DIR)/client_info.hpp \
-			  $(SOCKET_DIR)/socket.hpp \
-			  $(CONFIG_DIR)/config.hpp \
+HEADERS		= $(SOCKET_DIR)/socket.hpp \
+			  $(CONNECTION_DIR)/connection.hpp \
+			  $(CONN_POOL_DIR)/connection_pool_manager.hpp \
+			  $(LISTEN_MGR_DIR)/listening_socket_manager.hpp \
 			  $(HTTP_REQ_DIR)/http_request.hpp \
 			  $(HTTP_RES_DIR)/http_response.hpp \
-			  $(SERVER_MGR_DIR)/server_controller.hpp \
-			  $(LOGGING_DIR)/logger.hpp \
-			  $(EXCEPTIONS_DIR)/config_exceptions.hpp \
-			  $(HELPERS_DIR)/helpers.hpp
+			  $(EVENT_LOOP_DIR)/event_loop.hpp \
+			  $(CONFIG_DIR)/config.hpp \
+			  $(CONFIG_HELPERS_DIR)/helpers.hpp \
+			  $(CONFIG_EXCEPT_DIR)/config_exceptions.hpp \
+			  $(CGI_DIR)/cgi.hpp \
+			  $(CGI_EXEC_DIR)/cgi_executor.hpp \
+			  $(REQ_HANDLER_DIR)/request_handler.hpp \
+			  $(REQ_ROUTER_DIR)/request_router.hpp \
+			  $(SERVER_DIR)/server.hpp \
+			  $(SERVER_DIR)/post_handler.hpp \
+			  $(SERVER_DIR)/client_info.hpp \
+			  $(LOGGING_DIR)/logger.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/21 17:48:40 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/08 15:22:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,6 @@ std::string HttpResponse::getContentType() {
 		default: return "application/octet-stream";
 	}
 }
-
 std::string HttpResponse::getReasonPhrase() {
 
 	switch (_statusCode) {
@@ -121,7 +120,6 @@ std::string HttpResponse::getReasonPhrase() {
 		default: return "Unknown";
 	}
 }
-
 std::string HttpResponse::getTimeNow() {
 
 	time_t now = time(0);
@@ -144,7 +142,6 @@ void HttpResponse::generatePostResponse(){
 		<< _body;
 	_response = oss.str();
 }
-
 void HttpResponse::generateGetResponse() {
 
 	std::ostringstream oss;
@@ -157,7 +154,6 @@ void HttpResponse::generateGetResponse() {
 		<< _body;
 	_response = oss.str();
 }
-
 void HttpResponse::generateDeleteResponse() {
 
 	std::ostringstream oss;
@@ -169,7 +165,6 @@ void HttpResponse::generateDeleteResponse() {
 		<< "Connection: " << _connectionType << "\r\n\r\n";
 	_response = oss.str();
 }
-
 void generateErrorResponse() {}
 
 void HttpResponse::generateResponse(int statusCode) {
@@ -210,7 +205,6 @@ std::string HttpResponse::extractBody() {
 	file.close();
 	return content;
 }
-
 
 void HttpResponse::setBody(std::string body) {_body = body;}
 void HttpResponse::setReasonPhrase(std::string reasonPhrase){_reasonPhrase = reasonPhrase;}

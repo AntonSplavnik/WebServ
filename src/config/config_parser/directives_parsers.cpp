@@ -12,14 +12,6 @@ void Config::parseBacklogDirective(ConfigData& config, const std::string& value)
     config.backlog = backlog;
 }
 
-void Config::parseMaxClientsDirective(ConfigData& config, const std::string& value) {
-    int max_clients = 0;
-    std::istringstream valStream(value);
-    if (!(valStream >> max_clients) || max_clients < 1 || max_clients > 10000)
-        throw ConfigParseException("Invalid max_clients value: " + value);
-    config.max_clients = max_clients;
-}
-
 void Config::parseKeepaliveTimeoutDirective(ConfigData& config, const std::string& value) {
     int keepalive_timeout = 0;
     std::istringstream valStream(value);

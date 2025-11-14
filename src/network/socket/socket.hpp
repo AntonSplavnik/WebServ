@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 19:28:26 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/05 21:09:54 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,15 +41,17 @@ class Socket{
 
 		// Getters
 		int getFd() const;
+		int getPort () const {return _port;}
+
+		void setReuseAddr(bool enable);
+		static void setNonBlocking(int fd);
+
 		// bool isBound() const;
 		// bool isListening() const;
-
-		// Setters
-		void setReuseAddr(bool enable);
-		void setNonBlocking(void);
-
+		
 	private:
-		short	_fd;
+		int	_fd;
+		int _port;
 		// bool _is_created;
 		// bool _is_bound;
 		// bool _is_listening;

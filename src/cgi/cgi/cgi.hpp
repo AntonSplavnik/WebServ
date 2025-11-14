@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 23:15:08 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/07 15:20:37 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 #include "http_request.hpp"
 #include "client_info.hpp"
 #include "config.hpp"
-#include "server_controller.hpp"
+#include "event_loop.hpp"
 
 enum CgiStatus{
 	CGI_CONTINUE,
@@ -36,7 +36,7 @@ enum CgiStatus{
 
 class Cgi {
 	public:
-		Cgi(ServerController& controller, const HttpRequest &req, const ClientInfo& clientInfo,
+		Cgi(EventLoop& controller, const HttpRequest &req, const ClientInfo& clientInfo,
 			ConfigData& config, const LocationConfig* loc, std::string &path, std::string cgiExt);
 		~Cgi();
 
@@ -77,7 +77,7 @@ class Cgi {
 		const ClientInfo&			_client;
 		const LocationConfig*		_matchedLoc;
 		const ConfigData&			_config;
-		ServerController&			_controller;
+		EventLoop&			_controller;
 
 		void prepEnv(const HttpRequest &request, const std::string &scriptPath);
 		bool chdirToScriptDir();
