@@ -87,19 +87,16 @@ std::string HttpResponse::getTimeNow() {
 void generateErrorResponse() {}
 
 void HttpResponse::generateNormalResponse() {
-	// 1. Préparer les données de la réponse
+
 	_method = _request.getMethodEnum();
 	_connectionType = _request.getConnectionType();
 
-	// 2. Extraire le body depuis le fichier (si nécessaire)
-	// Pour DELETE, on pourrait ne pas avoir besoin du body
 	if (_method == GET || _method == POST) {
 		_body = extractBody();
 		_contentType = getContentType();
 		_contentLength = getContentLength();
 	} else if (_method == DELETE) {
-		// DELETE répond généralement sans body, ou avec un message de confirmation
-		_body = "";  // ou un petit message JSON comme {"status": "deleted"}
+		_body = "";
 		_contentType = "text/plain";
 		_contentLength = _body.length();
 	}
@@ -122,7 +119,6 @@ void HttpResponse::generateNormalResponse() {
 void HttpResponse::generateCgiResponse(const std::string& cgiOutput) {
 
 	if (cgiOutput.find("Content-Type:") != std::string::npos) {
-	// CGI a fourni des headers complets
 		_response = _protocolVer + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
 	} else {
 		_body = cgiOutput;
