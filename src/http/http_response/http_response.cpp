@@ -12,57 +12,11 @@
 
 #include "http_response.hpp"
 
-/*
-	Here's a typical HTTP response structure:
-
-  HTTP/1.1 200 OK
-  Date: Tue, 24 Sep 2025 16:00:00 GMT
-  Server: WebServ/1.0
-  Content-Type: text/html
-  Content-Length: 1234
-  Connection: keep-alive
-
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Example Page</title>
-  </head>
-  <body>
-      <h1>Hello World</h1>
-      <p>This is the response body content.</p>
-  </body>
-  </html>
-
-  Structure breakdown:
-
-  1. Status Line: HTTP/1.1 200 OK
-    - Protocol version
-    - Status code (200)
-    - Reason phrase (OK)
-  2. Headers: Key-value pairs ending with \r\n
-    - Date: When response was generated
-    - Server: Server information
-    - Content-Type: MIME type of content
-    - Content-Length: Size of body in bytes
-    - Connection: Connection handling
-  3. Empty Line: \r\n separates headers from body
-  4. Body: The actual content (HTML, JSON, file data, etc.)
-
-  Common status codes:
-  - 200 OK - Success
-  - 404 Not Found - File not found
-  - 500 Internal Server Error - Server error
-  - 403 Forbidden - Access denied
-
-  Each line ends with \r\n (carriage return + line feed).
-*/
-
 HttpResponse::HttpResponse(HttpRequest request)
 	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
 	_serverName("WebServ"), _serverVersion(1.0f){}
 
 HttpResponse::~HttpResponse(){}
-
 
 fileExtentions HttpResponse::extractFileExtension(std::string filePath){
 
@@ -130,75 +84,89 @@ std::string HttpResponse::getTimeNow() {
 	return httpTime;
 }
 
-void HttpResponse::generatePostResponse(){
+void generateErrorResponse() {}
+
+void HttpResponse::generateNormalResponse() {
+	// 1. Préparer les données de la réponse
+	_method = _request.getMethodEnum();
+	_connectionType = _request.getConnectionType();
+
+	// 2. Extraire le body depuis le fichier (si nécessaire)
+	// Pour DELETE, on pourrait ne pas avoir besoin du body
+	if (_method == GET || _method == POST) {
+		_body = extractBody();
+		_contentType = getContentType();
+		_contentLength = getContentLength();
+	} else if (_method == DELETE) {
+		// DELETE répond généralement sans body, ou avec un message de confirmation
+		_body = "";  // ou un petit message JSON comme {"status": "deleted"}
+		_contentType = "text/plain";
+		_contentLength = _body.length();
+	}
 
 	std::ostringstream oss;
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
-		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
-		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n"
-		<< _body;
-	_response = oss.str();
-}
-void HttpResponse::generateGetResponse() {
 
-	std::ostringstream oss;
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
-		<< "Date: " << _date << "\r\n"
-		<< "Server: " << _serverName << _serverVersion << "\r\n"
-		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n"
-		<< _body;
-	_response = oss.str();
-}
-void HttpResponse::generateDeleteResponse() {
-
-	std::ostringstream oss;
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
-		<< "Date: " << _date << "\r\n"
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n";
+	oss << "Date: " << _date << "\r\n"
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
 		<< "Content-Length: " << _contentLength << "\r\n"
 		<< "Connection: " << _connectionType << "\r\n\r\n";
+
+	if (_method == GET || _method == POST) {
+		oss << _body;
+	}
 	_response = oss.str();
 }
-void generateErrorResponse() {}
 
-void HttpResponse::generateResponse(int statusCode) {
+void HttpResponse::generateCgiResponse(const std::string& cgiOutput) {
 
-	_method = _request.getMethodEnum();
+	if (cgiOutput.find("Content-Type:") != std::string::npos) {
+	// CGI a fourni des headers complets
+		_response = _protocolVer + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
+	} else {
+		_body = cgiOutput;
+		_contentLength = _body.length();
+		_contentType = "text/html";
+
+		std::ostringstream oss;
+		oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+			<< "Date: " << _date << "\r\n"
+			<< "Server: " << _serverName << _serverVersion << "\r\n"
+			<< "Content-Type: " << _contentType << "\r\n"
+			<< "Content-Length: " << _contentLength << "\r\n"
+			<< "Connection: " << _connectionType << "\r\n\r\n"
+			<< _body;
+		_response = oss.str();
+	}
+}
+
+void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput, bool isCgi) {
+	_isCgiResponse = isCgi;
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase(); //change to map
+	_reasonPhrase = getReasonPhrase();
 	_date = getTimeNow();
 
-	if(_statusCode >= 400){
+	if (_statusCode >= 400) {
 		generateErrorResponse();
 		return;
 	}
-
-	_body = extractBody();
-	_contentType = getContentType();
-	_contentLength = getContentLength();
-	_connectionType = _request.getConnectionType();
-
-	switch (_method)
-	{
-	case POST:
-		generatePostResponse(); break;
-	case GET:
-		generateGetResponse(); break;
-	case DELETE:
-		generateDeleteResponse(); break;
-	default:
-		_statusCode = 405;
-		_reasonPhrase = "Method Not Allowed";
-		generateErrorResponse();
-		break;
-	}
+	generateCgiResponse(cgiOutput);
 }
+
+void HttpResponse::generateResponse(int statusCode) {
+	_isCgiResponse = false;
+	_statusCode = statusCode;
+	_reasonPhrase = getReasonPhrase();
+	_date = getTimeNow();
+
+	if (_statusCode >= 400) {
+		generateErrorResponse();
+		return;
+	}
+	generateNormalResponse();
+}
+
 std::string HttpResponse::extractBody() {
 	std::ifstream file(_filePath.c_str(), std::ios::binary);
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -219,24 +187,3 @@ std::string HttpResponse::getPath()const {return _filePath;}
 float HttpResponse::getVersion() const {return _serverVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 std::string HttpResponse::getResponse() const {return _response;}
-
-/*
-  HTTP/1.1 200 OK
-  Date: Tue, 24 Sep 2025 16:00:00 GMT
-  Server: WebServ/1.0
-  Content-Type: text/html
-  Content-Length: 1234
-  Connection: keep-alive
-
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>Example Page</title>
-  </head>
-  <body>
-      <h1>Hello World</h1>
-      <p>This is the response body content.</p>
-  </body>
-  </html>
-
-*/

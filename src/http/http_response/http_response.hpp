@@ -38,6 +38,10 @@ class HttpResponse {
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
+		void generateResponse(int statusCode, const std::string& cgiOutput);
+		
+		// Pour les erreurs avec body personnalisé
+		void generateResponse(int statusCode, const std::string& errorBody, bool isError);
 
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
@@ -56,9 +60,10 @@ class HttpResponse {
 
 	private:
 
-		void generateGetResponse();
-		void generatePostResponse();
-		void generateDeleteResponse();
+		void generateNormalResponse();
+		void generateCgiResponse(const std::string& cgiOutput);
+
+		bool _isCgiResponse;
 
 		std::string extractBody();
 		std::string	getTimeNow();
