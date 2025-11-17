@@ -137,7 +137,7 @@ void HttpResponse::generateCgiResponse(const std::string& cgiOutput) {
 	}
 }
 
-void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput, bool isCgi) {
+void HttpResponse::generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput) {
 	_isCgiResponse = isCgi;
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase();

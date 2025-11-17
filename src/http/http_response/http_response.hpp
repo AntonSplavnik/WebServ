@@ -38,10 +38,7 @@ class HttpResponse {
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
-		void generateResponse(int statusCode, const std::string& cgiOutput);
-		
-		// Pour les erreurs avec body personnalisé
-		void generateResponse(int statusCode, const std::string& errorBody, bool isError);
+		void generateResponse(int statusCode, bool isCgi, const std::string& cgiOutput);
 
 		void setBody(std::string body);
 		void setReasonPhrase(std::string reasonPhrase);
@@ -60,19 +57,20 @@ class HttpResponse {
 
 	private:
 
-		void generateNormalResponse();
-		void generateCgiResponse(const std::string& cgiOutput);
+		void 			generateNormalResponse();
+		void 			generateCgiResponse(const std::string& cgiOutput);
 
-		bool _isCgiResponse;
+		bool 			_isCgiResponse;
 
-		std::string extractBody();
-		std::string	getTimeNow();
+		std::string 	extractBody();
+		std::string		getTimeNow();
+		std::string 	getContentType();
 		fileExtentions	extractFileExtension(std::string filePath);
-		std::string	getReasonPhrase();
-		std::string	getContentType();
+		std::string		getReasonPhrase();
+		std::string		etContentType();
 
-		HttpRequest _request;
-		Methods		_method;
+		HttpRequest 	_request;
+		Methods			_method;
 
 		//status line
 		std::string		_protocolVer;
@@ -89,11 +87,8 @@ class HttpResponse {
 		std:: string	_connectionType;
 		std::map<std::string, std::string> _headers;
 
-		//body
-		std::string	_body;
-
-		//responce
-		std::string _response;
+		std::string			_body;
+		std::string 		_response;
 };
 
 #endif
