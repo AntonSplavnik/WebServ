@@ -18,11 +18,11 @@ struct ServerConfig {
 };
 
 enum RequestType{
-	STATIC_FILE, //GET
-	CGI_SCRIPT,  //CGI
+	STATIC_FILE, // GET
+	CGI_SCRIPT,  // CGI GET
 	REDIRECT,
-	UPLOAD,      //POST, CGI
-	DELETE       //DELETE
+	UPLOAD,      // POST, CGI POST
+	DELETE       // DELETE
 };
 
 class RequestRouter {
@@ -46,7 +46,7 @@ class RequestRouter {
 
 	bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 	std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
-	bool isPathSafe(const std::string& mappedPath, const std::string& allowedRoot);
+	bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
 
 
 	private:

@@ -1,6 +1,7 @@
 #include "connection_pool_manager.hpp"
 #include "request_router.hpp"
 
+
 ConnectionPoolManager::ConnectionPoolManager() {}
 ConnectionPoolManager::~ConnectionPoolManager() {}
 
@@ -24,7 +25,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
-	Connection* conn = &_connectionPool[fd];
+	Connection* connection = &_connectionPool[fd];
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
@@ -43,120 +44,128 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 	// ========== POLLIN Events ==========
 	else if (revents & POLLIN) {
 
-		// --- Phase 1: Reading headers ---
-		if (conn->getState() == READING_REQUEST) {
+		ConnectionState state = connection->getState();
+
+		if (state == READING_HEADERS) {
 
 			// Read until headers complete
-			if (!conn->readRequest()) {
-				return; // Headers not complete yet
+			if (!connection->readHeaders()) {
+				return;
 			}
+		}
 
-			// ✅ Headers complete - start routing
-			const HttpRequest& req = conn->getRequest();
+		else if (state == ROUTING_REQUEST) {
+
+
+			const HttpRequest& req = connection->getRequest();
 			RequestRouter router;
 
 			// Step 1: Find server config by port (virtual hosting)
-			ConfigData* serverConfig = findServerConfigByPort(conn->getServerPort());
+			ConfigData* serverConfig = findServerConfigByPort(connection->getServerPort());
 			if (!serverConfig) {
-				generateErrorResponse(conn, 500, "No server config found");
+				generateErrorResponse(connection, 500, "No server config found");
 				return;
 			}
 
 			// Step 2: Find matching location
 			const LocationConfig* location = router.findMatchingLocation(req.getPath(), serverConfig);
 			if (!location) {
-				generateErrorResponse(conn, 404, "Location not found");
+				generateErrorResponse(connection, 404, "Location not found");
 				return;
 			}
 
 			// Step 3: Validate method allowed
 			if (!router.validateMethod(req.getMethod(), location)) {
-				generateErrorResponse(conn, 405, "Method not allowed");
+				generateErrorResponse(connection, 405, "Method not allowed");
 				return;
 			}
 
 			// Step 4: Map and validate path
 			std::string mappedPath = router.mapPath(req.getPath(), location);
 			if (!router.validatePathSecurity(mappedPath, location->root)) {
-				generateErrorResponse(conn, 403, "Path traversal detected");
+				generateErrorResponse(connection, 403, "Path traversal detected");
 				return;
 			}
 
 			// Step 5: Store routing context for later use
-			conn->setRoutingContext(serverConfig, location, mappedPath);
+			connection->setRoutingContext(serverConfig, location, mappedPath);
 
 			// Step 6: Classify request type
 			RequestType type = router.classify(req, location);
+			connection.setRequestType(type);
 
 			// Step 7: Dispatch based on type
 			switch (type) {
 
 				case STATIC_FILE:
-					handleGET(conn, serverConfig, location, mappedPath);
+					handleGET(connection, serverConfig, location, mappedPath);
 					break;
 
-				case DELETE_FILE:
-					handleDELETE(conn, serverConfig, location, mappedPath);
+				case DELETE:
+					handleDELETE(connection, serverConfig, location, mappedPath);
 					break;
 
-				case POST_UPLOAD: {
-					// Initialize streaming
-					std::string uploadPath = location->upload_path;
-					if (uploadPath.empty()) {
-						uploadPath = location->root; // Fallback
-					}
-
-					std::string tempPath = uploadPath + "/temp_" + generateUniqueId() + ".raw";
-
-					bool complete = conn->initBodyStream(tempPath);
-
-					if (complete) {
-						// Small upload completed immediately
-						handlePOST(conn, serverConfig, location);
-					}
-					// else: state changed to STREAMING_BODY, wait for next POLLIN
+				case UPLOAD:
+					connection->readBody();
 					break;
-				}
 
 				case CGI_SCRIPT:
-					handleCGI(conn, serverConfig, location, mappedPath);
+					handleCGI(connection, serverConfig, location, mappedPath);
 					break;
 
 				case REDIRECT:
-					handleRedirect(conn, location);
+					handleRedirect(connection, location);
 					break;
 
 				default:
-					generateErrorResponse(conn, 500, "Unknown request type");
+					generateErrorResponse(connection, 500, "Unknown request type");
 					break;
+			}
+			return;
+		}
+
+		else if (state == READING_BODY) {
+
+			if(!connection->readBody()) {
+				return;
 			}
 		}
 
-		// --- Phase 2: Streaming body ---
-		else if (conn->getState() == STREAMING_BODY) {
+		else if (state == EXECUTING_REQUEST) {
 
-			bool streamingComplete = conn->streamBody();
+			RequestType type = connection->getRequestType();
 
-			if (streamingComplete) {
-				// Retrieve stored routing context
-				ConfigData* serverConfig = conn->getRoutedServer();
-				const LocationConfig* location = conn->getRoutedLocation();
-
-				// ✅ Now handle POST with complete body
-				handlePOST(conn, serverConfig, location);
+			switch(type) {
+				case (CGI){
+					handleCGI(connection, serverConfig, location, mappedPath);
+					break;
+				}
+				case (POST) {
+					handlePOST(connection, serverConfig, location);
+					break;
+				}
+				default: {
+					std::cout << "[DEBUG] Unknown reuest type" << std::endl;
+					break;
+				}
+				return;
 			}
-			// else: keep streaming on next POLLIN event
+		}
+
+		else if (state == PREPARING_RESPONSE) {
+
+			connection->prepareResponse();
 		}
 	}
 
 	// ========== POLLOUT Events ==========
 	else if (revents & POLLOUT) {
 
-		if (conn->getState() == SENDING_RESPONSE) {
+		if (connection->getState() == SENDING_RESPONSE) {
 
-			bool sendComplete = conn->sendResponse();
+			bool sendComplete = connection->sendResponse();
 
-			if (sendComplete && conn->shouldClose()) {
+			if (sendComplete && connection->shouldClose()) {
 				disconnectConnection(fd);
 			}
 		}

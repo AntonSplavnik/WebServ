@@ -37,9 +37,10 @@ void CgiExecutor::handleCGIevent(int fd, short revents) {
 				std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
 				if (revents & POLLIN) {
 					handleCGIread(fd);  // final read + cleanup
-					//do we need a return here?
+					return;
 				}
-				terminateCGI(cgiIt->second); // dont we need to send error resp here?
+				// Send error response if client connection still exists
+				terminateCGI(cgiIt->second);
 			} else if (revents & POLLOUT) {
 				std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
 				handleCGIwrite(fd);
@@ -79,7 +80,7 @@ void CgiExecutor::handleCGIerror(int fd) {
 				response.generateResponse(500);
 				connectionPool[connectionFd].setResponseData(response.getResponse());
 			}
-			connectionPool[connectionFd].setStete(SENDING_RESPONSE);
+			connectionPool[connectionFd].setState(SENDING_RESPONSE);
 		}
 
 		if(cgi->getPid() > 0){
@@ -103,7 +104,7 @@ void CgiExecutor::handleCGIerror(int fd) {
 				HttpResponse resp(cgi->getRequest());
 				resp.generateResponse(500, false, "");
 				connectionPool[connectionFd].setResponseData(resp.getResponse());
-				connectionPool[connectionFd].setStete(SENDING_RESPONSE);
+				connectionPool[connectionFd].setState(SENDING_RESPONSE);
 			}
 
 			cgi->cleanup();
@@ -155,7 +156,7 @@ void CgiExecutor::handleCGIread(int fd) {
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI complete" << std::endl;
 	}
-	connectionPool[connectionFd].setStete(SENDING_RESPONSE);
+	connectionPool[connectionFd].setState(SENDING_RESPONSE);
 
 	std::cout << "[Server] Erasing CGI FD " << fd << " from _cgi" << std::endl;
 
@@ -186,7 +187,7 @@ void CgiExecutor::handleCGItimeout(Cgi* cgi) {
 	response.generateResponse(504);
 	if (connectionPool.find(connectionFd) != connectionPool.end()) {
 		connectionPool[connectionFd].setResponseData(response.getResponse());
-		connectionPool[connectionFd].setStete(SENDING_RESPONSE);
+		connectionPool[connectionFd].setState(SENDING_RESPONSE);
 	}
 	std::cout << "[CGI TIMEOUT] Response 504 sent to client FD = " << connectionFd << std::endl;
 	terminateCGI(cgi);

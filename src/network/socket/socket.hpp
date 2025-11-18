@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/05 21:09:54 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/17 23:49:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ class Socket{
 		// Socket operations
 		void createDefault();
 		void createCustom(int domain, int type, int protocol);
-		void binding(int port);
+		void binding(std::string address, unsigned short port);
 		void listening(int backlog);
 		int accepting(sockaddr_in& client_addr);
 		void closing(short fd);
@@ -48,7 +48,7 @@ class Socket{
 
 		// bool isBound() const;
 		// bool isListening() const;
-		
+
 	private:
 		int	_fd;
 		int _port;

@@ -42,7 +42,7 @@ std::string RequestRouter::mapPath(const HttpRequest& request, const LocationCon
 	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
 	return locationRoot + relativePath;
 }
-bool RequestRouter::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot) {
+bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot) {
 
 	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
 		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
@@ -97,4 +97,3 @@ bool RequestRouter::isPathSafe(const std::string& mappedPath, const std::string&
 	}
 	return true;
 }
-

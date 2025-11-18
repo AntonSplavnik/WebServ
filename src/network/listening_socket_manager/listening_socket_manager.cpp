@@ -26,7 +26,9 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 
 			listeningSocket.setReuseAddr(true);
 
-			listeningSocket.binding(configs[i].listeners[j].second);
+			std::string address = configs[i].listeners[j].first;
+			unsigned short port = configs[i].listeners[j].second;
+			listeningSocket.binding(address, port);
 			if (fd < 0) {
 				throw std::runtime_error("[DEBUG] Failed to bind socket (port may be in use)");
 			}

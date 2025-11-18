@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 20:26:35 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/17 21:21:11 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,18 +47,22 @@ void EventLoop::rebuildPollFds() {
 		struct pollfd connection;
 		connection.fd = it->first;
 		connection.revents = 0;
-		switch (it->second.getState())
-		{
-		case READING_REQUEST:
-			connection.events = POLLIN;
-			break;
-		case SENDING_RESPONSE:
-			connection.events = POLLOUT;
-			break;
-		case WAITING_CGI:
-			continue;
-		default:
-			continue;
+		switch (it->second.getState()) {
+			case READING_HEADERS:
+			case ROUTING_REQUEST:
+			case READING_BODY:
+			case EXECUTING_REQUEST:
+			case PREPARING_RESPONSE:
+				connection.events = POLLIN;
+				break;
+			case SENDING_RESPONSE:
+				connection.events = POLLOUT;
+				break;
+			case WAITING_CGI:
+			case WRITING_DISK:
+				continue;
+			default:
+				continue;
 		}
 		_pollFds.push_back(connection);
 		std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
@@ -132,9 +136,9 @@ void EventLoop::run() {
 					_connectionPoolManager.handleConnectionEvent(_pollFds[i].fd, _pollFds[i].revents);
 			}
 		}
-
 		checkConnectionsTimeouts();
 		checkCgiTimeouts();
+		processDiskWrites();
 		reapZombieProcesses();
 	}
 }
@@ -190,6 +194,15 @@ void EventLoop::checkCgiTimeouts() {
 			continue;
 		}
 		++cgiIt;
+	}
+}
+
+void EventLoop::processDiskWrites() {
+std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
+for(size_t i = 0; i < conPool.size(); i++) {
+		if (conPool[i].getState() == WRITING_DISK) {
+			conPool[i].writeOnDisc();
+		}
 	}
 }
 

@@ -10,32 +10,26 @@ class RequestHandler {
 		RequestHandler();
 		~RequestHandler();
 
-		void handleCGI(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
-		void handleGET(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
-		void handlePOST(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
-		void handleDELETE(const HttpRequest& request, ClientInfo& client, std::string mappedPath);
+		void handleGET(Connection& connection, std::string path);
+		void handlePOST(Connection& connection, std::string path);
+		void handleDELETE(Connection& connection, std::string path);
 
 	private:
-		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
-		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
-		bool isPathSafe(const std::string& mappedPath, const std::string& allowedRoot);
 
 };
 
 
-class RequestHandler {
+// class RequestHandler {
 
-	public:
-		void handleStatic(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-		void handleUpload(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-		void handleDelete(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-		void handleRedirect(Connection* conn, const LocationConfig* location);
-		void handleError(Connection* conn, int statusCode, const ServerConfig* config);
+// 	public:
+// 		void handleStatic(Connection* conn, const ServerConfig* config, const LocationConfig* location);
+// 		void handleUpload(Connection* conn, const ServerConfig* config, const LocationConfig* location);
+// 		void handleDelete(Connection* conn, const ServerConfig* config, const LocationConfig* location);
+// 		void handleRedirect(Connection* conn, const LocationConfig* location);
+// 		void handleError(Connection* conn, int statusCode, const ServerConfig* config);
 
-	private:
-		std::string mapPath(const HttpRequest& req, const LocationConfig* location);
-		bool validateMethod(const HttpRequest& req, const LocationConfig* location);
-		bool isPathSafe(const std::string& path, const std::string& root);
-};
+// 	private:
+
+// };
 
 #endif

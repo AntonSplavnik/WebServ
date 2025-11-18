@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 19:52:27 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/16 20:30:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,8 @@ class EventLoop {
 		bool isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd);
 		void checkCgiTimeouts();
 
+		void EventLoop::processDiskWrites();
+		
 		void reapZombieProcesses();
 
 		ConnectionPoolManager		_connectionPoolManager;

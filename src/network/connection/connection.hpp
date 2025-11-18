@@ -14,7 +14,12 @@
 
 // Client connection states
 enum ConnectionState {
-	READING_REQUEST,    // Waiting to read HTTP request
+	READING_HEADERS,
+	ROUTING_REQUEST,
+	READING_BODY,
+	EXECUTING_REQUEST,
+	WRITING_DISK,
+	PREPARING_RESPONSE,
 	SENDING_RESPONSE,   // Ready to send HTTP response
 	WAITING_CGI         // Waiting for CGI execution to finish
 };
@@ -22,11 +27,14 @@ enum ConnectionState {
 class Connection {
 
 	public:
-		Connection(int fd, const std::string& ip, int port, int serverPort);
+		Connection(int fd, const std::string& ip, int connectionPort, int serverPort);
 		~Connection();
 
 		// I/O operations
-		bool readRequest();
+		bool readHeaders();
+		bool readBody();
+		bool writeOnDisc();
+		bool prepareResponse();
 		bool sendResponse();
 		bool isRequestComplete();
 
@@ -39,13 +47,17 @@ class Connection {
 			_bytesSent = 0;
 		}
 
-		// State
-		void setStete(ConnectionState state) {state = _connectionState;}
-		ConnectionState getState() const;
+		int getStatusCode() const {return _statusCode;}
+		void setStatusCode(int statusCode) {_statusCode = statusCode;}
 
+		// Connection data
 		int getFd() const { return _fd;}
+		ConnectionState getState() const {return _connectionState;}
+		void setState(ConnectionState state) {state = _connectionState;}
+
 		const std::string& getIp () const { return _ip;}
 		int getServerPort() const {return _serverPort;}
+		int getPort() const {return _connectionPort;}
 
 		// Keep-alive
 		bool shouldClose() const {return _shouldClose;}
@@ -54,7 +66,7 @@ class Connection {
 		time_t getLastActivity() const {return _lastActivity;}
 		int	getKeepAliveTimeout () const {return _keepAliveTimeout;}
 
-		void updateKeepaliveSettings(int keepAliveTimeout, int maxRequests);
+		void updateKeepAliveSettings(int keepAliveTimeout, int maxRequests);
 
 	private:
 		// connection data
@@ -62,7 +74,7 @@ class Connection {
 		ConnectionState	_connectionState;
 
 		std::string		_ip;
-		int				_port;
+		int				_connectionPort;
 		int				_serverPort;
 
 		// request data
@@ -72,6 +84,7 @@ class Connection {
 		// response data
 		std::string		_responseData;
 		size_t			_bytesSent;
+		int				_statusCode;
 
 		// timeout data
 		time_t			_lastActivity;           // Last time client sent data
