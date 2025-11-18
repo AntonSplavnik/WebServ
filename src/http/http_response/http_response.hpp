@@ -46,6 +46,7 @@ class HttpResponse {
 		void setStatusCode(int code);
 		void setHeader(std::string header);
 		void setPath(std::string path);
+		void setCustomErrorPage(const std::string& errorPagePath);
 
 		std::string		getBody() const;
 		std::string		getPath() const;
@@ -60,6 +61,9 @@ class HttpResponse {
 		void 			generateNormalResponse();
 		void 			generateCgiResponse(const std::string& cgiOutput);
 
+		void 			generateErrorResponse();
+		std::string 	getErrorPagePath(int statusCode, const std::string& requestPath) const;
+
 		bool 			_isCgiResponse;
 
 		std::string 	extractBody();
@@ -71,6 +75,8 @@ class HttpResponse {
 
 		HttpRequest 	_request;
 		Methods			_method;
+
+		std::string 	_customErrorPagePath;
 
 		//status line
 		std::string		_protocolVer;

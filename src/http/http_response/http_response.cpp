@@ -84,7 +84,27 @@ std::string HttpResponse::getTimeNow() {
 	return httpTime;
 }
 
-void generateErrorResponse() {}
+void HttpResponse::generateErrorResponse() {
+
+	std::string errorPagePath = _customErrorPagePath;
+    std::cout << "[DEBUG ERROR_PAGE] errorPagePath: " << errorPagePath << std::endl;
+
+	if (!errorPagePath.empty()) {
+		std::ifstream errorFile(errorPagePath.c_str());
+		if (errorFile.is_open()) {
+			std::stringstream buffer;
+			buffer << errorFile.rdbuf();
+			_contentType = "text/html";
+			_body = buffer.str();
+			_contentLength = _body.length();
+			return ;
+		}
+	}
+		std::cout << "[DEBUG] Default page error" << std::endl;
+		_contentType = "text/html";
+		_body = "<html><body><h1>Error " + std::to_string(_statusCode) + "</h1></body></html>";
+		_contentLength = _body.length();
+}
 
 void HttpResponse::generateNormalResponse() {
 
@@ -168,6 +188,10 @@ std::string HttpResponse::extractBody() {
 	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 	file.close();
 	return content;
+}
+
+void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {
+    _customErrorPagePath = errorPagePath;
 }
 
 void HttpResponse::setBody(std::string body) {_body = body;}

@@ -698,5 +698,21 @@ void Server::handleCGItimeout(Cgi* cgi) {
 	terminateCGI(cgi);
 }
 
+std::string Server::resolveErrorPage(int statusCode, const LocationConfig* location) const {
+
+	if (location && location->error_pages.count(statusCode)) {
+		std::string path = location->error_pages.find(statusCode)->second;
+		return location->root + path;
+	}
+
+	// Global server config
+	if (_configData.error_pages.count(statusCode)) {
+		std::string path = _configData.error_pages.find(statusCode)->second;
+		return _configData.root + path;
+	}
+
+	return "";
+}
+
 const std::vector<Socket>& Server::getListeningSockets() const { return _listeningSockets;}
 std::map<int, ClientInfo>& Server::getClients() {return _clients;}

@@ -83,6 +83,8 @@ class Server {
 		int isListeningSocket(int fd) const;
 		void updateClientActivity(int fd);
 
+		std::string resolveErrorPage(int statusCode, const LocationConfig* location) const;
+
 		// Utility
 		// void logConnection(const Client& client);
 		// void logDisconnection(int client_fd);
