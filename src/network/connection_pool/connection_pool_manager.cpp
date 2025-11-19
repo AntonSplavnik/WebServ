@@ -141,7 +141,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 					break;
 				}
 				case (POST) {
-					handlePOST(connection, serverConfig, location);
+					handlePOST(connection, mappedPath);
 					break;
 				}
 				default: {

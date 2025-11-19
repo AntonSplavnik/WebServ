@@ -10,9 +10,9 @@ class RequestHandler {
 		RequestHandler();
 		~RequestHandler();
 
-		void handleGET(Connection& connection, std::string path);
-		void handlePOST(Connection& connection, std::string path);
-		void handleDELETE(Connection& connection, std::string path);
+		void handleGET(Connection& connection, std::string& path);
+		void handlePOST(Connection& connection, std::string& path);
+		void handleDELETE(Connection& connection, std::string& path);
 
 	private:
 

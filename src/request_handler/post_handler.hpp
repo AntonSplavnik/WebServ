@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/08 22:42:22 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/19 15:19:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,11 @@
 
 #include <string>
 #include <vector>
-#include <iostream>
-#include <fstream>
-#include <sstream>
+
 
 // Forward declarations
 class HttpRequest;
+class Connection;
 
 struct MultipartPart {
     std::string name;
@@ -30,13 +29,16 @@ struct MultipartPart {
 };
 
 class PostHandler {
+
     public:
         PostHandler(const std::string uploadPath);
 
-        // Main POST handling methods
-        void handlePOST(const HttpRequest& request);
-        int handleMultipart(const HttpRequest& request);
+        int handleMultipart(Connection& connection);
+        bool handleFile(Connection& connection, const std::string& contentType);
 
+        bool isSupportedContentType(const std::string& contentType);
+
+        private:
         // Multipart parsing methods
         std::vector<MultipartPart> parseMultipartData(const std::string& body, const std::string& boundary);
         MultipartPart parseMultipartPart(const std::string& partData);
@@ -50,15 +52,12 @@ class PostHandler {
 
         // Utility methods
         std::string extractBoundary(const std::string& contentType);
-        bool isSupportedContentType(const std::string& contentType);
-        int handleFile(const HttpRequest& request, const std::string& contentType);
         std::string getExtensionFromContentType(const std::string& contentType);
         std::string generateFilename(const std::string& extension);
-        bool saveRawContent(const std::string& filePath, const std::string& content);
+        // bool saveRawContent(const std::string& filePath, const std::string& content);
 
         std::string sanitizeFilename(const std::string& filename);
 
-    private:
         std::string _uploadPath;
 };
 

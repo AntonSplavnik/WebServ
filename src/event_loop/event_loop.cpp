@@ -6,14 +6,15 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/17 21:21:11 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/19 00:36:43 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "event_loop.hpp"
-
 #include <csignal>
 #include <cerrno>
+
+#include "event_loop.hpp"
+
 
 extern volatile sig_atomic_t g_shutdown;
 

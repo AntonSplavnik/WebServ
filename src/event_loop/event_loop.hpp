@@ -6,12 +6,14 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/16 20:30:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/19 00:36:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVER_MANAGER
 #define SERVER_MANAGER
+
+#include <poll.h>
 
 #include "cgi_executor.hpp"
 #include "listening_socket_manager.hpp"
@@ -20,7 +22,6 @@
 #include "config.hpp"
 #include "cgi.hpp"
 #include "server.hpp"
-#include <poll.h>
 
 class EventLoop {
 
@@ -43,7 +44,7 @@ class EventLoop {
 		void checkCgiTimeouts();
 
 		void EventLoop::processDiskWrites();
-		
+
 		void reapZombieProcesses();
 
 		ConnectionPoolManager		_connectionPoolManager;

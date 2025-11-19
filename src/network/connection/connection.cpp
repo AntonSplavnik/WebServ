@@ -1,10 +1,12 @@
 #include "connection.hpp"
 
-Connection::Connection(int fd, const std::string& ip, int port, int serverPort)
+Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
 	  _ip(ip),
-	  _connectionPort(port),
+	  _connectionPort(connectionPort),
 	  _serverPort(serverPort),
+	  _bytesWritten(0),
+	  _multipart(),
 	  _keepAliveTimeout(15),
 	  _maxRequests(100),
 	  _requestCount(0),
@@ -12,7 +14,10 @@ Connection::Connection(int fd, const std::string& ip, int port, int serverPort)
 	  _bytesSent(0),
 	  _lastActivity(time(NULL)),
 	  _shouldClose(false) {}
-Connection::~Connection() {}
+Connection::~Connection() {
+
+	if(_fileStream.is_open()) _fileStream.close();
+}
 
 bool Connection::readHeaders() {
 
@@ -31,7 +36,7 @@ bool Connection::readHeaders() {
 		return true;
 	}
 
-	if(_connectionState == READING_HEADERS) {
+	// if(_connectionState == READING_HEADERS) {
 
 		char buffer[BUFFER_SIZE_32];
 		std::memset(buffer, 0, BUFFER_SIZE_32);
@@ -63,7 +68,7 @@ bool Connection::readHeaders() {
 
 			return true;
 		}
-	}
+	// }
 }
 bool Connection::readBody() {
 
@@ -80,7 +85,7 @@ bool Connection::readBody() {
 		return true;
 	}
 
-	if(_connectionState == READING_BODY) {
+	// if(_connectionState == READING_BODY) {
 
 		char buffer[BUFFER_SIZE_32];
 		std::memset(buffer, 0, BUFFER_SIZE_32);
@@ -124,43 +129,61 @@ bool Connection::readBody() {
 				return true;
 			}
 		}
-	}
+	// }
 
 }
 
 bool Connection::writeOnDisc() {
 
+	if (!_fileStream.is_open()) {
+		_fileStream.open(_filePath.c_str(), std::ios::binary);
+		if (!_fileStream.is_open()) {
+			_statusCode = 500;
+			_connectionState = PREPARING_RESPONSE;
+			return false;
+		}
+	}
+
 	std::string body = _request.getBody();
 	const char* data = body.c_str() + _bytesWritten;
 	size_t remainingLean = body.length() - _bytesWritten;
 	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
+	_fileStream.write(data, bytesToWrite);
 
-	int bytesWritten = write(_fd, data, bytesToWrite);
-	std::cout << "write() returned " << bytesWritten << " bytes to FD " << _fd << std::endl;
-
-	if (bytesWritten > 0) {
-
-		_bytesWritten += bytesWritten;
-
-		updateClientActivity();
-
-		std::cout << "Bytes setn: " << _bytesSent << "    ResponseData length: " << body.length() << std::endl;
-
-		// Check if disc writeing is complete
-		if (_bytesWritten == body.length()) {
-
-			// Reset connection state for execution
-			_connectionState = PREPARING_RESPONSE;
-			return true;
-
-		} else {
-			std::cout << "[DEBUG] Partial write: " << _bytesWritten << "/" << body.length() << " bytes sent" << std::endl;
-		}
-	} else {
-
-		// Send failed, close connection
-		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
+	if (_fileStream.fail()) {
+		std::cout << "[ERROR] File write failed" << std::endl;
+		_fileStream.close();
+		_statusCode = 500;
+		_connectionState = PREPARING_RESPONSE;
 		return false;
+	}
+
+	_bytesWritten += bytesToWrite;
+	updateClientActivity();
+
+	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << body.length() << ")" << std::endl;
+
+	// Check if complete
+	if (_bytesWritten == body.length()) {
+		_fileStream.close();
+		_statusCode = _fileStream.good()? 200 : 500;
+		_connectionState = PREPARING_RESPONSE;
+		return true;
+	}
+
+	return false;
+}
+void Connection::appendFormFieldToLog(const std::string& name, const std::string& value) {
+	std::string logFile = _uploadPath;
+	if (!logFile.empty() && logFile[logFile.size() - 1] != '/') {
+		logFile += '/';
+	}
+	logFile += "form_data.log";
+
+	std::ofstream file(logFile.c_str(), std::ios::app);
+	if (file.is_open()) {
+		file << "Field: " << name << " = " << value << std::endl;
+		file.close();
 	}
 }
 
@@ -203,7 +226,7 @@ bool Connection::sendResponse() {
 				}
 
 				// Reset client state for next request
-				_connectionState = READING_BODY;
+				_connectionState = READING_HEADERS;
 				_bytesSent = 0;
 				_responseData.clear();
 				_requestData.clear();

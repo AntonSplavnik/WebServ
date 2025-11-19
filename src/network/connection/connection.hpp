@@ -50,6 +50,13 @@ class Connection {
 		int getStatusCode() const {return _statusCode;}
 		void setStatusCode(int statusCode) {_statusCode = statusCode;}
 
+		std::string getFilePath() {return _filePath;}
+		void setFilePath(std::string filePath) {_filePath == filePath;}
+		const std::vector<MultipartPart>& getMultipart() const {return _multipart;}
+		void setMultipart(std::vector<MultipartPart> multipart, std::string path) {
+			_multipart.swap(multipart);
+			path = _filePath;}
+
 		// Connection data
 		int getFd() const { return _fd;}
 		ConnectionState getState() const {return _connectionState;}
@@ -70,32 +77,39 @@ class Connection {
 
 	private:
 		// connection data
-		int				_fd;
-		ConnectionState	_connectionState;
+		int							_fd;
+		ConnectionState				_connectionState;
 
-		std::string		_ip;
-		int				_connectionPort;
-		int				_serverPort;
+		std::string					_ip;
+		int							_connectionPort;
+		int							_serverPort;
 
 		// request data
-		std::string		_requestData;
-		HttpRequest		_request;
+		std::string					_requestData;
+		HttpRequest					_request;
 
+		// disc writing
+		std::ofstream				_fileStream;
+		std::string					_filePath;
+		int							_bytesWritten;
+		// mutipart
+		std::vector<MultipartPart>	_multipart;
+		int							_partIndex;
 		// response data
-		std::string		_responseData;
-		size_t			_bytesSent;
-		int				_statusCode;
+		std::string					_responseData;
+		size_t						_bytesSent;
+		int							_statusCode;
 
 		// timeout data
-		time_t			_lastActivity;           // Last time client sent data
-		int				_keepAliveTimeout;       // Timeout in seconds (default 15)
+		time_t						_lastActivity;           // Last time client sent data
+		int							_keepAliveTimeout;       // Timeout in seconds (default 15)
 
 		// request limits
-		int				_maxRequests;            // Max requests per connection
-		int				_requestCount;           // Current request count
+		int							_maxRequests;            // Max requests per connection
+		int							_requestCount;           // Current request count
 
 		// flag to send data
-		bool			_shouldClose;           // Close on error
+		bool						_shouldClose;           // Close on error
 
 		void Connection::updateClientActivity();
 };

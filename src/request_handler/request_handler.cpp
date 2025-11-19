@@ -4,7 +4,7 @@
 RequestHandler::RequestHandler() {}
 RequestHandler::~RequestHandler() {}
 
-void RequestHandler::handleGET(Connection& connection, std::string path) {
+void RequestHandler::handleGET(Connection& connection, std::string& path) {
 
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
@@ -32,7 +32,7 @@ void RequestHandler::handleGET(Connection& connection, std::string path) {
 	connection.setResponseData(content);
 	connection.setState(PREPARING_RESPONSE);
 }
-void RequestHandler::handleDELETE(Connection& connection, std::string path) {
+void RequestHandler::handleDELETE(Connection& connection, std::string& path) {
 
 	std::ifstream file(path.c_str());
 	if (file.is_open()) {
@@ -51,30 +51,36 @@ void RequestHandler::handleDELETE(Connection& connection, std::string path) {
 	connection.setState(PREPARING_RESPONSE);
 }
 
-void RequestHandler::handlePOST(Connection& connection, std::string path) {
+void RequestHandler::handlePOST(Connection& connection, std::string& path) {
 
 	std::cout << "[DEBUG] UploadPath: " << path << std::endl;
 	PostHandler post(path);
 
-	HttpRequest request = connection.getRequest();
+	const HttpRequest& request = connection.getRequest();
 
 	std::string contentType = request.getContentType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
 	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
-	int statusCode;
+
 	if (contentType.find("multipart/form-data") != std::string::npos) {
-		statusCode = post.handleMultipart(request);
+		if(post.handleMultipart(connection)) {
+			connection.setState(WRITING_DISK);
+		} else {
+			connection.setState(PREPARING_RESPONSE);
+		}
 	} else if (post.isSupportedContentType(contentType)) {
-		statusCode = post.handleFile(request, contentType);
+		post.handleFile(connection, contentType);
+		connection.setState(WRITING_DISK);
 	} else {
 		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
-		statusCode = 415;
+		connection.setStatusCode(415);
+		connection.setState(SENDING_RESPONSE);
 	}
-	HttpResponse response(request);
-	response.generateResponse(statusCode);
-	client.responseData = response.getResponse();
-	client.bytesSent = 0;
-	client.state = SENDING_RESPONSE;
+	// HttpResponse response(request);
+	// response.generateResponse(statusCode);
+	// client.responseData = response.getResponse();
+	// client.bytesSent = 0;
+	// client.state = SENDING_RESPONSE;
 }
 

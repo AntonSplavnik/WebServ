@@ -32,17 +32,18 @@ class RequestRouter {
 		~RequestRouter();
 
 
-	// Route by Host header to ServerConfig
-	ServerConfig* routeToServer(const HttpRequest& req, ServerConfig* defaultConfig);
+
 
 	// Find location within server
 	const LocationConfig* routeToLocation(const HttpRequest& req, const ServerConfig* server);
+	ConfigData* findServerConfigByPort();
+
+	// Route by Host header to ServerConfig
+	ServerConfig* routeToServer(const HttpRequest& req, ServerConfig* defaultConfig);
 
 	// Determine request type
 	RequestType classify(const HttpRequest& req, const LocationConfig* location);
 	// Returns: STATIC_FILE, CGI_SCRIPT, REDIRECT, UPLOAD, DELETE
-
-	ConfigData* findServerConfigByPort();
 
 	bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 	std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
