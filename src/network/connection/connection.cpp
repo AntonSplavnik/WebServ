@@ -1,4 +1,5 @@
 #include "connection.hpp"
+#include "post_handler.hpp"
 
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
@@ -7,6 +8,7 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	  _serverPort(serverPort),
 	  _bytesWritten(0),
 	  _multipart(),
+	  _currentPartIndex(0),
 	  _keepAliveTimeout(15),
 	  _maxRequests(100),
 	  _requestCount(0),
@@ -36,39 +38,36 @@ bool Connection::readHeaders() {
 		return true;
 	}
 
-	// if(_connectionState == READING_HEADERS) {
+	char buffer[BUFFER_SIZE_32];
+	std::memset(buffer, 0, BUFFER_SIZE_32);
+	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
+	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
 
-		char buffer[BUFFER_SIZE_32];
-		std::memset(buffer, 0, BUFFER_SIZE_32);
-		int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-		std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	if (bytes <= 0) {
+		if (bytes == 0) {
+			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
+			return false;
+		} else { // bytes < 0
 
-		if (bytes <= 0) {
-			if (bytes == 0) {
-				std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
-				return false;
-			} else { // bytes < 0
-
-				std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
-				return false;
-			}
+			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			return false;
 		}
-		else {
+	}
+	else {
 
-			updateClientActivity();
+		updateClientActivity();
 
-			_requestData.append(buffer, bytes);
+		_requestData.append(buffer, bytes);
 
-			// Check if headers complete
-			size_t headerEnd = _requestData.find("\r\n\r\n");
-			if(headerEnd == std::string::npos) {
-				_connectionState = ROUTING_REQUEST;
-				return;  // Keep receiving headers
-			}
-
-			return true;
+		// Check if headers complete
+		size_t headerEnd = _requestData.find("\r\n\r\n");
+		if(headerEnd == std::string::npos) {
+			_connectionState = ROUTING_REQUEST;
+			return;  // Keep receiving headers
 		}
-	// }
+
+		return true;
+	}
 }
 bool Connection::readBody() {
 
@@ -85,92 +84,92 @@ bool Connection::readBody() {
 		return true;
 	}
 
-	// if(_connectionState == READING_BODY) {
+	char buffer[BUFFER_SIZE_32];
+	std::memset(buffer, 0, BUFFER_SIZE_32);
+	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
+	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
 
-		char buffer[BUFFER_SIZE_32];
-		std::memset(buffer, 0, BUFFER_SIZE_32);
-		int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-		std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	if (bytes <= 0) {
+		if (bytes == 0) {
+			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
+			return false;
+		} else { // bytes < 0
 
-		if (bytes <= 0) {
-			if (bytes == 0) {
-				std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
-				return false;
-			} else { // bytes < 0
-
-				std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
-				return false;
-			}
+			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			return false;
 		}
+	}
+	else {
+
+		updateClientActivity();
+
+		_requestData.append(buffer, bytes);
+
+		// Check if headers complete
+		size_t headerEnd = _requestData.find("\r\n\r\n");
+
+		// Parse headers to get Content-Length
+		HttpRequest tempParser;
+		tempParser.ParsePartialRequest(_requestData);
+		size_t contentLength = tempParser.getContentLength();
+
+		// Check if full body received
+		size_t bodyStart = headerEnd + 4;
+		size_t bodyReceived = _requestData.length() - bodyStart;
+
+		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;
+
+		if(bodyReceived < contentLength)
+			return false;  // Keep receiving body
 		else {
-
-			updateClientActivity();
-
-			_requestData.append(buffer, bytes);
-
-			// Check if headers complete
-			size_t headerEnd = _requestData.find("\r\n\r\n");
-
-			// Parse headers to get Content-Length
-			HttpRequest tempParser;
-			tempParser.ParsePartialRequest(_requestData);
-			size_t contentLength = tempParser.getContentLength();
-
-			// Check if full body received
-			size_t bodyStart = headerEnd + 4;
-			size_t bodyReceived = _requestData.length() - bodyStart;
-
-			std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;
-
-			if(bodyReceived < contentLength)
-				return false;  // Keep receiving body
-			else {
-				_connectionState == EXECUTING_REQUEST;
-				return true;
-			}
+			_connectionState == EXECUTING_REQUEST;
+			return true;
 		}
-	// }
+	}
+
 
 }
 
 bool Connection::writeOnDisc() {
 
-	if (!_fileStream.is_open()) {
-		_fileStream.open(_filePath.c_str(), std::ios::binary);
-		if (!_fileStream.is_open()) {
-			_statusCode = 500;
+	if(_multipart.empty()) {
+		std::string filePath = _uploadPath + _fileName;
+		if (processWriteChunck(_request.getBody(), filePath)) {
+			if (_bytesWritten >= _request.getBody().length()) {
+				_fileStream.close();
+				_statusCode = _fileStream.good()? 200 : 500;
+				_connectionState = PREPARING_RESPONSE;
+				return true;
+			}
+		}
+		return false;
+	} else {
+
+		if (_currentPartIndex >= _multipart.size()) {
+			_statusCode = 200;
 			_connectionState = PREPARING_RESPONSE;
+			return true;
+		}
+
+		MultipartPart& part = _multipart[_currentPartIndex];
+
+		if (part.fileName.empty()) {
+			appendFormFieldToLog(part.name, part.content);
+			_currentPartIndex++;
 			return false;
 		}
-	}
 
-	std::string body = _request.getBody();
-	const char* data = body.c_str() + _bytesWritten;
-	size_t remainingLean = body.length() - _bytesWritten;
-	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
-	_fileStream.write(data, bytesToWrite);
-
-	if (_fileStream.fail()) {
-		std::cout << "[ERROR] File write failed" << std::endl;
-		_fileStream.close();
-		_statusCode = 500;
-		_connectionState = PREPARING_RESPONSE;
+		std::string filePath = _uploadPath + part.fileName;
+		if (processWriteChunck(part.content, filePath)) {
+			if (_bytesWritten >= part.content.length()) {
+				_fileStream.close();
+				_currentPartIndex++;
+				_bytesWritten = 0;
+				return false;
+			}
+		}
 		return false;
 	}
-
-	_bytesWritten += bytesToWrite;
-	updateClientActivity();
-
-	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << body.length() << ")" << std::endl;
-
-	// Check if complete
-	if (_bytesWritten == body.length()) {
-		_fileStream.close();
-		_statusCode = _fileStream.good()? 200 : 500;
-		_connectionState = PREPARING_RESPONSE;
-		return true;
-	}
-
 	return false;
 }
 void Connection::appendFormFieldToLog(const std::string& name, const std::string& value) {
@@ -186,7 +185,35 @@ void Connection::appendFormFieldToLog(const std::string& name, const std::string
 		file.close();
 	}
 }
+bool Connection::processWriteChunck(const std::string& data, const std::string& filePath) {
 
+	if (!_fileStream.is_open()) {
+		_fileStream.open(filePath.c_str(), std::ios::binary);
+		if (!_fileStream.is_open()) {
+			_statusCode = 500;
+			_connectionState = PREPARING_RESPONSE;
+			return false;
+		}
+	}
+
+	const char* writeData = data.c_str() + _bytesWritten;
+	size_t remainingLen = data.length() - _bytesWritten;
+	size_t bytesToWrite = std::min(remainingLen, static_cast<size_t>(BUFFER_SIZE_32));
+	_fileStream.write(writeData, bytesToWrite);
+
+	if (_fileStream.fail()) {
+		std::cout << "[ERROR] File write failed" << std::endl;
+		_fileStream.close();
+		_statusCode = 500;
+		_connectionState = PREPARING_RESPONSE;
+		return false;
+	}
+
+	_bytesWritten += bytesToWrite;
+	updateClientActivity();
+	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
+	return true;
+}
 bool Connection::prepareResponse() {
 
 	HttpResponse response(_requestData);
@@ -197,51 +224,48 @@ bool Connection::prepareResponse() {
 }
 bool Connection::sendResponse() {
 
-	if (_connectionState == SENDING_RESPONSE){
+	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
 
-		std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
+	// Send remaining response data
+	const char* data = _responseData.c_str() + _bytesSent;
+	size_t remainingLean = _responseData.length() - _bytesSent;
+	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
-		// Send remaining response data
-		const char* data = _responseData.c_str() + _bytesSent;
-		size_t remainingLean = _responseData.length() - _bytesSent;
-		size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
+	int bytes_sent = send(_fd, data, bytesToWrite, 0);
+	std::cout << "send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
 
-		int bytes_sent = send(_fd, data, bytesToWrite, 0);
-		std::cout << "send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
+	if (bytes_sent > 0) {
 
-		if (bytes_sent > 0) {
+		_bytesSent += bytes_sent;
 
-			_bytesSent += bytes_sent;
+		updateClientActivity();
 
-			updateClientActivity();
+		std::cout << "Bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
 
-			std::cout << "Bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
+		// Check if entire response was sent
+		if (_bytesSent == _responseData.length()) {
 
-			// Check if entire response was sent
-			if (_bytesSent == _responseData.length()) {
-
-				if(_shouldClose){
-					std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
-					return true;
-				}
-
-				// Reset client state for next request
-				_connectionState = READING_HEADERS;
-				_bytesSent = 0;
-				_responseData.clear();
-				_requestData.clear();
-
+			if(_shouldClose){
+				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
 				return true;
-
-			} else {
-				std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
 			}
-		} else {
 
-			// Send failed, close connection
-			std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
-			return false;
+			// Reset client state for next request
+			_connectionState = READING_HEADERS;
+			_bytesSent = 0;
+			_responseData.clear();
+			_requestData.clear();
+
+			return true;
+
+		} else {
+			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
 		}
+	} else {
+
+		// Send failed, close connection
+		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
+		return false;
 	}
 }
 

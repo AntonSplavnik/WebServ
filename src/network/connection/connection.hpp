@@ -2,6 +2,7 @@
 #define CONNECTION_HPP
 
 #include <string>
+#include <fstream>
 
 #include "socket.hpp"
 #include "http_request.hpp"
@@ -50,12 +51,20 @@ class Connection {
 		int getStatusCode() const {return _statusCode;}
 		void setStatusCode(int statusCode) {_statusCode = statusCode;}
 
-		std::string getFilePath() {return _filePath;}
-		void setFilePath(std::string filePath) {_filePath == filePath;}
+		// Disc writing
+		std::string getUploadPath() const {return _uploadPath;}
+		std::string getFileName() const {return _fileName;}
+		void setFilePath(std::string& uploadPath, std::string& fileName) {
+			_uploadPath == uploadPath;
+			_fileName = fileName;
+			_bytesWritten = 0;}
+
 		const std::vector<MultipartPart>& getMultipart() const {return _multipart;}
-		void setMultipart(std::vector<MultipartPart> multipart, std::string path) {
+		void setMultipart(std::string& path, std::vector<MultipartPart>& multipart) {
+			_uploadPath = path;
 			_multipart.swap(multipart);
-			path = _filePath;}
+			_bytesWritten = 0;
+			_currentPartIndex = 0;}
 
 		// Connection data
 		int getFd() const { return _fd;}
@@ -90,11 +99,14 @@ class Connection {
 
 		// disc writing
 		std::ofstream				_fileStream;
-		std::string					_filePath;
+		std::string					_uploadPath;
+		std::string					_fileName;
 		int							_bytesWritten;
-		// mutipart
+
+		// disc writing - mutipart
 		std::vector<MultipartPart>	_multipart;
-		int							_partIndex;
+		int							_currentPartIndex;
+
 		// response data
 		std::string					_responseData;
 		size_t						_bytesSent;
@@ -112,6 +124,8 @@ class Connection {
 		bool						_shouldClose;           // Close on error
 
 		void Connection::updateClientActivity();
+		bool processWriteChunck(const std::string& data, const std::string& filePath);
+		void appendFormFieldToLog(const std::string& name, const std::string& value);
 };
 
 #endif

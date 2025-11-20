@@ -31,9 +31,6 @@ class RequestRouter {
 		RequestRouter();
 		~RequestRouter();
 
-
-
-
 	// Find location within server
 	const LocationConfig* routeToLocation(const HttpRequest& req, const ServerConfig* server);
 	ConfigData* findServerConfigByPort();

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/19 15:13:59 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/20 01:07:01 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ bool PostHandler::handleFile(Connection& connection, const std::string& contentT
 
     std::string fileName = generateFilename(extension);
     std::string filePath = _uploadPath + fileName;
-    connection.setFilePath(filePath);
+    connection.setFilePath(_uploadPath, fileName);
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     return true;
@@ -158,11 +158,11 @@ int PostHandler::handleMultipart(Connection& connection) {
                 connection.setStatusCode(400);
                 return false;
             }
-            parts[i].fileName = safe;
+            parts[i].fileName = _uploadPath + safe;
         }
     }
 
-    connection.setMultipart(parts, _uploadPath);
+    connection.setMultipart(_uploadPath, parts);
     return true;
 
 /*     int statusCode = processMultipartParts(parts);
