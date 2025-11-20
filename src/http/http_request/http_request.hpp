@@ -74,6 +74,12 @@ class HttpRequest{
 		Methods getMethodEnum() const;
 		bool getStatus() const;
 
+		//BONUS cookies
+
+		std::string getCookie(const std::string& name) const;
+		const std::map<std::string, std::string>& getCookies() const;
+		bool hasCookie(const std::string& name) const;
+
 	private:
 		std::string		_requestLine;
 		std::string		_body;
@@ -91,6 +97,10 @@ class HttpRequest{
 		std::map<std::string, std::string>	_headers;
 		// std::string query;
 		bool	_isValid;
+
+		//BONUS cookies
+		std::map<std::string, std::string> _cookies;
+		void 								parseCookies();
 };
 #endif
 

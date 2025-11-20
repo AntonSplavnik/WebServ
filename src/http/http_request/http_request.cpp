@@ -187,6 +187,7 @@ void HttpRequest::parseHeaders() {
 	} else {
 		_contentLength = 0;  // No Content-Length header
 	}
+	parseCookies();
 }
 void HttpRequest::parseBody() {
 
@@ -246,4 +247,50 @@ std::string HttpRequest::getConnectionType() const {
 		return it->second;
 	else
 		return "keep-alive";
+}
+
+std::string HttpRequest::getCookie(const std::string& name) const {
+	std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
+	if (it != _cookies.end()) {
+		return it->second;
+	}
+	return "";
+}
+
+const std::map<std::string, std::string>& HttpRequest::getCookies() const {
+	return _cookies;
+}
+
+bool HttpRequest::hasCookie(const std::string& name) const {
+	return _cookies.find(name) != _cookies.end();
+}
+
+void HttpRequest::parseCookies() {
+    // Chercher le header "Cookie"
+	std::map<std::string, std::string>::const_iterator it = _headers.find("cookie");
+	if (it == _headers.end()) {
+		return; // Pas de cookies
+	}
+
+	std::string cookieHeader = it->second;
+	std::istringstream stream(cookieHeader);
+	std::string pair;
+
+	// Format: "name1=value1; name2=value2; name3=value3"
+	while (std::getline(stream, pair, ';')) {
+	// Enlever les espaces au début
+		size_t start = pair.find_first_not_of(" \t");
+		if (start != std::string::npos) {
+			pair = pair.substr(start);
+		}
+		// Trouver le '=' qui sépare nom et valeur
+		size_t equalPos = pair.find('=');
+		if (equalPos != std::string::npos) {
+			std::string name = pair.substr(0, equalPos);
+			std::string value = pair.substr(equalPos + 1);
+			_cookies[name] = value;
+
+			std::cout << "[COOKIE] " << name << " = " << value << std::endl;
+		}
+	}
 }

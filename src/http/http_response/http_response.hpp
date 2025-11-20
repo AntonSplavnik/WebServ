@@ -21,6 +21,21 @@
 #include <algorithm>
 #include "http_request.hpp"
 
+struct Cookie {
+	std::string name;
+	std::string value;
+	std::string path;		// "/" par défaut
+	std::string domain;		// optionnel
+	int maxAge;              // -1 = session cookie
+	bool httpOnly;           // true pour sécurité
+	bool secure;             // true pour HTTPS uniquement
+	std::string sameSite;    // "Strict", "Lax", ou "None"
+
+	Cookie(const std::string& n, const std::string& v)
+		: name(n), value(v), path("/"), maxAge(-1), 
+		httpOnly(false), secure(false), sameSite("Lax") {}
+};
+
 enum fileExtentions{
 	HTML,
 	PDF,
@@ -54,6 +69,10 @@ class HttpResponse {
 		int				getStatusCode() const;
 		unsigned long	getContentLength() const;
 		std::string		getResponse() const;
+
+		void addCookie(const Cookie& cookie);
+		void addCookie(const std::string& name, const std::string& value);
+		void deleteCookie(const std::string& name);
 
 
 	private:
@@ -95,6 +114,9 @@ class HttpResponse {
 
 		std::string			_body;
 		std::string 		_response;
+
+		std::vector<Cookie> _cookies;
+		std::string buildSetCookieHeader(const Cookie& cookie) const;
 };
 
 #endif

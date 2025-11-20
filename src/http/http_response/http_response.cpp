@@ -130,6 +130,9 @@ void HttpResponse::generateNormalResponse() {
 		<< "Content-Length: " << _contentLength << "\r\n"
 		<< "Connection: " << _connectionType << "\r\n\r\n";
 
+	 for (size_t i = 0; i < _cookies.size(); ++i) {
+		oss << "Set-Cookie: " << buildSetCookieHeader(_cookies[i]) << "\r\n";
+	}
 	if (_method == GET || _method == POST) {
 		oss << _body;
 	}
@@ -191,7 +194,7 @@ std::string HttpResponse::extractBody() {
 }
 
 void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {
-    _customErrorPagePath = errorPagePath;
+	_customErrorPagePath = errorPagePath;
 }
 
 void HttpResponse::setBody(std::string body) {_body = body;}
@@ -207,3 +210,49 @@ std::string HttpResponse::getPath()const {return _filePath;}
 float HttpResponse::getVersion() const {return _serverVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 std::string HttpResponse::getResponse() const {return _response;}
+
+void HttpResponse::addCookie(const std::string& name, const std::string& value) {
+	Cookie cookie(name, value);
+	_cookies.push_back(cookie);
+}
+
+void HttpResponse::addCookie(const Cookie& cookie) {
+	_cookies.push_back(cookie);
+}
+
+void HttpResponse::deleteCookie(const std::string& name) {
+	// Pour supprimer un cookie, on l'envoie avec Max-Age=0
+	Cookie deleteCookie(name, "");
+	deleteCookie.maxAge = 0;
+	deleteCookie.path = "/";
+	_cookies.push_back(deleteCookie);
+}
+
+std::string HttpResponse::buildSetCookieHeader(const Cookie& cookie) const {
+	 std::ostringstream oss;
+	// Format de base : Set-Cookie: name=value
+	oss << cookie.name << "=" << cookie.value;
+	// Attributs optionnels
+	if (!cookie.path.empty()) {
+		oss << "; Path=" << cookie.path;
+	}
+	if (!cookie.domain.empty()) {
+		oss << "; Domain=" << cookie.domain;
+	}
+	if (cookie.maxAge >= 0) {
+		oss << "; Max-Age=" << cookie.maxAge;
+	}
+
+	if (cookie.httpOnly) {
+		oss << "; HttpOnly";
+	}
+
+	if (cookie.secure) {
+		oss << "; Secure";
+	}
+
+	if (!cookie.sameSite.empty()) {
+		oss << "; SameSite=" << cookie.sameSite;
+	}
+	return oss.str();
+}
