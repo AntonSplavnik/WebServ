@@ -60,7 +60,7 @@ class Connection {
 		// Connection data
 		int getFd() const { return _fd;}
 		ConnectionState getState() const {return _connectionState;}
-		void setState(ConnectionState state) {state = _connectionState;}
+		void setState(ConnectionState state) {state = _connectionState;} // comment_Mak: we need to switch state and _connectionState
 
 		const std::string& getIp () const { return _ip;}
 		int getServerPort() const {return _serverPort;}
