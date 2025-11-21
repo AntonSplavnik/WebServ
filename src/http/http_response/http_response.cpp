@@ -67,10 +67,12 @@ std::string HttpResponse::getReasonPhrase() {
 		case 405: return "Method Not Allowed";
 		case 413: return "Payload Too Large";
 		case 414: return "URI Too Long";
+		case 415: return "Unsupported Media Type";
 		// Server Error
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
 		case 503: return "Service Unavailable";
+		case 504: return "Gateway Timeout";
 		default: return "Unknown";
 	}
 }
@@ -85,25 +87,33 @@ std::string HttpResponse::getTimeNow() {
 }
 
 void HttpResponse::generateErrorResponse() {
-
 	std::string errorPagePath = _customErrorPagePath;
-    std::cout << "[DEBUG ERROR_PAGE] errorPagePath: " << errorPagePath << std::endl;
 
 	if (!errorPagePath.empty()) {
 		std::ifstream errorFile(errorPagePath.c_str());
 		if (errorFile.is_open()) {
 			std::stringstream buffer;
 			buffer << errorFile.rdbuf();
-			_contentType = "text/html";
 			_body = buffer.str();
-			_contentLength = _body.length();
-			return ;
+			errorFile.close();
 		}
 	}
-		std::cout << "[DEBUG] Default page error" << std::endl;
-		_contentType = "text/html";
+	if (_body.empty()) {
 		_body = "<html><body><h1>Error " + std::to_string(_statusCode) + "</h1></body></html>";
-		_contentLength = _body.length();
+	}
+	_contentType = "text/html";
+	_contentLength = _body.length();
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: close\r\n\r\n"
+		<< _body;
+
+	_response = oss.str();
 }
 
 void HttpResponse::generateNormalResponse() {
