@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/20 01:07:01 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 17:15:54 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ PostHandler::PostHandler(const std::string uploadPath)
     :_uploadPath(uploadPath){
     std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
 }
-
 
 bool PostHandler::handleFile(Connection& connection, const std::string& contentType) {
     std::string extension = getExtensionFromContentType(contentType);
@@ -155,13 +154,11 @@ int PostHandler::handleMultipart(Connection& connection) {
         if (!parts[i].fileName.empty()) {
             std::string safe = sanitizeFilename(parts[i].fileName);
             if (safe.empty()) {
-                connection.setStatusCode(400);
                 return false;
             }
-            parts[i].fileName = _uploadPath + safe;
+            parts[i].fileName = safe;
         }
     }
-
     connection.setMultipart(_uploadPath, parts);
     return true;
 

@@ -1,29 +1,29 @@
 #include "connection.hpp"
 #include "post_handler.hpp"
+#include "http_response.hpp"
 
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
-	  _ip(ip),
-	  _connectionPort(connectionPort),
-	  _serverPort(serverPort),
-	  _bytesWritten(0),
-	  _multipart(),
-	  _currentPartIndex(0),
-	  _keepAliveTimeout(15),
-	  _maxRequests(100),
-	  _requestCount(0),
-	  _connectionState(READING_HEADERS),
-	  _bytesSent(0),
-	  _lastActivity(time(NULL)),
-	  _shouldClose(false) {}
-Connection::~Connection() {
+	_ip(ip),
+	_connectionPort(connectionPort),
+	_serverPort(serverPort),
+	_bytesWritten(0),
+	_multipart(),
+	_currentPartIndex(0),
+	_keepAliveTimeout(15),
+	_maxRequests(100),
+	_requestCount(0),
+	_connectionState(READING_HEADERS),
+	_bytesSent(0),
+	_lastActivity(time(NULL)),
+	_shouldClose(false) {}
 
-	if(_fileStream.is_open()) _fileStream.close();
+Connection::~Connection() {
+	if (_fileStream.is_open())
+		_fileStream.close();
 }
 
 bool Connection::readHeaders() {
-
-	std::cout << "\n#######  HANDLE CLIENT READ DATA #######" << std::endl;
 
 	if (_requestCount >= _maxRequests){
 		std::cout << "[DEBUG] Max request count reached: " << _fd << std::endl;
@@ -57,15 +57,15 @@ bool Connection::readHeaders() {
 
 		updateClientActivity();
 
-		_requestData.append(buffer, bytes);
+		_requestBuffer.append(buffer, bytes);
 
 		// Check if headers complete
-		size_t headerEnd = _requestData.find("\r\n\r\n");
+		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 		if(headerEnd == std::string::npos) {
-			_connectionState = ROUTING_REQUEST;
-			return;  // Keep receiving headers
+			return false;  // Keep receiving headers
 		}
 
+		_connectionState = ROUTING_REQUEST;
 		return true;
 	}
 }
@@ -102,32 +102,21 @@ bool Connection::readBody() {
 	else {
 
 		updateClientActivity();
+		_requestBuffer.append(buffer, bytes);
 
-		_requestData.append(buffer, bytes);
-
-		// Check if headers complete
-		size_t headerEnd = _requestData.find("\r\n\r\n");
-
-		// Parse headers to get Content-Length
-		HttpRequest tempParser;
-		tempParser.ParsePartialRequest(_requestData);
-		size_t contentLength = tempParser.getContentLength();
+		size_t contentLength = _request.getContentLength();
+		size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
+		size_t bodyReceived = _requestBuffer.length() - bodyStart;
+		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
 
 		// Check if full body received
-		size_t bodyStart = headerEnd + 4;
-		size_t bodyReceived = _requestData.length() - bodyStart;
-
-		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;
-
 		if(bodyReceived < contentLength)
 			return false;  // Keep receiving body
 		else {
-			_connectionState == EXECUTING_REQUEST;
+			_connectionState = EXECUTING_REQUEST;
 			return true;
 		}
 	}
-
-
 }
 
 bool Connection::writeOnDisc() {
@@ -138,7 +127,7 @@ bool Connection::writeOnDisc() {
 			if (_bytesWritten >= _request.getBody().length()) {
 				_fileStream.close();
 				_statusCode = _fileStream.good()? 200 : 500;
-				_connectionState = PREPARING_RESPONSE;
+				prepareResponse();
 				return true;
 			}
 		}
@@ -147,7 +136,7 @@ bool Connection::writeOnDisc() {
 
 		if (_currentPartIndex >= _multipart.size()) {
 			_statusCode = 200;
-			_connectionState = PREPARING_RESPONSE;
+			prepareResponse();
 			return true;
 		}
 
@@ -173,13 +162,13 @@ bool Connection::writeOnDisc() {
 	return false;
 }
 void Connection::appendFormFieldToLog(const std::string& name, const std::string& value) {
-	std::string logFile = _uploadPath;
-	if (!logFile.empty() && logFile[logFile.size() - 1] != '/') {
-		logFile += '/';
+	std::string logFilePath = _uploadPath;
+	if (!logFilePath.empty() && logFilePath[logFilePath.size() - 1] != '/') {
+		logFilePath += '/';
 	}
-	logFile += "form_data.log";
+	logFilePath += "form_data.log";
 
-	std::ofstream file(logFile.c_str(), std::ios::app);
+	std::ofstream file(logFilePath.c_str(), std::ios::app);
 	if (file.is_open()) {
 		file << "Field: " << name << " = " << value << std::endl;
 		file.close();
@@ -191,7 +180,7 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 		_fileStream.open(filePath.c_str(), std::ios::binary);
 		if (!_fileStream.is_open()) {
 			_statusCode = 500;
-			_connectionState = PREPARING_RESPONSE;
+			prepareResponse();
 			return false;
 		}
 	}
@@ -205,7 +194,7 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 		std::cout << "[ERROR] File write failed" << std::endl;
 		_fileStream.close();
 		_statusCode = 500;
-		_connectionState = PREPARING_RESPONSE;
+		prepareResponse();
 		return false;
 	}
 
@@ -214,9 +203,10 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
 	return true;
 }
+
 bool Connection::prepareResponse() {
 
-	HttpResponse response(_requestData);
+	HttpResponse response(_request);
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
@@ -254,7 +244,7 @@ bool Connection::sendResponse() {
 			_connectionState = READING_HEADERS;
 			_bytesSent = 0;
 			_responseData.clear();
-			_requestData.clear();
+			_requestBuffer.clear();
 
 			return true;
 
@@ -269,15 +259,12 @@ bool Connection::sendResponse() {
 	}
 }
 
-bool isRequestComplete() {
-
-}
 void Connection::updateClientActivity() {
 
 	_lastActivity = time(NULL);
 }
-
 void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) {
 	_keepAliveTimeout = keepAliveTimeout;
 	_maxRequests = maxRequests;
 }
+/* bool isRequestComplete() {} */

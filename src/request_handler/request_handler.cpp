@@ -4,13 +4,14 @@
 RequestHandler::RequestHandler() {}
 RequestHandler::~RequestHandler() {}
 
-void RequestHandler::handleGET(Connection& connection, std::string& path) {
+void RequestHandler::handleGET(Connection& connection) {
 
+	const std::string& path = connection.getRoutingResult().mappedPath;
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
 		// Differentiate 404 vs 403 if needed
 		connection.setStatusCode(errno == ENOENT ? 404 : 403);
-		connection.setState(PREPARING_RESPONSE);
+		connection.prepareResponse();
 		return;
 	}
 
@@ -23,17 +24,18 @@ void RequestHandler::handleGET(Connection& connection, std::string& path) {
 	// Check read errors
 	if (content.empty() && errno) {
 		connection.setStatusCode(500);
-		connection.setState(PREPARING_RESPONSE);
+		connection.prepareResponse();
 		return;
 	}
 
 	// Success
 	connection.setStatusCode(200);
 	connection.setResponseData(content);
-	connection.setState(PREPARING_RESPONSE);
+	connection.prepareResponse();
 }
-void RequestHandler::handleDELETE(Connection& connection, std::string& path) {
+void RequestHandler::handleDELETE(Connection& connection) {
 
+	const std::string& path = connection.getRoutingResult().mappedPath;
 	std::ifstream file(path.c_str());
 	if (file.is_open()) {
 		file.close();
@@ -48,11 +50,11 @@ void RequestHandler::handleDELETE(Connection& connection, std::string& path) {
 		connection.setStatusCode(404);
 		std::cout << "[DEBUG] Error: 404 path is not found" << std::endl;
 	}
-	connection.setState(PREPARING_RESPONSE);
+	connection.prepareResponse();
 }
+void RequestHandler::handlePOST(Connection& connection) {
 
-void RequestHandler::handlePOST(Connection& connection, std::string& path) {
-
+	const std::string& path = connection.getRoutingResult().mappedPath;
 	std::cout << "[DEBUG] UploadPath: " << path << std::endl;
 	PostHandler post(path);
 
@@ -62,12 +64,12 @@ void RequestHandler::handlePOST(Connection& connection, std::string& path) {
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
 	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
-
 	if (contentType.find("multipart/form-data") != std::string::npos) {
 		if(post.handleMultipart(connection)) {
 			connection.setState(WRITING_DISK);
 		} else {
-			connection.setState(PREPARING_RESPONSE);
+			connection.setStatusCode(400);
+			connection.prepareResponse();
 		}
 	} else if (post.isSupportedContentType(contentType)) {
 		post.handleFile(connection, contentType);
@@ -75,7 +77,7 @@ void RequestHandler::handlePOST(Connection& connection, std::string& path) {
 	} else {
 		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
 		connection.setStatusCode(415);
-		connection.setState(SENDING_RESPONSE);
+		connection.prepareResponse();;
 	}
 	// HttpResponse response(request);
 	// response.generateResponse(statusCode);
@@ -83,4 +85,3 @@ void RequestHandler::handlePOST(Connection& connection, std::string& path) {
 	// client.bytesSent = 0;
 	// client.state = SENDING_RESPONSE;
 }
-

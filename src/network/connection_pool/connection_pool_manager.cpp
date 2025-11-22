@@ -1,31 +1,26 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   connection_pool_manager.cpp                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/11/22 22:18:54 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "connection_pool_manager.hpp"
 #include "request_router.hpp"
-
-
-ConnectionPoolManager::ConnectionPoolManager() {}
-ConnectionPoolManager::~ConnectionPoolManager() {}
+#include "request_handler.hpp"
+#include "cgi_executor.hpp"
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
-	Connection* connection = &_connectionPool[fd];
+	Connection& connection = _connectionPool[fd];
+	const ConnectionState& state = connection.getState();
 
-	if (revents & POLLERR || revents & POLLHUP) {
-		disconnectConnection(fd);
-		return;
-	} if (revents & POLLIN && connection->getState() == READING_REQUEST) {
-		if (!connection->readRequest()) {
-			return ;
-		} else {
-			// call router method()
-		}
-	} else if (revents & POLLOUT && connection->getState() == SENDING_RESPONSE) {
-		connection->sendResponse();
-	}
-}
 
-void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
-
-	Connection* connection = &_connectionPool[fd];
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
@@ -35,86 +30,77 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 	// ========== POLLHUP Events ==========
 	else if (revents & POLLHUP) {
-		if (revents & POLLIN) handleClientRead(fd); // half closed in case client is done sending and waiting for respose: shutdown(fd, SHUT_WR); recv(fd, ...);
-		std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
-		disconnectConnection(fd);
-		return;
+		if (revents & POLLIN) {
+			if (connection.getState() == READING_HEADERS) {
+				connection.shouldClose();
+				connection.readHeaders();
+			} else if (connection.getState() == READING_BODY) {
+				connection.shouldClose();
+				connection.readBody();
+			} else {
+				disconnectConnection(fd);
+				return;
+			}
+		} else {
+			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			disconnectConnection(fd);
+			return;
+		}
 	}
 
 	// ========== POLLIN Events ==========
 	else if (revents & POLLIN) {
 
-		ConnectionState state = connection->getState();
-
 		if (state == READING_HEADERS) {
 
 			// Read until headers complete
-			if (!connection->readHeaders()) {
+			if (!connection.readHeaders()) {
 				return;
 			}
 		}
-
 		else if (state == ROUTING_REQUEST) {
 
-
-			const HttpRequest& req = connection->getRequest();
-			RequestRouter router;
-
-			// Step 1: Find server config by port (virtual hosting)
-			ConfigData* serverConfig = findServerConfigByPort(connection->getServerPort());
-			if (!serverConfig) {
-				generateErrorResponse(connection, 500, "No server config found");
+			HttpRequest request;
+			request.parseRequestHeaders(connection.getRequestBuffer());
+			if(!request.getStatus()) {
+				connection.setStatusCode(400);
+				connection.prepareResponse();
 				return;
 			}
+			connection.setRequest(request);
 
-			// Step 2: Find matching location
-			const LocationConfig* location = router.findMatchingLocation(req.getPath(), serverConfig);
-			if (!location) {
-				generateErrorResponse(connection, 404, "Location not found");
-				return;
-			}
+			RequestRouter router(_configs);
+			RoutingResult result = router.route(connection);
+			// if(!result.success){
+			// 	error;
+			// 	return;
+			// }
+			connection.setRoutingResult(result);
 
-			// Step 3: Validate method allowed
-			if (!router.validateMethod(req.getMethod(), location)) {
-				generateErrorResponse(connection, 405, "Method not allowed");
-				return;
-			}
+			RequestHandler reqHandler;
+			CgiExecutor cgiExecutor;
+			// Dispatch based on type
+			switch (result.type) {
 
-			// Step 4: Map and validate path
-			std::string mappedPath = router.mapPath(req.getPath(), location);
-			if (!router.validatePathSecurity(mappedPath, location->root)) {
-				generateErrorResponse(connection, 403, "Path traversal detected");
-				return;
-			}
-
-			// Step 5: Store routing context for later use
-			connection->setRoutingContext(serverConfig, location, mappedPath);
-
-			// Step 6: Classify request type
-			RequestType type = router.classify(req, location);
-			connection.setRequestType(type);
-
-			// Step 7: Dispatch based on type
-			switch (type) {
-
-				case STATIC_FILE:
-					handleGET(connection, serverConfig, location, mappedPath);
+				case GET:
+					reqHandler.handleGET(connection);
 					break;
 
 				case DELETE:
-					handleDELETE(connection, serverConfig, location, mappedPath);
+					reqHandler.handleDELETE(connection);
 					break;
 
-				case UPLOAD:
-					connection->readBody();
+				case POST:
+				case CGI_POST:
+					connection.readBody();
 					break;
 
-				case CGI_SCRIPT:
-					handleCGI(connection, serverConfig, location, mappedPath);
+				case CGI_GET:
+					cgiExecutor.handleCGI();
 					break;
 
 				case REDIRECT:
-					handleRedirect(connection, location);
+					reqHandler.handleRedirect(connection);
 					break;
 
 				default:
@@ -123,25 +109,32 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			}
 			return;
 		}
-
 		else if (state == READING_BODY) {
 
-			if(!connection->readBody()) {
+			if(!connection.readBody()) {
 				return;
 			}
 		}
-
 		else if (state == EXECUTING_REQUEST) {
 
-			RequestType type = connection->getRequestType();
+			connection.moveBodyToRequest();
+			const HttpRequest& request = connection.getRequest();
+			if(!request.getStatus()) {
+				connection.setStatusCode(400);
+				connection.prepareResponse();
+				return;
+			}
 
+			const RequestType& type = connection.getRoutingResult().type;
+			RequestHandler reqHandler;
+			CgiExecutor cgiExecutor;
 			switch(type) {
-				case (CGI){
-					handleCGI(connection, serverConfig, location, mappedPath);
+				case (CGI_POST): {
+					cgiExecutor.handleCGI(connection, serverConfig, location, mappedPath);
 					break;
 				}
-				case (POST) {
-					handlePOST(connection, mappedPath);
+				case (POST): {
+					reqHandler.handlePOST(connection, mappedPath);
 					break;
 				}
 				default: {
@@ -152,20 +145,16 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			}
 		}
 
-		else if (state == PREPARING_RESPONSE) {
-
-			connection->prepareResponse();
-		}
 	}
 
 	// ========== POLLOUT Events ==========
 	else if (revents & POLLOUT) {
 
-		if (connection->getState() == SENDING_RESPONSE) {
+		if (connection.getState() == SENDING_RESPONSE) {
 
-			bool sendComplete = connection->sendResponse();
+			bool sendComplete = connection.sendResponse();
 
-			if (sendComplete && connection->shouldClose()) {
+			if (sendComplete && connection.shouldClose()) {
 				disconnectConnection(fd);
 			}
 		}

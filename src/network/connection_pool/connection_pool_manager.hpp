@@ -8,8 +8,8 @@
 class ConnectionPoolManager {
 
 	public:
-		ConnectionPoolManager();
-		~ConnectionPoolManager();
+		ConnectionPoolManager(std::vector<ConfigData>& configs):_configs(configs){}
+		~ConnectionPoolManager(){}
 
 		void handleConnectionEvent(int fd, short revents);
 		void addConnection(Connection& incomingConnection);
@@ -20,7 +20,7 @@ class ConnectionPoolManager {
 
 	private:
 		std::map<int, Connection>	_connectionPool;
-
+		std::vector<ConfigData>&	_configs;
 };
 
 #endif

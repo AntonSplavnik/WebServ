@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/19 00:36:43 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 17:24:21 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,6 @@
 
 
 extern volatile sig_atomic_t g_shutdown;
-
-EventLoop::EventLoop(Config& config)
-	: _connectionPoolManager(),
-	  _cgiExecutor(_connectionPoolManager),
-	  _listenManager(_connectionPoolManager),
-	  _configs(config.getServers()),
-	  _listeningSocketCount(),
-	  _running(true) {}
-EventLoop::~EventLoop() {
-	stop();
-}
 
 void EventLoop::stop() {
 
@@ -53,7 +42,6 @@ void EventLoop::rebuildPollFds() {
 			case ROUTING_REQUEST:
 			case READING_BODY:
 			case EXECUTING_REQUEST:
-			case PREPARING_RESPONSE:
 				connection.events = POLLIN;
 				break;
 			case SENDING_RESPONSE:

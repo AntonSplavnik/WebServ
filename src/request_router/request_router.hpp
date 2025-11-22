@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   request_router.hpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/21 17:44:00 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/11/22 18:01:33 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef REQUEST_ROUTER_HPP
 #define REQUEST_ROUTER_HPP
 
@@ -5,50 +17,44 @@
 
 #include "http_request.hpp"
 #include "config.hpp"
-
-struct ServerConfig {
-	// Your existing ConfigData
-	std::vector<std::string> server_names;
-	std::vector<std::pair<std::string, int>> listeners;
-	std::string root;
-	std::vector<LocationConfig> locations;
-	// ... all config fields
-
-	const LocationConfig* findLocation(const std::string& path);
-};
+#include "connection.hpp"
 
 enum RequestType{
-	STATIC_FILE, // GET
-	CGI_SCRIPT,  // CGI GET
-	REDIRECT,
-	UPLOAD,      // POST, CGI POST
-	DELETE       // DELETE
+	GET,
+	DELETE,
+	POST,
+	CGI_POST,
+	CGI_GET,
+	REDIRECT
+};
+
+struct RoutingResult {
+	bool success;
+	int errorCode;
+	std::string errorMessage;
+	ConfigData* serverConfig;
+	const LocationConfig* location;
+	std::string mappedPath;
+	RequestType type;
 };
 
 class RequestRouter {
 
 	public:
-		RequestRouter();
-		~RequestRouter();
+		RequestRouter(std::vector<ConfigData>& configs) :_configs(configs){}
+		~RequestRouter(){}
 
-	// Find location within server
-	const LocationConfig* routeToLocation(const HttpRequest& req, const ServerConfig* server);
-	ConfigData* findServerConfigByPort();
-
-	// Route by Host header to ServerConfig
-	ServerConfig* routeToServer(const HttpRequest& req, ServerConfig* defaultConfig);
-
-	// Determine request type
-	RequestType classify(const HttpRequest& req, const LocationConfig* location);
-	// Returns: STATIC_FILE, CGI_SCRIPT, REDIRECT, UPLOAD, DELETE
-
-	bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
-	std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
-	bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
-
+		RoutingResult route(Connection& connection);
 
 	private:
-		std::vector<ServerConfig*> _configs;
+		std::vector<ConfigData>&	_configs;
+
+		ConfigData& findServerConfig(const HttpRequest& request, int serverPort);	// Virtual hosting FindServerConfigByPort + MatchServerByHost
+		bool validateBodySize(int contentLength, const LocationConfig*& location);
+		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
+		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
+		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
+		RequestType classify(const HttpRequest& req, const LocationConfig* location);
 };
 
 #endif

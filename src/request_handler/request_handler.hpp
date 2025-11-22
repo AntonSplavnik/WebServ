@@ -7,29 +7,14 @@
 class RequestHandler {
 
 	public:
-		RequestHandler();
-		~RequestHandler();
+		RequestHandler(){}
+		~RequestHandler(){}
 
-		void handleGET(Connection& connection, std::string& path);
-		void handlePOST(Connection& connection, std::string& path);
-		void handleDELETE(Connection& connection, std::string& path);
-
-	private:
-
+		void handleGET(Connection& connection);
+		void handlePOST(Connection& connection);
+		void handleDELETE(Connection& connection);
+		// void handleRedirect(Connection* conn, const LocationConfig* location);
+		// void handleError(Connection* conn, int statusCode, const ServerConfig* config);
 };
-
-
-// class RequestHandler {
-
-// 	public:
-// 		void handleStatic(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-// 		void handleUpload(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-// 		void handleDelete(Connection* conn, const ServerConfig* config, const LocationConfig* location);
-// 		void handleRedirect(Connection* conn, const LocationConfig* location);
-// 		void handleError(Connection* conn, int statusCode, const ServerConfig* config);
-
-// 	private:
-
-// };
 
 #endif

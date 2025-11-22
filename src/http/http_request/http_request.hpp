@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/10/30 20:52:46 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 22:02:49 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,70 +27,84 @@ enum Methods {
 	DELETE
 };
 
-class HttpRequest{
+
+class HttpRequest {
 
 	public:
-		HttpRequest();
-		~HttpRequest();
+		HttpRequest()
+			: _requestLine(),
+			_body(),
+			_method(),
+			_path(),
+			_query(),
+			_version(),
+			_contentLength(0),
+			_headers(),
+			_isValid(true) {
+		}
+		~HttpRequest() {}
 
-		void parseRequest(std::string requestData);
-		void ParsePartialRequest(const std::string requestData);
-
-		void extractLineHeaderBodyLen(const std::string rawData);
-
-		//parse
-		void parseRequestLine();
+		// Parsing methods
+		void parseRequestHeaders(const std::string requestData);
+		void addBody(const std::string& requestBuffer);
 		void parseBody();
-		void parseHeaders();
-		void parseQuery();
 
-		//extract (get, set)
-		std::string getRequstLine() const;
-		std::string getBody() const;
-		std::string getRawHeaders() const;
-		unsigned long getContentLength() const;
-		unsigned long getBodyLength() const;
+		// Request line getters
+		const std::string& getMethod() const { return _method; }
+		Methods getMethodEnum() const { return _methodEnum; }
+		const std::string& getPath() const { return _path; }
+		const std::string& getQuery() const { return _query; }
+		const std::string& getVersion() const { return _version; }
 
-		void setRequstLine(std::string requestLine);
-		void setBody(std::string body);
-		void setRawHeaders(std::string rawHeaders);
-		void setContentLength(unsigned long contentLength);
-
-		//parse (get, set)
-		std::string getMethod() const;
-		std::string getPath() const;
-		std::string getQuery() const;
-		std::string getVersion() const;
+		// Headers getters
+		const std::map<std::string, std::string>& getHeaders() const { return _headers; }
 		std::string getContentType() const;
 		std::string getConnectionType() const;
+		unsigned long getContentLength() const { return _contentLength; }
 
-		const std::map<std::string, std::string>& getHeaders() const;
+		// Body getters
+		const std::string& getBody() const { return _body; }
+		unsigned long getBodyLength() const { return _body.length(); }
 
-		void setMethod(std::string method);
-		void setPath(std::string path);
-		void setVersion(std::string version);
-		void setContentType(std::string ContentType) const;
+		// Raw data getters
+		const std::string& getRequstLine() const { return _requestLine; }
+		const std::string& getRawHeaders() const { return _rawHeaders; }
 
-		Methods getMethodEnum() const;
-		bool getStatus() const;
+		// Setters
+		void setRequstLine(std::string requestLine) { _requestLine = requestLine; }
+		void setRawHeaders(std::string rawHeaders) { _rawHeaders = rawHeaders; }
+		void setMethod(std::string method) { _method = method; }
+		void setPath(std::string path) { _path = path; }
+		void setVersion(std::string version) { _version = version; }
+		void setContentLength(unsigned long contentLength) { _contentLength = contentLength; }
+
+		// Status
+		bool getStatus() const { return _isValid; }
 
 	private:
-		std::string		_requestLine;
-		std::string		_body;
-		std::string		_rawHeaders;
+		// Raw data
+		std::string	_requestLine;
+		std::string	_rawHeaders;
+		std::string	_body;
 
-		//reqest line
-		std::string		_method;
-		Methods			_methodEnum;
-		std::string		_path;
-		std::string		_query;
-		std::string		_version;
+		// Parsed request line
+		std::string _method;
+		Methods		_methodEnum;
+		std::string	_path;
+		std::string	_query;
+		std::string	_version;
+
+		// Parsed headers
+		std::map<std::string, std::string>	_headers;
 		unsigned long	_contentLength;
 
-		//headers
-		std::map<std::string, std::string>	_headers;
-		// std::string query;
+		// State
 		bool	_isValid;
-};
-#endif
 
+		// Internal parsing helpers
+		void extractLineHeaderBodyLen(const std::string rawData);
+		void parseRequestLine();
+		void parseHeaders();
+};
+
+#endif

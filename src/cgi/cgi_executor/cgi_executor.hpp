@@ -10,6 +10,8 @@ class CgiExecutor {
 		CgiExecutor(ConnectionPoolManager& conPoolManager);
 		~CgiExecutor();
 
+		void handleCGI();
+
 		void handleCGIevent(int fd, short revent);
 		bool isCGI(int fd);
 		void handleCGItimeout(Cgi* cgi);

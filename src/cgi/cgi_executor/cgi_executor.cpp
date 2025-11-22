@@ -4,7 +4,7 @@ CgiExecutor::CgiExecutor(ConnectionPoolManager& conPoolManager)
 	:_conPoolManager(conPoolManager) {}
 CgiExecutor::~CgiExecutor() {}
 
-void CgiExecutor::handleCGI() {
+void CgiExecutor::handleCGI(Connection& connection, ) {
 
 	Cgi* cgi = new Cgi(_controller, httpRequest, _clients[fd], mappedPath, matchedLoc, cgiExt);
 

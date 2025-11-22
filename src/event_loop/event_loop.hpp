@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/19 00:36:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 15:38:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,14 @@
 class EventLoop {
 
 	public:
-		EventLoop(Config& config);
-		~EventLoop();
+		EventLoop::EventLoop(Config& config)
+			: _connectionPoolManager(_configs),
+			_cgiExecutor(_connectionPoolManager),
+			_listenManager(_connectionPoolManager),
+			_configs(config.getServers()),
+			_listeningSocketCount(),
+			_running(true) {}
+		EventLoop::~EventLoop() { stop(); }
 
 		void run();
 		void addKilledPid(pid_t pid);
