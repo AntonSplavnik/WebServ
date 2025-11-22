@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 19:03:18 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/23 00:20:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,6 @@ ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPor
 	// No match - return first server as default (nginx behavior)
 	return *matchedConfigs[0];
 }
-
 bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig*& location) {
 
 	bool methodAllowed = false;
@@ -209,30 +208,27 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 	}
 	return true;
 }
-
 RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig* location) {
 
-	// Step 1: Check for redirect
+	// Check for redirect
 	if (!location->redirect.empty()) {
 		return REDIRECT;
 	}
 
-	// Step 2: Check for CGI
+	// Check for CGI
 	// Check if path matches CGI extension
 	std::string path = req.getPath();
 	bool isCGI = false;
 
 	// Check against cgi_extension list
-	for (size_t i = 0; i < location->cgi_extension.size(); i++) {
-		std::string ext = location->cgi_extension[i];
+	for (size_t i = 0; i < location->cgi_ext.size(); i++) {
+		std::string ext = location->cgi_ext[i];
 
 		// Check if path ends with this extension
-		if (path.length() >= ext.length()) {
-			if (path.compare(path.length() - ext.length(), ext.length(), ext) == 0) {
+		if (path.size() > ext.size() && path.substr(path.length() - ext.length()) == ext) {
 				isCGI = true;
 				break;
 			}
-		}
 	}
 	const std::string& method = req.getMethod();
 
@@ -245,23 +241,11 @@ RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig
 		// DELETE on CGI? Treat as regular DELETE
 	}
 
-	// Step 3: Classify by method
-	if (method == "DELETE") {
-		return DELETE;
-	}
-
-	if (method == "POST") {
-		return POST;
-	}
-
-	if (method == "GET") {
-		return GET;
-	}
-
-	// Shouldn't reach here if validateMethod() passed
-	return GET;  // Default fallback
+	// Classify by method
+	if (method == "DELETE")  return DELETE;
+	else if (method == "POST") return POST;
+	return GET;
 }
-
 RoutingResult& prepErrorResult(bool success, int errorCode, std::string errorMessage) {
 	RoutingResult result;
 	result.success = success;

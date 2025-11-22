@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 22:18:54 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 23:43:40 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,8 +19,6 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 	Connection& connection = _connectionPool[fd];
 	const ConnectionState& state = connection.getState();
-
-
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
@@ -57,9 +55,8 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			if (!connection.readHeaders()) {
 				return;
 			}
-		}
-		else if (state == ROUTING_REQUEST) {
 
+			// Parse headers after received
 			HttpRequest request;
 			request.parseRequestHeaders(connection.getRequestBuffer());
 			if(!request.getStatus()) {
@@ -69,12 +66,17 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			}
 			connection.setRequest(request);
 
+			return;
+		}
+		else if (state == ROUTING_REQUEST) {
+
 			RequestRouter router(_configs);
 			RoutingResult result = router.route(connection);
-			// if(!result.success){
-			// 	error;
-			// 	return;
-			// }
+			if(!result.success){
+				connection.setStatusCode(result.errorCode);
+				connection.prepareResponse();
+				return;
+			}
 			connection.setRoutingResult(result);
 
 			RequestHandler reqHandler;
@@ -104,6 +106,8 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 					break;
 
 				default:
+					connection.setStatusCode(500);
+					connection.prepareResponse();
 					generateErrorResponse(connection, 500, "Unknown request type");
 					break;
 			}
@@ -114,9 +118,8 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			if(!connection.readBody()) {
 				return;
 			}
-		}
-		else if (state == EXECUTING_REQUEST) {
 
+			// Parse body after received
 			connection.moveBodyToRequest();
 			const HttpRequest& request = connection.getRequest();
 			if(!request.getStatus()) {
@@ -124,6 +127,10 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 				connection.prepareResponse();
 				return;
 			}
+
+			return;
+		}
+		else if (state == EXECUTING_REQUEST) {
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;
@@ -144,7 +151,6 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 				return;
 			}
 		}
-
 	}
 
 	// ========== POLLOUT Events ==========
