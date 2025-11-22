@@ -20,7 +20,6 @@ struct ServerConfig {
 enum RequestType{
 	STATIC_FILE, // GET
 	CGI_SCRIPT,  // CGI GET
-	REDIRECT,
 	UPLOAD,      // POST, CGI POST
 	DELETE       // DELETE
 };
@@ -43,7 +42,7 @@ class RequestRouter {
 
 	// Determine request type
 	RequestType classify(const HttpRequest& req, const LocationConfig* location);
-	// Returns: STATIC_FILE, CGI_SCRIPT, REDIRECT, UPLOAD, DELETE
+	// Returns: STATIC_FILE, CGI_SCRIPT, UPLOAD, DELETE
 
 	bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 	std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);

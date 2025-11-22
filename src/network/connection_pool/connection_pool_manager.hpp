@@ -11,7 +11,8 @@ class ConnectionPoolManager {
 		ConnectionPoolManager();
 		~ConnectionPoolManager();
 
-		void handleConnectionEvent(int fd, short revents);
+		// comment from Maksim: maybe move to private?
+		void handleConnectionEvent(int fd, short revents); 
 		void addConnection(Connection& incomingConnection);
 		void disconnectConnection(short fd);
 		bool isConnection(int fd);
@@ -19,6 +20,8 @@ class ConnectionPoolManager {
 		std::map<int, Connection>& getConnectionPool() {return _connectionPool;}
 
 	private:
+		void handleRedirect(Connection* connection, const LocationConfig* location);
+
 		std::map<int, Connection>	_connectionPool;
 
 };

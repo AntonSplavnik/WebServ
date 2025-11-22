@@ -1,10 +1,12 @@
 #include "connection_pool_manager.hpp"
 #include "request_router.hpp"
+#include "http_response.hpp"
 
 
 ConnectionPoolManager::ConnectionPoolManager() {}
 ConnectionPoolManager::~ConnectionPoolManager() {}
 
+// comment from Maksim: old code as I suppose
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 	Connection* connection = &_connectionPool[fd];
@@ -74,6 +76,12 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 				return;
 			}
 
+			// Step 2.5: Check for redirect (highest priority - works for all methods)
+			if (!location->redirect.empty()) {
+				handleRedirect(connection, location);
+				return;
+			}
+			
 			// Step 3: Validate method allowed
 			if (!router.validateMethod(req.getMethod(), location)) {
 				generateErrorResponse(connection, 405, "Method not allowed");
@@ -111,10 +119,6 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 				case CGI_SCRIPT:
 					handleCGI(connection, serverConfig, location, mappedPath);
-					break;
-
-				case REDIRECT:
-					handleRedirect(connection, location);
 					break;
 
 				default:
@@ -181,4 +185,18 @@ void ConnectionPoolManager::disconnectConnection(short fd) {
 }
 bool ConnectionPoolManager::isConnection(int fd){
 	return _connectionPool.find(fd) != _connectionPool.end();
+}
+
+void ConnectionPoolManager::handleRedirect(Connection* connection, const LocationConfig* location) {
+	const HttpRequest& req = connection->getRequest();
+	HttpResponse response(req);
+	
+	response.setStatusCode(location->redirect_code);
+	response.generateRedirectResponse(location->redirect);
+	
+	connection->setResponseData(response.getResponse());
+	connection->setStatusCode(location->redirect_code);
+	connection->setState(SENDING_RESPONSE);
+	
+	std::cout << "[DEBUG] Redirect " << location->redirect_code << " to: " << location->redirect << std::endl;
 }

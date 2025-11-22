@@ -87,7 +87,17 @@ void Config::parseRedirect(LocationConfig& config, const std::vector<std::string
     if (tokens.size() != 2)
         throw ConfigParseException("Redirect directive requires exactly 2 arguments: status code and target path/URL");
     int code = std::atoi(tokens[0].c_str());
-    if (!isValidHttpStatusCode(code) || (code != 301 && code != 302 && code != 303))
+    
+    // Validate redirect code against allowed list
+    bool isValidRedirectCode = false;
+    for (size_t i = 0; i < VALID_REDIRECT_CODES_COUNT; ++i) {
+        if (code == VALID_REDIRECT_CODES[i]) {
+            isValidRedirectCode = true;
+            break;
+        }
+    }
+    
+    if (!isValidHttpStatusCode(code) || !isValidRedirectCode)
         throw ConfigParseException("Invalid redirect status code: " + tokens[0]);
     config.redirect_code = code;
     config.redirect = tokens[1];

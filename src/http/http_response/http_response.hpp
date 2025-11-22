@@ -59,6 +59,7 @@ class HttpResponse {
 		void generateGetResponse();
 		void generatePostResponse();
 		void generateDeleteResponse();
+		void generateRedirectResponse(const std::string& location);
 
 		std::string extractBody();
 		std::string	getTimeNow();

@@ -105,6 +105,8 @@ std::string HttpResponse::getReasonPhrase() {
 		case 204: return "No Content";
 		// Redirection
 		case 301: return "Moved Permanently";
+		case 302: return "Found";
+		case 303: return "See Other";
 		case 304: return "Not Modified";
 		// Client Error
 		case 400: return "Bad Request";
@@ -162,6 +164,19 @@ void HttpResponse::generateDeleteResponse() {
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
 		<< "Content-Length: " << _contentLength << "\r\n"
+		<< "Connection: " << _connectionType << "\r\n\r\n";
+	_response = oss.str();
+}
+void HttpResponse::generateRedirectResponse(const std::string& location) {
+	_reasonPhrase = getReasonPhrase();
+	_date = getTimeNow();
+	_connectionType = _request.getConnectionType();
+	
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Location: " << location << "\r\n"
 		<< "Connection: " << _connectionType << "\r\n\r\n";
 	_response = oss.str();
 }

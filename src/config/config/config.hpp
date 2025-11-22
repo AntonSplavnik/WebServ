@@ -23,6 +23,10 @@ static const size_t AUTOINDEX_VALUES_COUNT = sizeof(AUTOINDEX_VALUES) / sizeof(A
 static const char *HTTP_METHODS[] = {"GET", "POST", "DELETE"};
 static const size_t HTTP_METHODS_COUNT = sizeof(HTTP_METHODS) / sizeof(HTTP_METHODS[0]);
 
+// Valid redirect status codes
+static const int VALID_REDIRECT_CODES[] = {301, 302, 303};
+static const size_t VALID_REDIRECT_CODES_COUNT = sizeof(VALID_REDIRECT_CODES) / sizeof(VALID_REDIRECT_CODES[0]);
+
 //Valid location directives (used in config.cpp)
 static const char *LOCATION_DIRECTIVES[] = {
 	"autoindex", "root", "index", "allow_methods", "cgi_ext", "cgi_path",
@@ -38,6 +42,8 @@ static const char *SERVER_DIRECTIVES[] = {
 	"client_max_body_size", "keepalive_timeout", "keepalive_max_requests"
 };
 static const size_t SERVER_DIRECTIVES_COUNT = sizeof(SERVER_DIRECTIVES) / sizeof(SERVER_DIRECTIVES[0]);
+
+
 
 // Default error pages
 #define DEFAULT_ERROR_PAGE_404 "runtime/www/errors/404.html"
