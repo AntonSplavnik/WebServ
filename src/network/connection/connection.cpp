@@ -1,5 +1,7 @@
 #include "connection.hpp"
 
+// comment from Maksim: the constructor is not complete (_request etc ...)?
+
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
 	  _ip(ip),
@@ -13,7 +15,7 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	  _connectionState(READING_HEADERS),
 	  _bytesSent(0),
 	  _lastActivity(time(NULL)),
-	  _shouldClose(false) {}
+	  _shouldClose(false){}
 Connection::~Connection() {
 
 	if(_fileStream.is_open()) _fileStream.close();

@@ -3,6 +3,7 @@
 
 #include "http_response.hpp"
 #include "post_handler.hpp"
+#include "config.hpp"
 
 class RequestHandler {
 
@@ -13,6 +14,7 @@ class RequestHandler {
 		void handleGET(Connection& connection, std::string& path);
 		void handlePOST(Connection& connection, std::string& path);
 		void handleDELETE(Connection& connection, std::string& path);
+		void handleRedirect(Connection& connection, const LocationConfig* location);
 
 	private:
 

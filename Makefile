@@ -75,9 +75,9 @@ SRC_FILES	= main.cpp \
 			  $(CGI_DIR)/cgi_helpers.cpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.cpp \
 			  $(REQ_HANDLER_DIR)/request_handler.cpp \
+			  $(REQ_HANDLER_DIR)/post_handler.cpp \
 			  $(REQ_ROUTER_DIR)/request_router.cpp \
 			  $(SERVER_DIR)/server.cpp \
-			  $(SERVER_DIR)/post_handler.cpp \
 			  $(LOGGING_DIR)/logger.cpp
 
 # Object files
@@ -97,9 +97,9 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(CGI_DIR)/cgi.hpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.hpp \
 			  $(REQ_HANDLER_DIR)/request_handler.hpp \
+			  $(REQ_HANDLER_DIR)/post_handler.hpp \
 			  $(REQ_ROUTER_DIR)/request_router.hpp \
 			  $(SERVER_DIR)/server.hpp \
-			  $(SERVER_DIR)/post_handler.hpp \
 			  $(SERVER_DIR)/client_info.hpp \
 			  $(LOGGING_DIR)/logger.hpp
 

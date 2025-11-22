@@ -50,7 +50,7 @@
 
   Common status codes:
   - 200 OK - Success
-  - 404 Not Found - File not found
+  - 404 Not Found - File not found 
   - 500 Internal Server Error - Server error
   - 403 Forbidden - Access denied
 

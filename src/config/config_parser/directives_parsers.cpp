@@ -1,6 +1,6 @@
 #include "config.hpp"
-#include "../exceptions/config_exceptions.hpp"
-#include "../helpers/helpers.hpp"
+#include "../config_exceptions/config_exceptions.hpp"
+#include "../config_helpers/helpers.hpp"
 #include <sstream>
 #include <unistd.h>
 

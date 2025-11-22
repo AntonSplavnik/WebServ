@@ -1,7 +1,7 @@
 // Logger.cpp
 #include "logger.hpp"
-#include "../exceptions/config_exceptions.hpp"
-#include "../helpers/helpers.hpp"
+#include "../config/config_exceptions/config_exceptions.hpp"
+#include "../config/config_helpers/helpers.hpp"
 #include <unistd.h>
 //Instructions: Implement a simple logging system that writes access and error logs to specified files.
 //usage:

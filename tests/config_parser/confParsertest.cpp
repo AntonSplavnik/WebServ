@@ -1,11 +1,11 @@
 
-#include "../src/config/config.hpp"
-#include "../src/exceptions/config_exceptions.hpp"
+#include "config.hpp"
+#include "config_exceptions.hpp"
 #include <iostream>
 #include <string>
-#include "../src/logging/logger.hpp"
+#include "logger.hpp"
 
-// c++ -std=c++98 test/confParsertest.cpp src/config/config.cpp src/logging/logger.cpp src/config/directivesParsers.cpp src/helpers/helpers.cpp -o confParsertest
+// c++ -std=c++98 -Isrc/config/config -Isrc/config/config_parser -Isrc/config/config_helpers -Isrc/config/config_exceptions -Isrc/logging -Isrc/network/socket -Isrc/network/connection -Isrc/network/connection_pool -Isrc/network/listening_socket_manager -Isrc/http/http_request -Isrc/http/http_response -Isrc/event_loop -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler -Isrc/request_router -Isrc/server -Isrc/logging tests/config_parser/confParsertest.cpp src/config/config/config.cpp src/config/config_parser/directives_parsers.cpp src/config/config_helpers/helpers.cpp src/logging/logger.cpp -o confParsertest
 
 int main(int argc, char *argv[])
 {
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     Config config;
     try
     {
-        config.parseConfig(argv);
+        config.parseConfig(argv[1]);
     }
     catch (const ConfigParseException &e)
     {

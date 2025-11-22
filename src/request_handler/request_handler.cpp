@@ -84,3 +84,17 @@ void RequestHandler::handlePOST(Connection& connection, std::string& path) {
 	// client.state = SENDING_RESPONSE;
 }
 
+void RequestHandler::handleRedirect(Connection& connection, const LocationConfig* location) {
+	const HttpRequest& req = connection.getRequest();
+	HttpResponse response(req);
+	
+	response.setStatusCode(location->redirect_code);
+	response.generateRedirectResponse(location->redirect);
+	
+	connection.setResponseData(response.getResponse());
+	connection.setStatusCode(location->redirect_code);
+	connection.setState(SENDING_RESPONSE);
+	
+	std::cout << "[DEBUG] Redirect " << location->redirect_code << " to: " << location->redirect << std::endl;
+}
+

@@ -20,7 +20,6 @@ class ConnectionPoolManager {
 		std::map<int, Connection>& getConnectionPool() {return _connectionPool;}
 
 	private:
-		void handleRedirect(Connection* connection, const LocationConfig* location);
 
 		std::map<int, Connection>	_connectionPool;
 

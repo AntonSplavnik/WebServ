@@ -12,6 +12,14 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 		//add logic for incoming listening sockets from the config file.
 		for(size_t j = 0; j < configs[i].listeners.size(); j++) {
 
+			//comment from Maksim: shouldn't we check for the listeners dublicates here and skip the loop if we find a duplicate?
+			/*
+		- Second socket tries to bind → bind() fails with EADDRINUSE
+		- Socket's _fd becomes -1 (in binding())
+		- Continues with invalid socket → tries listen() on fd = -1
+		- Invalid socket gets added to vectors
+*/
+
 			Socket listeningSocket;
 
 			listeningSocket.createDefault();
@@ -20,8 +28,7 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 
 			if (fd < 0) {
 				throw std::runtime_error("[DEBUG] Failed to create socket");
-			}
-
+			}			
 			_fd.push_back(fd);
 
 			listeningSocket.setReuseAddr(true);
@@ -78,7 +85,8 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents) {
 			std::cout << "[DEBUG] Error on FD accept" << std::endl;
 			return;
 
-		Socket::setNonBlocking(clientFd);
+		Socket::setNonBlocking(clientFd);		
+		
 
 		Connection incomingConnection(
 			clientFd,
