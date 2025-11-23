@@ -2,6 +2,7 @@
 #include "request_router.hpp"
 #include "http_response.hpp"
 #include "request_handler.hpp"
+#include <sys/stat.h>
 
 
 ConnectionPoolManager::ConnectionPoolManager() {}
@@ -97,18 +98,63 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 				return;
 			}
 
-			// Step 5: Store routing context for later use
-			connection->setRoutingContext(serverConfig, location, mappedPath);
-
-			// Step 6: Classify request type
+			// Step 5: Classify request type
 			RequestType type = router.classify(req, location);
 			connection.setRequestType(type);
 
-			// Step 7: Dispatch based on type
+			// Step 6: Check path existence and get file info (for GET/DELETE)
+			struct stat pathStat;
+			bool pathExists = router.getPathInfo(mappedPath, type, &pathStat);
+			
+			if (!pathExists && (type == STATIC_FILE || type == DELETE)) {
+				// Path doesn't exist for GET/DELETE
+				generateErrorResponse(connection, errno == ENOENT ? 404 : 403, "Path not found");
+				return;
+			}
+			
+			// Step 7: Handle directory requests for GET
+			if (pathExists && type == STATIC_FILE && S_ISDIR(pathStat.st_mode)) {
+					// Ensure path ends with '/'
+					if (mappedPath.empty() || mappedPath[mappedPath.length() - 1] != '/') {
+						mappedPath += '/';
+					}
+					
+					// Check for index file - try to serve it, let handleGET handle errors
+					if (!location->index.empty()) {
+						std::string fullIndexPath = mappedPath + location->index;
+						handler.handleGET(*connection, location->index, location->autoindex, fullIndexPath);
+						// If handleGET succeeded (status 200), return. Otherwise continue to autoindex
+						if (connection->getStatusCode() == 200) {
+							return;
+						}
+						// File doesn't exist or error - continue to autoindex check
+					}
+					
+					// No index file or index file doesn't exist - check autoindex
+					if (location->autoindex) {
+						// Generate directory listing
+						std::string listing = handler.generateAutoindexHTML(connection->getRequest(), mappedPath);
+						connection->setStatusCode(200);
+						connection->setResponseData(listing);
+						connection->setState(PREPARING_RESPONSE);
+						return;
+					} else {
+						// Autoindex off and no index - return 403
+						generateErrorResponse(connection, 403, "Directory listing forbidden");
+						return;
+					}
+				}
+			}
+
+			// Step 8: Store routing context for later use
+			connection->setRoutingContext(serverConfig, location, mappedPath);
+
+			// Step 9: Dispatch based on type
 			switch (type) {
 
 				case STATIC_FILE:
-					handleGET(connection, serverConfig, location, mappedPath);
+					// Regular file (not directory) - serve it
+					handler.handleGET(*connection, location->index, location->autoindex, mappedPath);
 					break;
 
 				case DELETE:

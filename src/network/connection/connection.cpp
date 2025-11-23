@@ -192,10 +192,18 @@ void Connection::appendFormFieldToLog(const std::string& name, const std::string
 bool Connection::prepareResponse() {
 
 	HttpResponse response(_requestData);
+	
+	// If _responseData contains a body (e.g., from autoindex), set it before generating
+	if (!_responseData.empty()) {
+		response.setBody(_responseData);
+		response.setPath("index.html"); // For content-type detection (text/html)
+	}
+	
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
 	_connectionState = SENDING_RESPONSE;
+	return true;
 }
 bool Connection::sendResponse() {
 

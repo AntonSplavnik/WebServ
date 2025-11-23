@@ -11,13 +11,15 @@ class RequestHandler {
 		RequestHandler();
 		~RequestHandler();
 
-		void handleGET(Connection& connection, std::string& path);
-		void handlePOST(Connection& connection, std::string& path);
-		void handleDELETE(Connection& connection, std::string& path);
-		void handleRedirect(Connection& connection, const LocationConfig* location);
+	void handleGET(Connection& connection, const std::string& indexFile, bool autoindex, std::string& path);
+	void handlePOST(Connection& connection, std::string& path);
+	void handleDELETE(Connection& connection, std::string& path);
+	void handleRedirect(Connection& connection, const LocationConfig* location);
+
+	public:
+		std::string generateAutoindexHTML(const HttpRequest& request, const std::string& dirPath);
 
 	private:
-
 };
 
 

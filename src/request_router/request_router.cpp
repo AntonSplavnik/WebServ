@@ -1,6 +1,8 @@
 #include "request_router.hpp"
+#include <sys/stat.h>
+#include <cerrno>
 
-bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig*& location) {
+bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig* location) {
 
 	bool methodAllowed = false;
 	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
@@ -96,4 +98,18 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 		return false;
 	}
 	return true;
+}
+
+bool RequestRouter::getPathInfo(const std::string& path, RequestType type, struct stat* statBuf) {
+	// For POST/UPLOAD, skip existence check (may create new files)
+	if (type == UPLOAD) {
+		return false; // Don't check, let handler deal with it
+	}
+	
+	// For GET/DELETE, check if path exists
+	if (stat(path.c_str(), statBuf) != 0) {
+		return false; // Path doesn't exist or error
+	}
+	
+	return true; // Path exists
 }

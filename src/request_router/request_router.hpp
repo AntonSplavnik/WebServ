@@ -44,9 +44,14 @@ class RequestRouter {
 	RequestType classify(const HttpRequest& req, const LocationConfig* location);
 	// Returns: STATIC_FILE, CGI_SCRIPT, UPLOAD, DELETE
 
-	bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
+	bool validateMethod(const HttpRequest& request, const LocationConfig* location);
 	std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
 	bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
+	
+	// Path existence and type checking
+	// Returns true if path exists, false otherwise. Fills statBuf with file info if exists.
+	// For POST/UPLOAD requests, existence check is skipped (may create new files)
+	bool getPathInfo(const std::string& path, RequestType type, struct stat* statBuf);
 
 
 	private:

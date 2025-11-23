@@ -194,7 +194,10 @@ void HttpResponse::generateResponse(int statusCode) {
 		return;
 	}
 
-	_body = extractBody();
+	// If body is already set (e.g., autoindex HTML), use it instead of reading from file
+	if (_body.empty()) {
+		_body = extractBody();
+	}
 	_contentType = getContentType();
 	_contentLength = getContentLength();
 	_connectionType = _request.getConnectionType();
