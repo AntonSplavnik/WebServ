@@ -85,25 +85,38 @@ std::string HttpResponse::getTimeNow() {
 }
 
 void HttpResponse::generateErrorResponse() {
-
 	std::string errorPagePath = _customErrorPagePath;
-    std::cout << "[DEBUG ERROR_PAGE] errorPagePath: " << errorPagePath << std::endl;
 
 	if (!errorPagePath.empty()) {
 		std::ifstream errorFile(errorPagePath.c_str());
 		if (errorFile.is_open()) {
 			std::stringstream buffer;
 			buffer << errorFile.rdbuf();
-			_contentType = "text/html";
 			_body = buffer.str();
-			_contentLength = _body.length();
-			return ;
+			errorFile.close();
 		}
 	}
-		std::cout << "[DEBUG] Default page error" << std::endl;
-		_contentType = "text/html";
+	if (_body.empty()) {
 		_body = "<html><body><h1>Error " + std::to_string(_statusCode) + "</h1></body></html>";
-		_contentLength = _body.length();
+	}
+	_contentType = "text/html";
+	_contentLength = _body.length();
+
+	std::ostringstream oss;
+	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n"
+		<< "Date: " << _date << "\r\n"
+		<< "Server: " << _serverName << _serverVersion << "\r\n"
+		<< "Content-Type: " << _contentType << "\r\n"
+		<< "Content-Length: " << _contentLength << "\r\n";
+
+		for (size_t i = 0; i < _cookies.size(); ++i) {
+			oss << "Set-Cookie: " << buildSetCookieHeader(_cookies[i]) << "\r\n";
+		}
+
+		oss << "Connection: close\r\n\r\n"
+		<< _body;
+
+	_response = oss.str();
 }
 
 void HttpResponse::generateNormalResponse() {
@@ -127,12 +140,14 @@ void HttpResponse::generateNormalResponse() {
 	oss << "Date: " << _date << "\r\n"
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n";
-
-	 for (size_t i = 0; i < _cookies.size(); ++i) {
+		<< "Content-Length: " << _contentLength << "\r\n";
+	
+	for (size_t i = 0; i < _cookies.size(); ++i) {
 		oss << "Set-Cookie: " << buildSetCookieHeader(_cookies[i]) << "\r\n";
 	}
+	
+	oss << "Connection: " << _connectionType << "\r\n\r\n";
+	
 	if (_method == GET || _method == POST) {
 		oss << _body;
 	}
@@ -142,7 +157,15 @@ void HttpResponse::generateNormalResponse() {
 void HttpResponse::generateCgiResponse(const std::string& cgiOutput) {
 
 	if (cgiOutput.find("Content-Type:") != std::string::npos) {
-		_response = _protocolVer + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
+		std::ostringstream oss;
+		oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n";
+		
+		for (size_t i = 0; i < _cookies.size(); ++i) {
+			oss << "Set-Cookie: " << buildSetCookieHeader(_cookies[i]) << "\r\n";
+		}
+		
+		oss << cgiOutput;
+		_response = oss.str();
 	} else {
 		_body = cgiOutput;
 		_contentLength = _body.length();
@@ -153,8 +176,13 @@ void HttpResponse::generateCgiResponse(const std::string& cgiOutput) {
 			<< "Date: " << _date << "\r\n"
 			<< "Server: " << _serverName << _serverVersion << "\r\n"
 			<< "Content-Type: " << _contentType << "\r\n"
-			<< "Content-Length: " << _contentLength << "\r\n"
-			<< "Connection: " << _connectionType << "\r\n\r\n"
+			<< "Content-Length: " << _contentLength << "\r\n";
+		
+		for (size_t i = 0; i < _cookies.size(); ++i) {
+			oss << "Set-Cookie: " << buildSetCookieHeader(_cookies[i]) << "\r\n";
+		}
+		
+		oss << "Connection: " << _connectionType << "\r\n\r\n"
 			<< _body;
 		_response = oss.str();
 	}

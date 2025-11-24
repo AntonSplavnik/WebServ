@@ -149,6 +149,11 @@ void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
     	setenv(key.c_str(), it->second.c_str(), 1);
 	}
 
+    std::map<std::string, std::string>::const_iterator cookieIt = headers.find("cookie");
+    if (cookieIt != headers.end()) {
+        setenv("HTTP_COOKIE", cookieIt->second.c_str(), 1);
+    }
+
     // Content info (for POST, PUT)
     std::string body = request.getBody();
     std::string contentLength = "0";
