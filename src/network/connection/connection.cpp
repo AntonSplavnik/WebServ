@@ -16,7 +16,9 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_connectionState(READING_HEADERS),
 	_bytesSent(0),
 	_lastActivity(time(NULL)),
-	_shouldClose(false) {}
+	_shouldClose(false),
+	_isChunked(false),
+	_chunkedBufferInitialized(false) {}
 
 Connection::~Connection() {
 	if (_fileStream.is_open())
@@ -99,27 +101,84 @@ bool Connection::readBody() {
 			return false;
 		}
 	}
-	else {
+	
+	updateClientActivity();
+	_requestBuffer.append(buffer, bytes);
 
-		updateClientActivity();
-		/* if (_request.getTransferEncoding() == "chunked"){
-			std::string unchunkedResult = unchuck(bytes);
-		} */
-		_requestBuffer.append(buffer, bytes);
+	if (!_chunkedBufferInitialized) {
+		_isChunked = (_request.getTransferEncoding() == "chunked");
+		_chunkedBufferInitialized = true;
+	}
 
+	if (_isChunked) {
+		return processChunkedData();
+	} else {
 		size_t contentLength = _request.getContentLength();
 		size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
 		size_t bodyReceived = _requestBuffer.length() - bodyStart;
-		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
 
-		// Check if full body received
-		if(bodyReceived < contentLength)
-			return false;  // Keep receiving body
-		else {
+		if (bodyReceived < contentLength)
+			return false;
+
+		_connectionState = EXECUTING_REQUEST;
+		return true;
+	}
+}
+
+bool Connection::processChunkedData() {
+	size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
+	std::string chunkedData = _requestBuffer.substr(bodyStart);
+
+	size_t pos = 0;
+
+	while (pos < chunkedData.length()) {
+		size_t crlfPos = chunkedData.find("\r\n", pos);
+		if (crlfPos == std::string::npos)
+			return false;
+
+		std::string sizeStr = chunkedData.substr(pos, crlfPos - pos);
+
+		size_t semicolonPos = sizeStr.find(';');
+		if (semicolonPos != std::string::npos) {
+			sizeStr = sizeStr.substr(0, semicolonPos);
+		}
+
+		// Convert hexa → decimal
+		size_t chunkSize = 0;
+		std::istringstream iss(sizeStr);
+		iss >> std::hex >> chunkSize;
+
+		if (iss.fail()) {
+			std::cout << "[ERROR] Invalid chunk size: " << sizeStr << std::endl;
 			_connectionState = EXECUTING_REQUEST;
+			_statusCode = 400;
 			return true;
 		}
+
+		std::cout << "[CHUNKED] Chunk size: " << chunkSize << " (0x" << sizeStr << ")" << std::endl;
+
+		// End of chunk
+		if (chunkSize == 0) {
+			_request.setBody(_dechunkedBody);
+			_connectionState = EXECUTING_REQUEST;
+			std::cout << "[CHUNKED] Complete! Total body: " << _dechunkedBody.length() << " bytes" << std::endl;
+			return true;
+		}
+
+		size_t dataStart = crlfPos + 2;
+		size_t dataEnd = dataStart + chunkSize;
+
+		if (dataEnd + 2 > chunkedData.length())
+			return false;
+
+		_dechunkedBody.append(chunkedData.substr(dataStart, chunkSize));
+		std::cout << "[CHUNKED] Accumulated: " << _dechunkedBody.length() << " bytes" << std::endl;
+
+		// 5. Next chunk (après les \r\n finaux)
+		pos = dataEnd + 2;
 	}
+
+	return false;  // wait for (0\r\n\r\n)
 }
 
 bool Connection::writeOnDisc() {
@@ -271,15 +330,18 @@ bool Connection::sendResponse() {
 				return true;
 			}
 
-			// Reset client state for next request
-			_connectionState = READING_HEADERS;
-			_bytesSent = 0;
-			_responseData.clear();
-			_requestBuffer.clear();
+		// Reset client state for next request
+		_connectionState = READING_HEADERS;
+		_bytesSent = 0;
+		_responseData.clear();
+		_requestBuffer.clear();
+		
+		// Reset chunked state for next request
+		_isChunked = false;
+		_chunkedBufferInitialized = false;
+		_dechunkedBody.clear();
 
-			return true;
-
-		} else {
+		return true;		} else {
 			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
 		}
 	} else {

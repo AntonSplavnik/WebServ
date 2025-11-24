@@ -60,13 +60,15 @@ class HttpRequest {
 		const std::map<std::string, std::string>& getHeaders() const { return _headers; }
 		std::string getContentType() const;
 		std::string getConnectionType() const;
+		std::string getTransferEncoding() const;
 		unsigned long getContentLength() const { return _contentLength; }
 
 		// Body getters
 		const std::string& getBody() const { return _body; }
 		unsigned long getBodyLength() const { return _body.length(); }
-
-		// Raw data getters
+	
+		// Body setters
+		void  setBody(const std::string& body) { _body = body; }		// Raw data getters
 		const std::string& getRequstLine() const { return _requestLine; }
 		const std::string& getRawHeaders() const { return _rawHeaders; }
 

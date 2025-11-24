@@ -87,6 +87,8 @@ class Connection {
 		int getKeepAliveTimeout() const { return _keepAliveTimeout; }
 		void updateKeepAliveSettings(int keepAliveTimeout, int maxRequests);
 
+		bool processChunkedData();
+
 	private:
 		// Connection Metadata
 		int				_fd;
@@ -128,6 +130,12 @@ class Connection {
 		bool processWriteChunck(const std::string& data, const std::string& filePath);
 		void appendFormFieldToLog(const std::string& name, const std::string& value);
 		void setupErrorPageIfNeeded(HttpResponse& response);
+
+		// Chunked
+		std::string 	_chunkedBuffer;
+		bool 			_isChunked;
+		bool			_chunkedBufferInitialized;
+		std::string 	_dechunkedBody;
 };
 
 #endif

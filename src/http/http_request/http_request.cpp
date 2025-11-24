@@ -215,3 +215,11 @@ std::string HttpRequest::getConnectionType() const {
 	else
 		return "keep-alive";
 }
+
+std::string HttpRequest::getTransferEncoding() const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find("transfer-encoding");
+	if (it != _headers.end())
+		return it->second;
+	else
+		return "";
+}
