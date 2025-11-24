@@ -4,7 +4,7 @@
 HttpResponse::HttpResponse(const HttpRequest& request)
 	:_request(request),
 	 _method(),
-	 _protocolVer("HTTP/1.1 "),
+	 _protocolVer(request.getVersion() + " "),
 	 _serverName("WebServ"),
 	 _serverVersion(1.0f){}
 
@@ -214,6 +214,7 @@ void HttpResponse::setReasonPhrase(const std::string& reasonPhrase){_reasonPhras
 void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
+void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}

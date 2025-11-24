@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 02:49:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 16:04:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,8 @@ class Cgi {
 		const ConfigData&			_config;
 		EventLoop&					_eventLoop;
 
-		void prepEnv(const HttpRequest &request, const std::string &scriptPath);
+		// void prepEnv(const HttpRequest &request, const std::string &scriptPath);
+		char** prepEnvVariables();
 		bool chdirToScriptDir();
 		void executeCGI();
 };

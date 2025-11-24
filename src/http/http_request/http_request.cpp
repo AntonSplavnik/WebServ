@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 23:11:49 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 20:24:04 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,12 +178,14 @@ void HttpRequest::parseHeaders() {
 		_headers[key] = value;
 	}
 
-	// Extract Content-Length
-	std::map<std::string, std::string>::const_iterator it = _headers.find("content-length");
-	if (it != _headers.end()) {
-		_contentLength = std::strtoul(it->second.c_str(), NULL, 10);
-	} else {
-		_contentLength = 0;
+	// Only validate Host for HTTP/1.1
+	if (_version == "HTTP/1.1") {
+		std::map<std::string, std::string>::const_iterator hostIt = _headers.find("host");
+		if (hostIt == _headers.end() || hostIt->second.empty()) {
+			std::cout << "[ERROR] Missing Host header" << std::endl;
+			_isValid = false;
+			return;
+		}
 	}
 }
 void HttpRequest::parseBody() {
@@ -194,24 +196,29 @@ void HttpRequest::parseBody() {
 	}
 
 	// Validate Content-Length if present
-	if (_contentLength != _body.length()) {
+	if (getContentLength() != _body.length()) {
 		_isValid = false;
 		std::cout << "Content-Length mismatch"
-				  << _contentLength << ", got " << _body.length() << std::endl;
+				  << getContentLength() << ", got " << _body.length() << std::endl;
 	}
 }
 
-std::string HttpRequest::getContentType() const {
-	std::map<std::string, std::string>::const_iterator it = _headers.find("content-type");
+std::string HttpRequest::getHeaderValue(const std::string& key, const std::string& defaultValue) const {
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
 	if (it != _headers.end())
 		return it->second;
 	else
-		return "";
+		return defaultValue;
+}
+std::string HttpRequest::getContentType() const {
+	return getHeaderValue("content-type");
 }
 std::string HttpRequest::getConnectionType() const {
-	std::map<std::string, std::string>::const_iterator it = _headers.find("connection");
-	if (it != _headers.end())
-		return it->second;
-	else
-		return "keep-alive";
+	return getHeaderValue("connection", "close");
+}
+unsigned long HttpRequest::getContentLength() const {
+	std::string value = getHeaderValue("content-length", "0");
+	if (value.empty())
+		return 0;
+	return std::strtoul(value.c_str(), NULL, 10);
 }

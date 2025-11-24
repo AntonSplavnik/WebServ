@@ -25,19 +25,6 @@ Connection::~Connection() {
 
 bool Connection::readHeaders() {
 
-	if (_requestCount >= _maxRequests){
-		std::cout << "[DEBUG] Max request count reached: " << _fd << std::endl;
-
-		/*
-			1. Graceful Closure: You should finish sending the current
-			response before disconnecting
-			2. Signal to Client: Send Connection: close header in the
-			response before closing
-			3. Not an Error: This is normal behavior, not an error condition
-		*/
-		return true;
-	}
-
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
@@ -71,19 +58,6 @@ bool Connection::readHeaders() {
 }
 bool Connection::readBody() {
 
-	if (_requestCount >= _maxRequests){
-		std::cout << "[DEBUG] Max request count reached: " << _fd << std::endl;
-
-		/*
-			1. Graceful Closure: You should finish sending the current
-			response before disconnecting
-			2. Signal to Client: Send Connection: close header in the
-			response before closing
-			3. Not an Error: This is normal behavior, not an error condition
-		*/
-		return true;
-	}
-
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
@@ -102,8 +76,8 @@ bool Connection::readBody() {
 	else {
 
 		updateClientActivity();
-		/* if (_request.getTransferEncoding() == "chunked"){
-			std::string unchunkedResult = unchuck(bytes);
+		/* if (_request.getTransferEncoding() == "chunked" || _request.getVersion() == "HTTP/1.1"){
+			std::string unchunkedResult = processChunkedData(bytes);
 		} */
 		_requestBuffer.append(buffer, bytes);
 
@@ -206,10 +180,39 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
 	return true;
 }
+/* bool Connection::processChunkedData() {
+	while (true) {
+		if (_chunkState == READING_SIZE) {
+			size_t crlf = _requestData.find("\r\n", bodyStart);
+			if (crlf == npos) return false; // Need more data
+
+			std::string sizeStr = _requestData.substr(bodyStart, crlf - bodyStart);
+			_currentChunkSize = strtoul(sizeStr.c_str(), NULL, 16); // Hex
+
+			if (_currentChunkSize == 0) {
+				_connectionState = EXECUTING_REQUEST;
+				return true; // Done
+			}
+			bodyStart = crlf + 2;
+			_chunkState = READING_DATA;
+		}
+
+		if (_chunkState == READING_DATA) {
+			if (_requestData.length() - bodyStart < _currentChunkSize + 2)
+				return false; // Need more data
+
+			_dechunkedBody.append(_requestData, bodyStart, _currentChunkSize);
+			bodyStart += _currentChunkSize + 2; // Skip data + \r\n
+			_chunkState = READING_SIZE;
+		}
+	}
+} */
 
 bool Connection::prepareResponse() {
 
 	HttpResponse response(_request);
+
+	// Set body for GET request
 	if (!_bodyContent.empty()) {
 		response.setBody(_bodyContent);
 		_bodyContent.clear();
@@ -221,7 +224,16 @@ bool Connection::prepareResponse() {
 	}
 
 	// Look up custom error page if status is an error
-	setupErrorPageIfNeeded(response);
+	if (_statusCode >= 400 && _routingResult.serverConfig){
+		setupErrorPage(response);
+		_shouldClose = true;
+	}
+
+	// Set header to close
+	if (_shouldClose || _request.getConnectionType() == "close" || _requestCount + 1 >= _maxRequests){
+		response.setConnectionType("close");
+		_shouldClose = true;
+	}
 
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
@@ -234,7 +246,16 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	HttpResponse response(_request);
 
 	// Look up custom error page if status is an error
-	setupErrorPageIfNeeded(response);
+		if (_statusCode >= 400 && _routingResult.serverConfig){
+		setupErrorPage(response);
+		_shouldClose = true;
+	}
+
+	// Set header to close
+	if (_shouldClose || _request.getConnectionType() == "close" || _requestCount + 1 >= _maxRequests){
+		response.setConnectionType("close");
+		_shouldClose = true;
+	}
 
 	response.generateResponse(_statusCode, cgiOutput);
 	_responseData = response.getResponse();
@@ -243,6 +264,17 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	return true;
 
 }
+void Connection::setupErrorPage(HttpResponse& response) {
+	std::string errorPage = _routingResult.serverConfig->getErrorPage(
+		_statusCode,
+		_routingResult.location
+	);
+	if (!errorPage.empty()) {
+		response.setCustomErrorPage(errorPage);
+	}
+
+}
+
 bool Connection::sendResponse() {
 
 	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
@@ -266,18 +298,15 @@ bool Connection::sendResponse() {
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {
 
-			if(_shouldClose){
+
+			if(_shouldClose) {
 				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
 				return true;
 			}
 
-			// Reset client state for next request
-			_connectionState = READING_HEADERS;
-			_bytesSent = 0;
-			_responseData.clear();
-			_requestBuffer.clear();
+			resetForNextRequest(); // Reset client state for next request
 
-			return true;
+			return false;
 
 		} else {
 			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
@@ -289,6 +318,32 @@ bool Connection::sendResponse() {
 		return false;
 	}
 }
+void Connection::resetForNextRequest() {
+
+	// Request data
+	_request = HttpRequest();
+	_requestBuffer.clear();
+	_routingResult = RoutingResult();
+
+	// File upload
+	if (_fileStream.is_open())
+		_fileStream.close();
+	_uploadPath.clear();
+	_fileName.clear();
+	_bytesWritten = 0;
+	_multipart.clear();
+	_currentPartIndex = 0;
+
+	// Response data
+	_bodyContent.clear();
+	_responseData.clear();
+	_bytesSent = 0;
+	_statusCode = 0;
+
+	// State
+	_connectionState = READING_HEADERS;
+	_requestCount++;
+}
 
 void Connection::updateClientActivity() {
 
@@ -299,15 +354,4 @@ void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) 
 	_maxRequests = maxRequests;
 }
 
-void Connection::setupErrorPageIfNeeded(HttpResponse& response) {
-	if (_statusCode >= 400 && _routingResult.serverConfig) {
-		std::string errorPage = _routingResult.serverConfig->getErrorPage(
-			_statusCode,
-			_routingResult.location
-		);
-		if (!errorPage.empty()) {
-			response.setCustomErrorPage(errorPage);
-		}
-	}
-}
 /* bool isRequestComplete() {} */

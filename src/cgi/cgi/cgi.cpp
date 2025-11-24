@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 12:44:17 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 17:17:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,7 +96,7 @@ bool Cgi::start() {
             _exit(126);  // non-zero => parent will treat as 500
         }
 
-        prepEnv(_request, _scriptPath);  // Ensure PATH is set
+        // prepEnv(_request, _scriptPath);  // Ensure PATH is set
         executeCGI();
     }
 
@@ -121,7 +121,7 @@ void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
     //  Base CGI variables
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
     setenv("SERVER_PROTOCOL", request.getVersion().c_str(), 1);
-    setenv("SERVER_SOFTWARE", SERVER_SOFTWARE_NAME, 1);
+    // setenv("SERVER_SOFTWARE", SERVER_SOFTWARE_NAME, 1); // optional
 
     //  Server name and port
     std::string host = "localhost";
@@ -135,9 +135,9 @@ void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
     //  Request details
     setenv("REQUEST_METHOD", request.getMethod().c_str(), 1);
     setenv("QUERY_STRING", request.getQuery().c_str(), 1);
-    setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1);
+    // setenv("SCRIPT_FILENAME", scriptPath.c_str(), 1); // optional
     setenv("SCRIPT_NAME", request.getNormalizedReqPath().c_str(), 1);
-    setenv("PATH", "/usr/local/bin:/usr/bin:/bin", 1);
+    // setenv("PATH", "/usr/local/bin:/usr/bin:/bin", 1); // optional
 	setenv("DOCUMENT_ROOT", _matchedLoc ? _matchedLoc->root.c_str() : ".", 1);
 	setenv("REDIRECT_STATUS", "200", 1); // required for php-cgi
 	setenv("REQUEST_URI", request.getNormalizedReqPath().c_str(), 1);
@@ -194,6 +194,7 @@ void Cgi::prepEnv(const HttpRequest &request, const std::string &scriptPath) {
     	setenv("PATH_TRANSLATED", pathTranslated.c_str(), 1);
 	}
 }
+
 void Cgi::executeCGI() {
     // --- Determine interpreter ---
     std::string interpreter;
@@ -209,8 +210,8 @@ void Cgi::executeCGI() {
     argv[2] = NULL;
 
     // --- Build environment array ---
-    // use current env as base. You can later extend this if you build your own envp
-    extern char **environ;
+    char** envp = prepEnvVariables();
+
 
     execve(argv[0], argv, environ);
 
@@ -218,7 +219,72 @@ void Cgi::executeCGI() {
     perror("execve");
     _exit(1);
 }
+char** Cgi::prepEnvVariables() {
 
+
+    /*
+    Required by CGI/1.1 Spec:
+
+  - GATEWAY_INTERFACE ✓
+  - SERVER_PROTOCOL ✓
+  - SERVER_NAME ✓
+  - SERVER_PORT ✓
+  - REQUEST_METHOD ✓
+  - QUERY_STRING ✓
+  - SCRIPT_NAME ✓
+  - PATH_INFO ✓
+  - PATH_TRANSLATED ✓
+  - CONTENT_LENGTH ✓
+  - CONTENT_TYPE ✓
+  - REMOTE_ADDR ✓
+  - REMOTE_HOST ✗
+  - AUTH_TYPE ✗
+  - REMOTE_USER ✗
+
+    Currently Implemented (extra/optional):
+
+  - SERVER_SOFTWARE ✓
+  - SCRIPT_FILENAME ✓
+  - DOCUMENT_ROOT ✓
+  - PATH ✓
+  - REQUEST_URI ✓
+  - REDIRECT_STATUS ✓ (PHP-specific)
+  - REMOTE_PORT ✓
+  - HTTP_* headers ✓
+
+    Missing from your implementation:
+
+  1. REMOTE_HOST - client hostname
+  2. AUTH_TYPE - authentication method (if used)
+  3. REMOTE_USER - authenticated username (if used)
+  4. HTTPS - "on" if HTTPS connection
+  5. REMOTE_IDENT - RFC 931 identity (rarely needed)
+
+  Notes:
+
+  - REDIRECT_STATUS is PHP-specific, unnecessary for other CGI scripts but harmless
+  - Auth variables only needed if you implement HTTP authentication
+  - HTTPS needed if supporting TLS
+  */
+
+    char** envp = new char*[50];
+    int i = 0;
+    std::string buffer;
+
+    envp[i++] = strdup("GATEWAY_INTERFACE=CGI/1.1");
+
+    buffer = "SERVER_PROTOCOL=" + _request.getVersion();
+    envp[i++] = strdup(buffer.c_str());
+
+    buffer = "SERVER_NAME=" + _request.getHostName();
+    envp[i++] = strdup(buffer.c_str());
+
+
+    //...
+    envp[i++] = NULL;
+
+    return envp;
+}
 CgiState Cgi::handleReadFromCGI() {
 
     std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;

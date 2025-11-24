@@ -87,51 +87,52 @@ class Connection {
 		int getKeepAliveTimeout() const { return _keepAliveTimeout; }
 		void updateKeepAliveSettings(int keepAliveTimeout, int maxRequests);
 
+		/* bool processChunkedData(); */
 	private:
 		// Connection Metadata
-		int				_fd;
-		ConnectionState	_connectionState;
-		std::string		_ip;
-		int				_connectionPort;
-		int				_serverPort;
+		int				_fd;				// connection file descriptor is assigned after recv()
+		ConnectionState	_connectionState;	// main states of the connection
+		std::string		_ip;				// connection ip address
+		int				_connectionPort;	// port of the connection side
+		int				_serverPort;		// port on the server side the connectin came to
 
 		// Request Data
-		std::string		_requestBuffer;
-		HttpRequest		_request;
-		RoutingResult	_routingResult;
+		std::string		_requestBuffer;		// request is appended here while receiving request
+		HttpRequest		_request;			// received and parsed request
+		RoutingResult	_routingResult;		// data after routing request to a correct server block
 
 		// File Writing - Single File
-		std::ofstream	_fileStream;
-		std::string		_uploadPath;
-		std::string		_fileName;
-		int				_bytesWritten;
+		std::ofstream	_fileStream;		// stram for disc writin. used in case of POST/ POST multipart
+		std::string		_uploadPath;		// path for the POST request to upload the file
+		std::string		_fileName;			// generated name for the file from the regular POST request, not multypart
+		int				_bytesWritten;		// data size written on disc from POST request should be set internally 32KB
 
 		// File Writing - Multipart
-		std::vector<MultipartPart>	_multipart;
-		int							_currentPartIndex;
+		std::vector<MultipartPart>	_multipart;	// vector with all parst of multypart POST request
+		int				_currentPartIndex;		// index for tracking position when writing on sick in chunks
 
 		// Response Data
 		std::string		_bodyContent;	// body from GET for response
 		std::string		_responseData;	// final response
-		size_t			_bytesSent;
-		int				_statusCode;
+		size_t			_bytesSent;		// data tracking for sending response should be set internally 32KB
+		int				_statusCode;	// code to determine if the request was sucessful or not
 
 		// Connection Lifecycle
 		time_t			_lastActivity;
 		int				_keepAliveTimeout;
-		int				_maxRequests;
+		int				_maxRequests;	// max number of requests for a client
 		int				_requestCount;
-		bool			_shouldClose;
+		bool			_shouldClose;	// only setup in case of error code
 
 		// Private Helper Methods
 		void updateClientActivity();
 		bool processWriteChunck(const std::string& data, const std::string& filePath);
 		void appendFormFieldToLog(const std::string& name, const std::string& value);
-		void setupErrorPageIfNeeded(HttpResponse& response);
+		void setupErrorPage(HttpResponse& response);
+		void resetForNextRequest();
 };
 
 #endif
-
 
 /* #define BUFFER_SIZE_4 4096    // 4 KB
 // #define BUFFER_SIZE_8 8192    // 8 KB

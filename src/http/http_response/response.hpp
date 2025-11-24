@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/11/24 02:20:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 21:56:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ class HttpResponse {
 		void setStatusCode(int code);
 		void setPath(const std::string& path);
 		void setCustomErrorPage(const std::string& errorPagePath);
-
+		void setConnectionType(const std::string& connectionType);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
 		float getVersion() const;

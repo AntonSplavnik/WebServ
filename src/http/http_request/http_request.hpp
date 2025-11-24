@@ -38,7 +38,6 @@ class HttpRequest {
 			_path(),
 			_query(),
 			_version(),
-			_contentLength(0),
 			_headers(),
 			_isValid(true) {
 		}
@@ -60,7 +59,7 @@ class HttpRequest {
 		const std::map<std::string, std::string>& getHeaders() const { return _headers; }
 		std::string getContentType() const;
 		std::string getConnectionType() const;
-		unsigned long getContentLength() const { return _contentLength; }
+		unsigned long getContentLength() const;
 
 		// Body getters
 		const std::string& getBody() const { return _body; }
@@ -76,7 +75,6 @@ class HttpRequest {
 		void setMethod(std::string method) { _method = method; }
 		void setPath(std::string path) { _path = path; }
 		void setVersion(std::string version) { _version = version; }
-		void setContentLength(unsigned long contentLength) { _contentLength = contentLength; }
 
 		// Status
 		bool getStatus() const { return _isValid; }
@@ -96,7 +94,6 @@ class HttpRequest {
 
 		// Parsed headers
 		std::map<std::string, std::string>	_headers;
-		unsigned long	_contentLength;
 
 		// State
 		bool	_isValid;
@@ -105,6 +102,7 @@ class HttpRequest {
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseHeaders();
+		std::string getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
 };
 
 #endif
