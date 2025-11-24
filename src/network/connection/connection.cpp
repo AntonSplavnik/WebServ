@@ -217,6 +217,9 @@ bool Connection::prepareResponse() {
 		response.setPath(_routingResult.mappedPath);
 	}
 
+	// Look up custom error page if status is an error
+	setupErrorPageIfNeeded(response);
+
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
@@ -227,7 +230,10 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 
 	HttpResponse response(_request);
 
-	response.generateResponse(_statusCode, cgiOutput);  // CGI version
+	// Look up custom error page if status is an error
+	setupErrorPageIfNeeded(response);
+
+	response.generateResponse(_statusCode, cgiOutput);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
 	_connectionState = SENDING_RESPONSE;
@@ -288,5 +294,17 @@ void Connection::updateClientActivity() {
 void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) {
 	_keepAliveTimeout = keepAliveTimeout;
 	_maxRequests = maxRequests;
+}
+
+void Connection::setupErrorPageIfNeeded(HttpResponse& response) {
+	if (_statusCode >= 400 && _routingResult.serverConfig) {
+		std::string errorPage = _routingResult.serverConfig->getErrorPage(
+			_statusCode,
+			_routingResult.location
+		);
+		if (!errorPage.empty()) {
+			response.setCustomErrorPage(errorPage);
+		}
+	}
 }
 /* bool isRequestComplete() {} */

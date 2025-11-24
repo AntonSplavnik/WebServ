@@ -127,6 +127,7 @@ class Connection {
 		void updateClientActivity();
 		bool processWriteChunck(const std::string& data, const std::string& filePath);
 		void appendFormFieldToLog(const std::string& name, const std::string& value);
+		void setupErrorPageIfNeeded(HttpResponse& response);
 };
 
 #endif

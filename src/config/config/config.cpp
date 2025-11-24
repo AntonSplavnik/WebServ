@@ -104,6 +104,24 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
     return bestMatch;
 }
 
+std::string ConfigData::getErrorPage(int statusCode, const LocationConfig* location) const {
+	// Try location-specific error page first
+	if (location) {
+		std::map<int, std::string>::const_iterator it = location->error_pages.find(statusCode);
+		if (it != location->error_pages.end()) {
+			return root + "/" + it->second;
+		}
+	}
+
+	// Fall back to server-level error page
+	std::map<int, std::string>::const_iterator it = error_pages.find(statusCode);
+	if (it != error_pages.end()) {
+		return root + "/" + it->second;
+	}
+
+	return "";  // No custom error page configured
+}
+
 
 // }
 // Validates that the given key is in the list of known directives

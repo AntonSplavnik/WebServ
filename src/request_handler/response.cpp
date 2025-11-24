@@ -121,8 +121,6 @@ std::string HttpResponse::getTimeNow() {
 	return httpTime;
 }
 
-
-
 void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput) {
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase();
@@ -145,7 +143,6 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 
 	buildHttpResponse();
 }
-
 void HttpResponse::generateResponse(int statusCode) {
 	_statusCode = statusCode;
 	_reasonPhrase = getReasonPhrase();
@@ -170,7 +167,6 @@ void HttpResponse::generateResponse(int statusCode) {
 
 	buildHttpResponse();
 }
-
 void HttpResponse::generateErrorResponse() {
 	std::string errorPagePath = _customErrorPagePath;
 

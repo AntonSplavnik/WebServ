@@ -80,9 +80,6 @@ class HttpResponse {
 		//response
 		std::string		_response;
 
-		//cgi
-		bool			_isCgiResponse;
-
 		//error pages
 		std::string		_customErrorPagePath;
 };
