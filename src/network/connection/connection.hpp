@@ -111,8 +111,8 @@ class Connection {
 		int							_currentPartIndex;
 
 		// Response Data
-		std::string		_bodyContent;
-		std::string		_responseData;
+		std::string		_bodyContent;	// body from GET for response
+		std::string		_responseData;	// final response
 		size_t			_bytesSent;
 		int				_statusCode;
 

@@ -91,6 +91,8 @@ std::string HttpResponse::getReasonPhrase() {
 	switch (_statusCode) {
 		// Success
 		case 200: return "OK";
+		case 302: return "Found";
+		case 303: return "See Other";
 		case 204: return "No Content";
 		// Redirection
 		case 301: return "Moved Permanently";
