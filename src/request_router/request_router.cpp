@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/23 00:20:17 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 12:36:14 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,19 +25,19 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	// Find matching location
 	const LocationConfig* location = serverConfig.findMatchingLocation(req.getPath());
 	if (!location) {
-		return prepErrorResult(false, 404, "Location not found");
+		return prepErrorResult(false, 404);
 	} else {
 		result.location = location;
 	}
 
 	// Validate method
 	if (!validateMethod(req, location)) {
-		return prepErrorResult(false, 405, "Method not allowed");
+		return prepErrorResult(false, 405);
 	}
 
 	// Validate body size BEFORE reading
 	if (!validateBodySize(connection.getRequest().getContentLength(), location)) {
-		return prepErrorResult(false, 413, "Payload too large");
+		return prepErrorResult(false, 413);
 	}
 
 	// Map path
@@ -45,7 +45,7 @@ RoutingResult RequestRouter::route(Connection& connection) {
 
 	// Validate security
 	if (!validatePathSecurity(mappedPath, location->root)) {
-		return prepErrorResult(false, 403, "Path traversal detected");
+		return prepErrorResult(false, 403);
 	}
 	result.mappedPath = mappedPath;
 
@@ -246,10 +246,9 @@ RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig
 	else if (method == "POST") return POST;
 	return GET;
 }
-RoutingResult& prepErrorResult(bool success, int errorCode, std::string errorMessage) {
+RoutingResult& prepErrorResult(bool success, int errorCode) {
 	RoutingResult result;
 	result.success = success;
 	result.errorCode = errorCode;
-	result.errorMessage = errorMessage;
 	return result;
 }

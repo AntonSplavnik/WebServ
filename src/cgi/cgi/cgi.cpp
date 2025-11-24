@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 02:49:07 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 12:44:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,8 +66,8 @@ bool Cgi::start() {
         return false;
     }
 
+    // --- CHILD ---
     if (_pid == 0) {
-        // --- CHILD ---
         dup2(inpipe[0], STDIN_FILENO);
         close(inpipe[1]);
 

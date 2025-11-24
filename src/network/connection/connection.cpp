@@ -102,6 +102,9 @@ bool Connection::readBody() {
 	else {
 
 		updateClientActivity();
+		/* if (_request.getTransferEncoding() == "chunked"){
+			std::string unchunkedResult = unchuck(bytes);
+		} */
 		_requestBuffer.append(buffer, bytes);
 
 		size_t contentLength = _request.getContentLength();

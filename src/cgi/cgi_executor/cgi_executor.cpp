@@ -3,7 +3,7 @@
 void CgiExecutor::handleCGI(Connection& connection) {
 	Cgi cgi(_eventLoop, httpRequest, _clients[fd], mappedPath, matchedLoc, cgiExt);
 	if (!cgi.start()){
-		connection.setStatusCode(/* 400? */);
+		connection.setStatusCode(500);
 		connection.prepareResponse();
 	}
 

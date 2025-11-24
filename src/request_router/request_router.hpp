@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:44:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 18:01:33 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 12:36:23 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@ enum RequestType{
 struct RoutingResult {
 	bool success;
 	int errorCode;
-	std::string errorMessage;
 	ConfigData* serverConfig;
 	const LocationConfig* location;
 	std::string mappedPath;

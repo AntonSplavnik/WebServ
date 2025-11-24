@@ -168,10 +168,9 @@ void HttpResponse::generateResponse(int statusCode) {
 	buildHttpResponse();
 }
 void HttpResponse::generateErrorResponse() {
-	std::string errorPagePath = _customErrorPagePath;
 
-	if (!errorPagePath.empty()) {
-		std::ifstream errorFile(errorPagePath.c_str());
+	if (!_customErrorPagePath.empty()) {
+		std::ifstream errorFile(_customErrorPagePath.c_str());
 		if (errorFile.is_open()) {
 			std::stringstream buffer;
 			buffer << errorFile.rdbuf();
@@ -213,7 +212,6 @@ void HttpResponse::setReasonPhrase(const std::string& reasonPhrase){_reasonPhras
 void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
-
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}
