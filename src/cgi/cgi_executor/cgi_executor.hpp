@@ -12,7 +12,7 @@ class CgiExecutor {
 
 		void handleCGI(Connection& connection);
 		void handleCGIevent(int fd, short revents, ConnectionPoolManager& connectionPoolManager);
-		void handleCGItimeout(Cgi& cgi);
+		void handleCGItimeout(Cgi& cgi, ConnectionPoolManager& _connectionPoolManager);
 		bool isCGI(int fd);
 
 		std::map<int, Cgi>& getCGI() {return _cgi;};

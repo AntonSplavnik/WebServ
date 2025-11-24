@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/23 20:15:05 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 02:49:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ enum CgiState{
 
 class Cgi {
 	public:
-		Cgi(EventLoop& eventLoop, const HttpRequest &req, const ClientInfo& clientInfo,
+		Cgi(EventLoop& eventLoop, const HttpRequest &req, const Connection& connection,
 			ConfigData& config, const LocationConfig* loc, std::string &path, std::string cgiExt);
 		~Cgi();
 
@@ -54,8 +54,8 @@ class Cgi {
 		int getOutFd() const;
 		int getPid() const;
 		int getClientFd() const;
-		HttpRequest getRequest() const;
-		std::string getResponseData() const;
+		const HttpRequest& getRequest() const;
+		const std::string& getResponseData() const;
 		time_t getStartTime() const;
 		size_t getBytesWrittenToCgi() const;
 		bool isFinished() const;
@@ -74,7 +74,7 @@ class Cgi {
 
 
 		HttpRequest					_request;
-		const ClientInfo&			_client;
+		const Connection&			_connection;
 		const LocationConfig*		_matchedLoc;
 		const ConfigData&			_config;
 		EventLoop&					_eventLoop;

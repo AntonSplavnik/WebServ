@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/23 20:14:58 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 02:49:07 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 
 #define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 
-Cgi::Cgi(EventLoop& eventLoop, const HttpRequest& req, const ClientInfo& clientInfo,
+Cgi::Cgi(EventLoop& eventLoop, const HttpRequest& req, const Connection& connection,
 		ConfigData& congig, const LocationConfig* loc, std::string& path, std::string cgiExt)
         : _pid(-1),
           _inFd(-1),
@@ -36,11 +36,11 @@ Cgi::Cgi(EventLoop& eventLoop, const HttpRequest& req, const ClientInfo& clientI
           _bytesWrittenToCgi(0),
           _eventLoop(eventLoop),
           _request(req),
-          _client(clientInfo),
+          _connection(connection),
           _config(congig),
           _matchedLoc(loc), // ??
           _scriptPath(path),
-          _ext(cgiExt) {} // ??
+          _ext(cgiExt) {} // comes from config (cgi extentions)
 Cgi::~Cgi() {
     cleanup();
 }
@@ -298,10 +298,10 @@ void Cgi::closeOutFd() {
 int Cgi::getInFd() const { return _inFd; }
 int Cgi::getOutFd() const { return _outFd; }
 int Cgi::getPid() const { return _pid; }
-int Cgi::getClientFd() const { return _client.socket.getFd(); };
+int Cgi::getClientFd() const { return _connection.getFd(); };
 
 time_t Cgi::getStartTime() const { return _startTime; }
-HttpRequest Cgi::getRequest() const { return _request; }
-std::string Cgi::getResponseData() const { return _resonseData; }
+const HttpRequest& Cgi::getRequest() const { return _request; }
+const std::string& Cgi::getResponseData() const { return _resonseData; }
 size_t Cgi::getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
 bool Cgi::isFinished() const {return _finished;}

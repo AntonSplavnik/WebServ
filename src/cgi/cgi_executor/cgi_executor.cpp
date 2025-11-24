@@ -25,8 +25,7 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 	std::map<int, Cgi>::iterator cgiIt = _cgi.find(fd);
 	int clientFd = cgiIt->second.getClientFd();
 
-	_conPoolManager = &connectionPoolManager;
-	Connection* connection = _conPoolManager->getConnection(clientFd);
+	Connection* connection = connectionPoolManager.getConnection(clientFd);
 
 	if (!connection) { // check if client is still there
 		std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
@@ -58,29 +57,24 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 
 void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 
-	Cgi& cgi = _cgi[fd];
+	Cgi& cgi = _cgi[cgiFd];
 	int connectionFd = cgi.getClientFd();
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
 
-	std::map<int, Connection>& connectionPool = _conPoolManager->getConnectionPool();
-
-	if (fd == outFd) {
+	if (cgiFd == outFd) {
 
 		std::cerr << "[WARNING] CGI OutFd error" << std::endl;
 
-		if (connectionPool.find(connectionFd) != connectionPool.end()) {
-			HttpResponse response (cgi.getRequest());
-			if(cgi.isFinished()){
-				std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
-				response.generateResponse(200, true, cgi.getResponseData());
-				connectionPool[connectionFd].setResponseData(response.getResponse());
-			} else {
-				std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
-				response.generateResponse(500);
-				connectionPool[connectionFd].setResponseData(response.getResponse());
-			}
-			connectionPool[connectionFd].setState(SENDING_RESPONSE);
+		HttpResponse response (cgi.getRequest());
+		if(cgi.isFinished()){
+			std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
+			connection.setStatusCode(200);
+			connection.prepareResponse(cgi.getResponseData());
+		} else {
+			std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
+			connection.setStatusCode(500);
+			connection.prepareResponse();
 		}
 
 		if(cgi.getPid() > 0){
@@ -91,21 +85,16 @@ void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 		if(inFd >= 0) _cgi.erase(inFd);
 		if(outFd >= 0) _cgi.erase(outFd);
 
-	} else if (fd == inFd) {
+	} else if (cgiFd == inFd) {
 
 		std::cerr << "[WARNING] CGI inFd error" << std::endl;
 
 		if(cgi.getRequest().getBody().size() != cgi.getBytesWrittenToCgi()) {
 
+			connection.setStatusCode(500);
+			connection.prepareResponse();
+
 			cgi.terminate();
-
-			if (connectionPool.find(connectionFd) != connectionPool.end()){
-				HttpResponse resp(cgi.getRequest());
-				resp.generateResponse(500, false, "");
-				connectionPool[connectionFd].setResponseData(resp.getResponse());
-				connectionPool[connectionFd].setState(SENDING_RESPONSE);
-			}
-
 			cgi.cleanup();
 
 			if(inFd >= 0) _cgi.erase(inFd);
@@ -120,7 +109,7 @@ void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 }
 void CgiExecutor::handleCGIwrite(Connection& connection, int cgiFd) { /* write to CGI */
 
-	Cgi& cgi = _cgi[fd];
+	Cgi& cgi = _cgi[cgiFd];
 	CgiState status = cgi.handleWriteToCGI();
 
 	if(status == CGI_CONTINUE) return;
@@ -143,14 +132,13 @@ void CgiExecutor::handleCGIread(Connection& connection, int cgiFd) { /* read fro
 
 	if(status == CGI_READY) {
 		connection.setStatusCode(200);
-		connection.setResponseData(cgi.getResponseData());
+		connection.prepareResponse(cgi.getResponseData());
 		// response.generateResponse(200, true, cgi.getResponseData());
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI complete" << std::endl;
 	}
 	else if(status == CGI_ERROR) {
-		connection.setStatusCode(200);
-		// response.generateResponse(500);
+		connection.setStatusCode(500);
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI ERROR" << std::endl;
 	}
@@ -173,35 +161,20 @@ void CgiExecutor::terminateCGI(Cgi& cgi) {
 	if (inFd >= 0) _cgi.erase(inFd);
 	if (outFd >= 0) _cgi.erase(outFd);
 }
-void CgiExecutor::handleCGItimeout(Cgi& cgi) {
-
-	std::map<int, Connection>& connectionPool = _conPoolManager->getConnectionPool();
+void CgiExecutor::handleCGItimeout(Cgi& cgi, ConnectionPoolManager& _connectionPoolManager) {
 
 	int connectionFd = cgi.getClientFd();
+	Connection* connection = _connectionPoolManager.getConnection(connectionFd);
+
 	//  Prepare 504 Gateway Timeout response
-	HttpResponse response(cgi.getRequest());
-	response.generateResponse(504);
-	if (connectionPool.find(connectionFd) != connectionPool.end()) {
-		connectionPool[connectionFd].setResponseData(response.getResponse());
-		connectionPool[connectionFd].setState(SENDING_RESPONSE);
+	if(connection){
+		connection->setStatusCode(504);
+		connection->prepareResponse();
+		std::cout << "[CGI TIMEOUT] Response 504 sent to Connection FD = " << connectionFd << std::endl;
 	}
-	std::cout << "[CGI TIMEOUT] Response 504 sent to client FD = " << connectionFd << std::endl;
+	std::cout << "[CGI TIMEOUT] CGI terminated Connection FD = " << connectionFd << std::endl;
 	terminateCGI(cgi);
 
-	//this suppose to be more safe, but make sure that this safety is needed cos we might already do these checks earlier
-/* 	std::map<int, Connection>& connectionPool = _conPoolManager.getConnectionPool();
-	int connectionFd = cgi.getClientFd();
-	std::map<int, Connection>::iterator cgit = connectionPool.find(connectionFd);
-
-	//  Prepare 504 Gateway Timeout response
-	HttpResponse response(cgi.getRequest());
-	response.generateResponse(504);
-	if (cgit != connectionPool.end()) {
-		cgit->second.setResponseData(response.getResponse());
-		cgit->second.setState(SENDING_RESPONSE);
-	}
-	std::cout << "[CGI TIMEOUT] Response 504 sent to client FD = " << connectionFd << std::endl;
-	terminateCGI(cgi); */
 }
 
 bool CgiExecutor::isCGI(int fd) {

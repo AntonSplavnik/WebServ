@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 01:50:10 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 02:38:21 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,7 +179,7 @@ void EventLoop::checkCgiTimeouts() {
 			std::cout << "[CGI TIMEOUT] Process pid=" << cgiIt->second.getPid()
 					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
 
-			_cgiExecutor.handleCGItimeout(cgiIt->second);
+			_cgiExecutor.handleCGItimeout(cgiIt->second, _connectionPoolManager);
 			cgiIt = cgiMap.begin();
 			continue;
 		}
