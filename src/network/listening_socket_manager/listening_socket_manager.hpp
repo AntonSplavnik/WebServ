@@ -15,21 +15,18 @@
 class ListeningSocketManager {
 
 	public:
-		ListeningSocketManager(ConnectionPoolManager& connectionPoolManager);
-		~ListeningSocketManager();
+		ListeningSocketManager::ListeningSocketManager(): _fd() {}
+		ListeningSocketManager::~ListeningSocketManager() {}
 
 		void initListeningSockets(std::vector<ConfigData>& configs);
-		void handleListenEvent(int fd, short revents);
-
+		void handleListenEvent(int fd, short revents, ConnectionPoolManager& connectionPoolManager);
 		bool isListening(int fd);
 
 		std::vector<int>& getListeningSockets() { return _fd;}
 
 	private:
-		ConnectionPoolManager&	_conPoolManager;
 		std::vector<Socket>		_listeningSockets;  // probably remove, not needed
 		std::vector<int>		_fd;
-
 };
 
 #endif

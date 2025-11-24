@@ -5,13 +5,17 @@
 
 #include "connection.hpp"
 
+class EventLoop; // Forward declaration
+
 class ConnectionPoolManager {
 
 	public:
-		ConnectionPoolManager(std::vector<ConfigData>& configs):_configs(configs){}
+		ConnectionPoolManager(std::vector<ConfigData>& configs)
+			:_configs(configs){}
 		~ConnectionPoolManager(){}
 
-		void handleConnectionEvent(int fd, short revents);
+		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);
+		Connection* getConnection(int fd);
 		void addConnection(Connection& incomingConnection);
 		void disconnectConnection(short fd);
 		bool isConnection(int fd);

@@ -35,6 +35,7 @@ class Connection {
 		bool readBody();
 		bool writeOnDisc();
 		bool prepareResponse();
+		bool prepareResponse(const std::string& cgiOutput); // For CGI
 		bool sendResponse();
 
 		// Connection Accessors
@@ -59,6 +60,7 @@ class Connection {
 		int getStatusCode() const { return _statusCode; }
 		void setStatusCode(int statusCode) { _statusCode = statusCode; }
 		void setResponseData(const std::string& responseData) { _responseData = responseData; }
+		void setBodyContent(const std::string& content) { _bodyContent = content; }
 
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
@@ -109,6 +111,7 @@ class Connection {
 		int							_currentPartIndex;
 
 		// Response Data
+		std::string		_bodyContent;
 		std::string		_responseData;
 		size_t			_bytesSent;
 		int				_statusCode;

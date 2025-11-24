@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 16:38:50 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/23 20:14:58 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 
 #define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 
-Cgi::Cgi(EventLoop& controller, const HttpRequest& req, const ClientInfo& clientInfo,
+Cgi::Cgi(EventLoop& eventLoop, const HttpRequest& req, const ClientInfo& clientInfo,
 		ConfigData& congig, const LocationConfig* loc, std::string& path, std::string cgiExt)
         : _pid(-1),
           _inFd(-1),
@@ -34,7 +34,7 @@ Cgi::Cgi(EventLoop& controller, const HttpRequest& req, const ClientInfo& client
           _finished(false),
           _startTime(time(NULL)),
           _bytesWrittenToCgi(0),
-          _controller(controller),
+          _eventLoop(eventLoop),
           _request(req),
           _client(clientInfo),
           _config(congig),
@@ -45,7 +45,7 @@ Cgi::~Cgi() {
     cleanup();
 }
 
-bool Cgi::startCGI() {
+bool Cgi::start() {
 
     //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
     int inpipe[2];
@@ -74,20 +74,22 @@ bool Cgi::startCGI() {
         dup2(outpipe[1], STDOUT_FILENO);
         close(outpipe[0]);
 
-        /*
-            - RLIMIT_AS limits the total address space (virtual memory) the process can allocate
-            - If the CGI tries to allocate more, malloc/new will fail and the script will crash (not your
-            server)
-            - The child exits with error → parent detects it via POLLHUP/POLLERR → returns 500 to client
-        */
-        // Limit memory usage BEFORE execution
-        struct rlimit mem_limit;
-        mem_limit.rlim_cur = 50 * 1024 * 1024;
-        mem_limit.rlim_max = 100 * 1024 * 1024;
+        {
+            /*
+                - RLIMIT_AS limits the total address space (virtual memory) the process can allocate
+                - If the CGI tries to allocate more, malloc/new will fail and the script will crash (not your
+                server)
+                - The child exits with error → parent detects it via POLLHUP/POLLERR → returns 500 to client
+            */
+            // Limit memory usage BEFORE execution
+            struct rlimit mem_limit;
+            mem_limit.rlim_cur = 50 * 1024 * 1024;
+            mem_limit.rlim_max = 100 * 1024 * 1024;
 
-        if (setrlimit(RLIMIT_AS, &mem_limit) != 0) {
-            perror("setrlimit");
-            _exit(126);
+            if (setrlimit(RLIMIT_AS, &mem_limit) != 0) {
+                perror("setrlimit");
+                _exit(126);
+            }
         }
 
         if (!chdirToScriptDir()) {
@@ -217,7 +219,7 @@ void Cgi::executeCGI() {
     _exit(1);
 }
 
-CgiStatus Cgi::handleReadFromCGI() {
+CgiState Cgi::handleReadFromCGI() {
 
     std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;
     if (_finished || _outFd < 0)
@@ -252,7 +254,7 @@ CgiStatus Cgi::handleReadFromCGI() {
         return CGI_READY;
     }
 }
-CgiStatus Cgi::handleWriteToCGI() {
+CgiState Cgi::handleWriteToCGI() {
 
     // POST → write body to stdin of CGI
     if (_request.getBody().size() == _bytesWrittenToCgi){
@@ -278,7 +280,7 @@ CgiStatus Cgi::handleWriteToCGI() {
 void Cgi::terminate() {
     kill(_pid, SIGKILL);
     waitpid(_pid, NULL, WNOHANG);
-    _controller.addKilledPid(_pid);
+    _eventLoop.addKilledPid(_pid);
 }
 void Cgi::cleanup() {
     closeInFd();

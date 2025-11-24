@@ -1,10 +1,5 @@
 #include "listening_socket_manager.hpp"
 
-ListeningSocketManager::ListeningSocketManager(ConnectionPoolManager& conPoolManager)
-	: _conPoolManager(conPoolManager),
-	  _fd() {}
-ListeningSocketManager::~ListeningSocketManager() {}
-
 void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& configs) {
 
 	for (size_t i = 0; i < configs.size(); i++)
@@ -48,7 +43,7 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 		}
 	}
 }
-void ListeningSocketManager::handleListenEvent(int fd, short revents) {
+void ListeningSocketManager::handleListenEvent(int fd, short revents, ConnectionPoolManager& connectionPoolManager) {
 
 	if (revents & POLLIN) {
 		std::cout << "[DEBUG] Event detected on listening socket FD " << fd << std::endl;
@@ -66,7 +61,7 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents) {
 			return;
 		}
 
-		if (_conPoolManager.getConnectionPool().size() >= static_cast<size_t>(MAX_CLIENTS)){
+		if (connectionPoolManager.getConnectionPool().size() >= static_cast<size_t>(MAX_CLIENTS)){
 			std::cout << "[DEBUG] Max clients reached, rejecting connection" << std::endl;
 			return;
 		}
@@ -86,7 +81,7 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents) {
 			ntohs(clientAddr.sin_port),
 			listeningSocket->getPort()
 		);
-		_conPoolManager.addConnection(incomingConnection);
+		connectionPoolManager.addConnection(incomingConnection);
 
 		std::cout << "[DEBUG] New connection accepted! Client FD: " << clientFd
 					<< "Timeout: 15" << "Max Max Requests: 100" << std::endl;

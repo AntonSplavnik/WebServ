@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 23:43:40 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/24 01:44:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
 
-void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
+void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
 	Connection& connection = _connectionPool[fd];
 	const ConnectionState& state = connection.getState();
@@ -28,6 +28,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 	// ========== POLLHUP Events ==========
 	else if (revents & POLLHUP) {
+
 		if (revents & POLLIN) {
 			if (connection.getState() == READING_HEADERS) {
 				connection.shouldClose();
@@ -52,9 +53,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 		if (state == READING_HEADERS) {
 
 			// Read until headers complete
-			if (!connection.readHeaders()) {
-				return;
-			}
+			if (!connection.readHeaders()) return;
 
 			// Parse headers after received
 			HttpRequest request;
@@ -79,10 +78,9 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 			}
 			connection.setRoutingResult(result);
 
+			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;
-			CgiExecutor cgiExecutor;
-			// Dispatch based on type
-			switch (result.type) {
+			switch (type) { // Dispatch based on type
 
 				case GET:
 					reqHandler.handleGET(connection);
@@ -98,7 +96,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 					break;
 
 				case CGI_GET:
-					cgiExecutor.handleCGI();
+					cgiExecutor.handleCGI(connection);
 					break;
 
 				case REDIRECT:
@@ -108,16 +106,14 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 				default:
 					connection.setStatusCode(500);
 					connection.prepareResponse();
-					generateErrorResponse(connection, 500, "Unknown request type");
+					// generateErrorResponse(connection, 500, "Unknown request type");
 					break;
 			}
 			return;
 		}
 		else if (state == READING_BODY) {
 
-			if(!connection.readBody()) {
-				return;
-			}
+			if(!connection.readBody()) return;
 
 			// Parse body after received
 			connection.moveBodyToRequest();
@@ -134,14 +130,14 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;
-			CgiExecutor cgiExecutor;
+
 			switch(type) {
 				case (CGI_POST): {
-					cgiExecutor.handleCGI(connection, serverConfig, location, mappedPath);
+					cgiExecutor.handleCGI(connection);
 					break;
 				}
 				case (POST): {
-					reqHandler.handlePOST(connection, mappedPath);
+					reqHandler.handlePOST(connection);
 					break;
 				}
 				default: {
@@ -166,9 +162,16 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 		}
 	}
 }
+/** returns NULL if connection doesn't exist! */
+Connection* ConnectionPoolManager::getConnection(int fd){
+	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
+	if(it != _connectionPool.end()) return &it->second;
+	return NULL;
+}
 
 void ConnectionPoolManager::addConnection(Connection& incomingConnection) {
-	_connectionPool[incomingConnection.getFd()] = incomingConnection;
+	int fd = incomingConnection.getFd();
+	_connectionPool[fd] = incomingConnection;
 }
 void ConnectionPoolManager::disconnectConnection(short fd) {
 	close(fd);

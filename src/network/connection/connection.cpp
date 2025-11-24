@@ -1,6 +1,6 @@
 #include "connection.hpp"
 #include "post_handler.hpp"
-#include "http_response.hpp"
+#include "response.hpp"
 
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
@@ -207,10 +207,32 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 bool Connection::prepareResponse() {
 
 	HttpResponse response(_request);
+	if (!_bodyContent.empty()) {
+		response.setBody(_bodyContent);
+		_bodyContent.clear();
+	}
+
+	// Set path for MIME type detection (for GET)
+	if (!_routingResult.mappedPath.empty()) {
+		response.setPath(_routingResult.mappedPath);
+	}
+
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
 	_connectionState = SENDING_RESPONSE;
+	return true;
+}
+bool Connection::prepareResponse(const std::string& cgiOutput){
+
+	HttpResponse response(_request);
+
+	response.generateResponse(_statusCode, cgiOutput);  // CGI version
+	_responseData = response.getResponse();
+	_bytesSent = 0;
+	_connectionState = SENDING_RESPONSE;
+	return true;
+
 }
 bool Connection::sendResponse() {
 

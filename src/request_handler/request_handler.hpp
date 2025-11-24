@@ -1,7 +1,6 @@
 #ifndef REQUEST_HANDLER_HPP
 #define REQUEST_HANDLER_HPP
 
-#include "http_response.hpp"
 #include "post_handler.hpp"
 
 class RequestHandler {

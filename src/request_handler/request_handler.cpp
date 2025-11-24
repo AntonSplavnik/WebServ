@@ -1,9 +1,6 @@
 #include "request_handler.hpp"
 #include "connection.hpp"
 
-RequestHandler::RequestHandler() {}
-RequestHandler::~RequestHandler() {}
-
 void RequestHandler::handleGET(Connection& connection) {
 
 	const std::string& path = connection.getRoutingResult().mappedPath;
@@ -30,7 +27,7 @@ void RequestHandler::handleGET(Connection& connection) {
 
 	// Success
 	connection.setStatusCode(200);
-	connection.setResponseData(content);
+	connection.setBodyContent(content);
 	connection.prepareResponse();
 }
 void RequestHandler::handleDELETE(Connection& connection) {
@@ -79,9 +76,5 @@ void RequestHandler::handlePOST(Connection& connection) {
 		connection.setStatusCode(415);
 		connection.prepareResponse();;
 	}
-	// HttpResponse response(request);
-	// response.generateResponse(statusCode);
-	// client.responseData = response.getResponse();
-	// client.bytesSent = 0;
-	// client.state = SENDING_RESPONSE;
+
 }
