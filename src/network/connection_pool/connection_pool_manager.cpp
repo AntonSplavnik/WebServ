@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 01:44:17 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 01:33:00 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					break;
 
 				case REDIRECT:
-					reqHandler.handleRedirect(connection);
+					/* reqHandler.handleRedirect(connection); */
 					break;
 
 				default:

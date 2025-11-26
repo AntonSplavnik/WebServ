@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 12:36:14 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 02:36:29 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,7 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	// Classify request type
 	RequestType type = classify(req, location);
 	result.type = type;
+
 	result.success = true;
 	return result;
 }

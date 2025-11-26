@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:44:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 12:36:23 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 02:29:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ struct RoutingResult {
 	const LocationConfig* location;
 	std::string mappedPath;
 	RequestType type;
+	std::string cgiExtension;
 };
 
 class RequestRouter {
@@ -54,6 +55,7 @@ class RequestRouter {
 		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
 		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
 		RequestType classify(const HttpRequest& req, const LocationConfig* location);
+		std::string RequestRouter::extractCgiExtension(const std::string& path, const LocationConfig* location);
 };
 
 #endif

@@ -43,7 +43,7 @@ class Connection {
 		ConnectionState getState() const { return _connectionState; }
 		void setState(ConnectionState state) { _connectionState = state; }
 		const std::string& getIp() const { return _ip; }
-		int getPort() const { return _connectionPort; }
+		int getConnectionPort() const { return _connectionPort; }
 		int getServerPort() const { return _serverPort; }
 
 		// Request Accessors

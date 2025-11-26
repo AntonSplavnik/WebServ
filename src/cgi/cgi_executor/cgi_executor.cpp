@@ -1,8 +1,8 @@
 #include "cgi_executor.hpp"
 
 void CgiExecutor::handleCGI(Connection& connection) {
-	Cgi cgi(_eventLoop, httpRequest, _clients[fd], mappedPath, matchedLoc, cgiExt);
-	if (!cgi.start()){
+	Cgi cgi(_eventLoop, connection.getRequest() , connection.getFd());
+	if (!cgi.start(connection)){
 		connection.setStatusCode(500);
 		connection.prepareResponse();
 	}
@@ -12,7 +12,7 @@ void CgiExecutor::handleCGI(Connection& connection) {
 	int outFd = cgi.getOutFd();
 	if (inFd >= 0) _cgi[inFd] = cgi;
 	_cgi[outFd] = cgi;
-	_clients[fd].state = WAITING_CGI;
+	connection.setState(WAITING_CGI);
 
 	std::cout << "[DEBUG] Spawned CGI pid = " << cgi.getPid()
 			<< " inFd = " << inFd

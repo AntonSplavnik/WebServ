@@ -11,7 +11,7 @@ class ConnectionPoolManager {
 
 	public:
 		ConnectionPoolManager(std::vector<ConfigData>& configs)
-			:_configs(configs){}
+			: _configs(configs){}
 		~ConnectionPoolManager(){}
 
 		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);

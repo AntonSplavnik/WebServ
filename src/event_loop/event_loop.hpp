@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 01:48:33 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 02:07:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class EventLoop {
 		EventLoop::EventLoop(Config& config)
 			:_configs(config.getServers()),
 			 _connectionPoolManager(_configs),
-			 _cgiExecutor(),
+			 _cgiExecutor(*this),
 			 _listenManager(),
 			 _listeningSocketCount(),
 			 _running(true) {}

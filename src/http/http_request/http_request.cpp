@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 20:24:04 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/25 22:42:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -203,17 +203,17 @@ void HttpRequest::parseBody() {
 	}
 }
 
-std::string HttpRequest::getHeaderValue(const std::string& key, const std::string& defaultValue) const {
+const std::string& HttpRequest::getHeaderValue(const std::string& key, const std::string& defaultValue) const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
 	if (it != _headers.end())
 		return it->second;
 	else
 		return defaultValue;
 }
-std::string HttpRequest::getContentType() const {
+const std::string& HttpRequest::getContentType() const {
 	return getHeaderValue("content-type");
 }
-std::string HttpRequest::getConnectionType() const {
+const std::string& HttpRequest::getConnectionType() const {
 	return getHeaderValue("connection", "close");
 }
 unsigned long HttpRequest::getContentLength() const {
@@ -222,3 +222,29 @@ unsigned long HttpRequest::getContentLength() const {
 		return 0;
 	return std::strtoul(value.c_str(), NULL, 10);
 }
+const std::string& HttpRequest::getTransferEncoding() const {
+	return getHeaderValue("transfer-encoding");
+}
+const std::string& HttpRequest::getHost() const {
+	return getHeaderValue("host");
+}
+std::vector<std::string> HttpRequest::getCgiHeadersString() const {
+	std::vector<std::string> cgiHeaders;
+	std::map<std::string, std::string>::const_iterator it = _headers.begin();
+	for (; it != _headers.end(); ++it)
+	{
+    	std::string key = "HTTP_" + it->first;
+    	std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+    	std::replace(key.begin(), key.end(), '-', '_');
+		std::string buffer = key + "=" + it->second;
+		cgiHeaders.push_back(buffer);
+	}
+	return cgiHeaders;
+}
+std::string HttpRequest::getUri() const {
+	if (_query.empty())
+		return _path;
+	return  _path + "?" + _query;
+
+}
+

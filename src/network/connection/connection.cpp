@@ -73,27 +73,45 @@ bool Connection::readBody() {
 			return false;
 		}
 	}
-	else {
 
-		updateClientActivity();
-		/* if (_request.getTransferEncoding() == "chunked" || _request.getVersion() == "HTTP/1.1"){
-			std::string unchunkedResult = processChunkedData(bytes);
-		} */
-		_requestBuffer.append(buffer, bytes);
 
-		size_t contentLength = _request.getContentLength();
-		size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
-		size_t bodyReceived = _requestBuffer.length() - bodyStart;
-		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
+/* 	updateClientActivity();
 
-		// Check if full body received
-		if(bodyReceived < contentLength)
-			return false;  // Keep receiving body
-		else {
-			_connectionState = EXECUTING_REQUEST;
-			return true;
+	if (_request.getTransferEncoding() == "chunked") {
+		if (_request.getVersion() == "HTTP/1.0"){
+			// Error: 400 Bad Request or 505 Version Not Supported
+			setStatusCode(400);
+			prepareResponse();
+			return false;
 		}
+		std::string unchunkedResult = processChunkedData(buffer, bytes);
+		// _requestBuffer.append(unchunkedResult);
+		// ❌ Missing: check if final chunk (0\r\n\r\n) received
+		// ❌ No state transition logic
 	}
+	else if (contentLength > 0) {
+		// Read fixed-size body (both HTTP/1.0 and HTTP/1.1)
+		readFixedBody(contentLength);
+	}
+	else {
+		//no body
+	} */
+
+	_requestBuffer.append(buffer, bytes);
+
+	size_t contentLength = _request.getContentLength();
+	size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
+	size_t bodyReceived = _requestBuffer.length() - bodyStart;
+	std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
+
+	// Check if full body received
+	if(bodyReceived < contentLength)
+		return false;  // Keep receiving body
+	else {
+		_connectionState = EXECUTING_REQUEST;
+		return true;
+	}
+
 }
 
 bool Connection::writeOnDisc() {
@@ -103,7 +121,7 @@ bool Connection::writeOnDisc() {
 		if (processWriteChunck(_request.getBody(), filePath)) {
 			if (_bytesWritten >= _request.getBody().length()) {
 				_fileStream.close();
-				_statusCode = _fileStream.good()? 200 : 500;
+				setStatusCode(_fileStream.good()? 200 : 500);
 				prepareResponse();
 				return true;
 			}
@@ -112,7 +130,7 @@ bool Connection::writeOnDisc() {
 	} else {
 
 		if (_currentPartIndex >= _multipart.size()) {
-			_statusCode = 200;
+			setStatusCode(200);
 			prepareResponse();
 			return true;
 		}
@@ -156,7 +174,7 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	if (!_fileStream.is_open()) {
 		_fileStream.open(filePath.c_str(), std::ios::binary);
 		if (!_fileStream.is_open()) {
-			_statusCode = 500;
+			setStatusCode(500);
 			prepareResponse();
 			return false;
 		}
@@ -170,7 +188,7 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	if (_fileStream.fail()) {
 		std::cout << "[ERROR] File write failed" << std::endl;
 		_fileStream.close();
-		_statusCode = 500;
+		setStatusCode(500);
 		prepareResponse();
 		return false;
 	}

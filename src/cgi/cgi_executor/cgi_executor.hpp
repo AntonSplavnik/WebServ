@@ -7,7 +7,7 @@
 class CgiExecutor {
 
 	public:
-		CgiExecutor::CgiExecutor(){};
+		CgiExecutor::CgiExecutor(EventLoop& eventLoop) : _eventLoop(eventLoop){};
 		CgiExecutor::~CgiExecutor(){};
 
 		void handleCGI(Connection& connection);
@@ -24,7 +24,8 @@ class CgiExecutor {
 
 		void terminateCGI(Cgi& cgi);
 
-		std::map<int, Cgi>		_cgi;
+		EventLoop&			_eventLoop;
+		std::map<int, Cgi>	_cgi;
 };
 
 #endif

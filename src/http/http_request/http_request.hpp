@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 22:02:49 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/25 22:43:12 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,12 +54,16 @@ class HttpRequest {
 		const std::string& getPath() const { return _path; }
 		const std::string& getQuery() const { return _query; }
 		const std::string& getVersion() const { return _version; }
+		std::string getUri() const;
 
 		// Headers getters
 		const std::map<std::string, std::string>& getHeaders() const { return _headers; }
-		std::string getContentType() const;
-		std::string getConnectionType() const;
+		const std::string& getContentType() const;
+		const std::string& getConnectionType() const;
 		unsigned long getContentLength() const;
+		const std::string& getTransferEncoding() const;
+		const std::string& getHost() const;
+		std::vector<std::string> HttpRequest::getCgiHeadersString() const;
 
 		// Body getters
 		const std::string& getBody() const { return _body; }
@@ -102,7 +106,7 @@ class HttpRequest {
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseHeaders();
-		std::string getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
+		const std::string& getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
 };
 
 #endif
