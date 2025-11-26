@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 02:49:52 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:13:10 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,10 +23,11 @@
 #include <iostream>
 #include <map>
 
-#include "http_request.hpp"
-#include "client_info.hpp"
+#include "request.hpp"
 #include "config.hpp"
-#include "event_loop.hpp"
+
+class EventLoop;
+class Connection;
 
 enum CgiState{
 	CGI_CONTINUE,
@@ -49,17 +50,17 @@ class Cgi {
 		void closeOutFd();
 		void terminate();
 
-		int Cgi::getInFd() const { return _inFd; }
-		int Cgi::getOutFd() const { return _outFd; }
-		int Cgi::getPid() const { return _pid; }
-		int Cgi::getClientFd() const { return _connectionFd; };
+		int getInFd() const { return _inFd; }
+		int getOutFd() const { return _outFd; }
+		int getPid() const { return _pid; }
+		int getClientFd() const { return _connectionFd; };
 
-		time_t Cgi::getStartTime() const { return _startTime; }
-		const HttpRequest& Cgi::getRequest() const { return _request; }
-		const std::string& Cgi::getResponseData() const { return _responseData; }
-		size_t Cgi::getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
+		time_t getStartTime() const { return _startTime; }
+		const HttpRequest& getRequest() const { return _request; }
+		const std::string& getResponseData() const { return _responseData; }
+		size_t getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
 
-		bool Cgi::isFinished() const {return _finished;}
+		bool isFinished() const {return _finished;}
 
 	private:
 		pid_t				_pid;

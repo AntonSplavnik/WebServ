@@ -6,13 +6,12 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 02:51:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:19:47 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "server.hpp"
 #include "cgi.hpp"
-#include "http_response.hpp"
+#include "response.hpp"
 #include "logger.hpp"
 
 #include <sys/types.h>

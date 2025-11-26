@@ -6,11 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/23 22:49:49 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:17:49 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "http_response.hpp"
+#include "response.hpp"
 
 /*
 	Here's a typical HTTP response structure:

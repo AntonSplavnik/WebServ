@@ -21,19 +21,18 @@
 #include "connection.hpp"
 #include "config.hpp"
 #include "cgi.hpp"
-#include "server.hpp"
 
 class EventLoop {
 
 	public:
-		EventLoop::EventLoop(Config& config)
+		EventLoop(Config& config)
 			:_configs(config.getServers()),
 			 _connectionPoolManager(_configs),
-			 _cgiExecutor(*this),
 			 _listenManager(),
+			 _cgiExecutor(*this),
 			 _listeningSocketCount(),
 			 _running(true) {}
-		EventLoop::~EventLoop() { stop(); }
+		~EventLoop() { stop(); }
 
 		void run();
 		void addKilledPid(pid_t pid);
@@ -50,7 +49,7 @@ class EventLoop {
 		bool isCgiTimedOut(std::map<int, Cgi>& cgiMap, int fd);
 		void checkCgiTimeouts();
 
-		void EventLoop::processDiskWrites();
+		void processDiskWrites();
 
 		void reapZombieProcesses();
 

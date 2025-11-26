@@ -1,11 +1,24 @@
-#ifndef CONNECTION_POOL_MANAGER
-#define CONNECTION_POOL_MANAGER
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   connection_pool_manager.hpp                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/26 11:18:50 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/11/26 11:18:51 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#ifndef CONNECTION_POOL_MANAGER_HPP
+#define CONNECTION_POOL_MANAGER_HPP
 
 #include <poll.h>
 
 #include "connection.hpp"
 
 class EventLoop; // Forward declaration
+class CgiExecutor; // Forward declaration
 
 class ConnectionPoolManager {
 

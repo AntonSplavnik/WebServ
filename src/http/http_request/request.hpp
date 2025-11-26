@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   http_request.hpp                                   :+:      :+:    :+:   */
+/*   request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/25 22:43:12 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:17:41 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTP_REQUEST
-#define HTTP_REQUEST
+#ifndef REQUEST_HPP
+#define REQUEST_HPP
 
 #include <iostream>
 #include <string>
@@ -19,14 +19,6 @@
 #include <sstream>
 #include <algorithm>
 #include <cstdlib>
-#include "client_info.hpp"
-
-enum Methods {
-	GET,
-	POST,
-	DELETE
-};
-
 
 class HttpRequest {
 
@@ -50,7 +42,6 @@ class HttpRequest {
 
 		// Request line getters
 		const std::string& getMethod() const { return _method; }
-		Methods getMethodEnum() const { return _methodEnum; }
 		const std::string& getPath() const { return _path; }
 		const std::string& getQuery() const { return _query; }
 		const std::string& getVersion() const { return _version; }
@@ -63,7 +54,7 @@ class HttpRequest {
 		unsigned long getContentLength() const;
 		const std::string& getTransferEncoding() const;
 		const std::string& getHost() const;
-		std::vector<std::string> HttpRequest::getCgiHeadersString() const;
+		std::vector<std::string> getCgiHeadersString() const;
 
 		// Body getters
 		const std::string& getBody() const { return _body; }
@@ -91,7 +82,6 @@ class HttpRequest {
 
 		// Parsed request line
 		std::string _method;
-		Methods		_methodEnum;
 		std::string	_path;
 		std::string	_query;
 		std::string	_version;

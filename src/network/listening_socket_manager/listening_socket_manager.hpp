@@ -15,8 +15,8 @@
 class ListeningSocketManager {
 
 	public:
-		ListeningSocketManager::ListeningSocketManager(): _fd() {}
-		ListeningSocketManager::~ListeningSocketManager() {}
+		ListeningSocketManager(): _fd() {}
+		~ListeningSocketManager() {}
 
 		void initListeningSockets(std::vector<ConfigData>& configs);
 		void handleListenEvent(int fd, short revents, ConnectionPoolManager& connectionPoolManager);

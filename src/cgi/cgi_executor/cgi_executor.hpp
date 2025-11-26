@@ -1,14 +1,18 @@
-#ifndef CGI_EXECUTOR
-#define CGI_EXECUTOR
+#ifndef CGI_EXECUTOR_HPP
+#define CGI_EXECUTOR_HPP
 
 #include "cgi.hpp"
 #include <map>
 
+class EventLoop;
+class Connection;
+class ConnectionPoolManager;
+
 class CgiExecutor {
 
 	public:
-		CgiExecutor::CgiExecutor(EventLoop& eventLoop) : _eventLoop(eventLoop){};
-		CgiExecutor::~CgiExecutor(){};
+		CgiExecutor(EventLoop& eventLoop) : _eventLoop(eventLoop){};
+		~CgiExecutor(){};
 
 		void handleCGI(Connection& connection);
 		void handleCGIevent(int fd, short revents, ConnectionPoolManager& connectionPoolManager);

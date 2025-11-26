@@ -6,12 +6,12 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/11/24 21:56:16 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 12:55:39 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTP_RESPONSE_HPP
-#define HTTP_RESPONSE_HPP
+#ifndef RESPONSE_HPP
+#define RESPONSE_HPP
 
 #include <iostream>
 #include <sstream>
@@ -19,12 +19,13 @@
 #include <string>
 #include <map>
 #include <algorithm>
-#include "http_request.hpp"
+
+#include "request_router.hpp"
 
 class HttpResponse {
 
 	public:
-		HttpResponse(const HttpRequest& request);
+		HttpResponse();
 		~HttpResponse();
 
 		void generateResponse(int statusCode);
@@ -37,6 +38,7 @@ class HttpResponse {
 		void setPath(const std::string& path);
 		void setCustomErrorPage(const std::string& errorPagePath);
 		void setConnectionType(const std::string& connectionType);
+		void setMethod(RequestType type);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
 		float getVersion() const;
@@ -57,8 +59,7 @@ class HttpResponse {
 		static std::map<std::string, std::string> initMimeTypes();
 		static const std::map<std::string, std::string> _mimeTypes;
 
-		const HttpRequest& _request;
-		Methods			_method;
+		RequestType		_requestType;
 
 		//status line
 		std::string		_protocolVer;

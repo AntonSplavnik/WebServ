@@ -1,16 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   http_request.cpp                                   :+:      :+:    :+:   */
+/*   request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/25 22:42:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 12:42:09 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "http_request.hpp"
+#include "request.hpp"
 
 /*
 Critical HTTP parsing test scenarios
@@ -65,12 +65,6 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 
 }
 
-Methods stringToEnum(const std::string& method) {
-	if (method == "GET") return GET;
-	else if (method == "POST") return POST;
-	else if (method == "DELETE") return DELETE;
-	else throw std::invalid_argument("Unknown method");
-}
 void HttpRequest::parseRequestLine() {
 
 	if (_requestLine.empty()) {
@@ -103,7 +97,6 @@ void HttpRequest::parseRequestLine() {
 		_isValid = false;
 		return;
 	}
-	_methodEnum = stringToEnum(_method);
 
 	size_t queryPos = _path.find('?');
 	if (queryPos != std::string::npos) {

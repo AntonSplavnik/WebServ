@@ -1,12 +1,11 @@
 
 #include "response.hpp"
 
-HttpResponse::HttpResponse(const HttpRequest& request)
-	:_request(request),
-	 _method(),
-	 _protocolVer(request.getVersion() + " "),
+HttpResponse::HttpResponse()
+	:_statusCode(0),
 	 _serverName("WebServ"),
-	 _serverVersion(1.0f){}
+	 _serverVersion(1.0f),
+	 _contentLength(0){}
 
 HttpResponse::~HttpResponse(){}
 
@@ -140,7 +139,6 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 		_body = cgiOutput;
 		_contentLength = _body.length();
 		_contentType = "text/html";
-		_connectionType = _request.getConnectionType();
 	}
 
 	buildHttpResponse();
@@ -155,13 +153,10 @@ void HttpResponse::generateResponse(int statusCode) {
 		return;
 	}
 
-	_method = _request.getMethodEnum();
-	_connectionType = _request.getConnectionType();
-
-	if (_method == GET ) {
+	if (_requestType == GET || _requestType == CGI_GET) {
 		_contentType = getContentType(); // path needed - setup externally via setPath()
 		_contentLength = _body.length();
-	} else if (_method == DELETE || _method == POST) {
+	} else if (_requestType == DELETE || _requestType == POST || _requestType == CGI_POST) {
 		_body = "";
 		_contentType = "text/plain";
 		_contentLength = 0;
@@ -215,6 +210,7 @@ void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
 void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
+void HttpResponse::setMethod(RequestType type) {_requestType = type;}
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}

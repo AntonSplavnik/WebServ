@@ -4,18 +4,19 @@
 
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
+	_connectionState(READING_HEADERS),
 	_ip(ip),
 	_connectionPort(connectionPort),
 	_serverPort(serverPort),
 	_bytesWritten(0),
 	_multipart(),
 	_currentPartIndex(0),
+	_bytesSent(0),
+	_statusCode(0),
+	_lastActivity(time(NULL)),
 	_keepAliveTimeout(15),
 	_maxRequests(100),
 	_requestCount(0),
-	_connectionState(READING_HEADERS),
-	_bytesSent(0),
-	_lastActivity(time(NULL)),
 	_shouldClose(false) {}
 
 Connection::~Connection() {
@@ -119,7 +120,7 @@ bool Connection::writeOnDisc() {
 	if(_multipart.empty()) {
 		std::string filePath = _uploadPath + _fileName;
 		if (processWriteChunck(_request.getBody(), filePath)) {
-			if (_bytesWritten >= _request.getBody().length()) {
+			if (static_cast<size_t>(_bytesWritten) >= _request.getBody().length()) {
 				_fileStream.close();
 				setStatusCode(_fileStream.good()? 200 : 500);
 				prepareResponse();
@@ -129,7 +130,7 @@ bool Connection::writeOnDisc() {
 		return false;
 	} else {
 
-		if (_currentPartIndex >= _multipart.size()) {
+		if (static_cast<size_t>(_currentPartIndex) >= _multipart.size()) {
 			setStatusCode(200);
 			prepareResponse();
 			return true;
@@ -145,7 +146,7 @@ bool Connection::writeOnDisc() {
 
 		std::string filePath = _uploadPath + part.fileName;
 		if (processWriteChunck(part.content, filePath)) {
-			if (_bytesWritten >= part.content.length()) {
+			if (static_cast<size_t>(_bytesWritten) >= part.content.length()) {
 				_fileStream.close();
 				_currentPartIndex++;
 				_bytesWritten = 0;
@@ -228,7 +229,11 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 
 bool Connection::prepareResponse() {
 
-	HttpResponse response(_request);
+	HttpResponse response;
+
+	// Set response metadata
+	response.setMethod(_routingResult.type);
+	response.setConnectionType(_request.getConnectionType());
 
 	// Set body for GET request
 	if (!_bodyContent.empty()) {
@@ -247,7 +252,7 @@ bool Connection::prepareResponse() {
 		_shouldClose = true;
 	}
 
-	// Set header to close
+	// Override connection type to close if needed
 	if (_shouldClose || _request.getConnectionType() == "close" || _requestCount + 1 >= _maxRequests){
 		response.setConnectionType("close");
 		_shouldClose = true;
@@ -261,15 +266,19 @@ bool Connection::prepareResponse() {
 }
 bool Connection::prepareResponse(const std::string& cgiOutput){
 
-	HttpResponse response(_request);
+	HttpResponse response;
+
+	// Set response metadata
+	response.setMethod(_routingResult.type);
+	response.setConnectionType(_request.getConnectionType());
 
 	// Look up custom error page if status is an error
-		if (_statusCode >= 400 && _routingResult.serverConfig){
+	if (_statusCode >= 400 && _routingResult.serverConfig){
 		setupErrorPage(response);
 		_shouldClose = true;
 	}
 
-	// Set header to close
+	// Override connection type to close if needed
 	if (_shouldClose || _request.getConnectionType() == "close" || _requestCount + 1 >= _maxRequests){
 		response.setConnectionType("close");
 		_shouldClose = true;
@@ -316,7 +325,6 @@ bool Connection::sendResponse() {
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {
 
-
 			if(_shouldClose) {
 				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
 				return true;
@@ -328,9 +336,9 @@ bool Connection::sendResponse() {
 
 		} else {
 			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
+			return false;
 		}
 	} else {
-
 		// Send failed, close connection
 		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
 		return false;
