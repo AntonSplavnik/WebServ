@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 15:38:38 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 18:32:03 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,10 +27,22 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 	}
 
 	// ========== POLLHUP Events ==========
+	/*
+	POLLHUP alone:
+	- Socket error occurred (often combined with POLLERR)
+	- Write-side closed on a socket
+	- Some abnormal disconnect conditions
+
+	POLLIN | POLLHUP together:
+	- Normal TCP connection close (graceful shutdown with FIN)
+	- Remote peer called close() or shutdown(SHUT_WR)
+	- This is the common case for normal disconnects
+
+	*/
 	else if (revents & POLLHUP) {
 
 		if (revents & POLLIN) {
-			if (connection.getState() == READING_HEADERS) { // client send last request and closed send, but still waiting for response.
+			if (connection.getState() == READING_HEADERS) {	// client send last request and closed send, but still waiting for response.
 				connection.setShouldClose(true);
 				if (!connection.readHeaders()) {	// recv() returned 0
 					disconnectConnection(fd);
@@ -46,7 +58,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				disconnectConnection(fd);
 				return;
 			}
-		} else {
+		} else {	// POLLOUT
 			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
 			disconnectConnection(fd);
 			return;
@@ -71,7 +83,6 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			}
 			connection.setRequest(request);
 		}
-
 		state = connection.getState();
 
 		if (state == ROUTING_REQUEST) {
@@ -99,6 +110,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 
 				case POST:
 				case CGI_POST:
+					connection.setState(READING_BODY);
 					connection.readBody();
 					break;
 
@@ -117,6 +129,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			}
 			return;
 		}
+
 		else if (state == READING_BODY) {
 
 			if(!connection.readBody()) return;
@@ -129,10 +142,10 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				connection.prepareResponse();
 				return;
 			}
-
-			return;
 		}
-		else if (state == EXECUTING_REQUEST) {
+		state = connection.getState();
+
+		if (state == EXECUTING_REQUEST) {
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;
@@ -174,7 +187,7 @@ Connection* ConnectionPoolManager::getConnection(int fd){
 	if(it != _connectionPool.end()) return &it->second;
 	return NULL;
 }
-/** Use ONLY when 100% sure that connection exists. Will create new input otherwise. */
+
 Connection& ConnectionPoolManager::getConnectionRef(int fd){
 	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
 	return it->second;

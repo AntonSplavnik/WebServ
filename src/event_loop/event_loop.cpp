@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 15:54:01 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 18:39:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,9 @@ void EventLoop::run() {
 
 		rebuildPollFds();
 
-		int ret = poll(_pollFds.data(), _pollFds.size(), -1);
+		/* bool hasWork = !conPool.empty() && (hasWritingDisk || hasCGI);
+		int timeout = hasWork ? 10 : -1; */ //optimisation for timer on disc writes
+		int ret = poll(_pollFds.data(), _pollFds.size(), 10);
 
 		//errno != EINTR check for interrupted poll
 		if (ret < 0 && errno != EINTR) {

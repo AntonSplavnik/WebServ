@@ -358,6 +358,10 @@ bool Connection::prepareResponse() {
 		_shouldClose = true;
 	}
 
+	std::cout << "[DEBUG] Response prepared for FD " << _fd << ": status=" << _statusCode
+			  << ", connectionType=" << _request.getConnectionType()
+			  << ", shouldClose=" << _shouldClose << std::endl;
+
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
@@ -407,8 +411,6 @@ bool Connection::sendResponse() {
 
 	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
 
-	std::cout << "[DEBUG] First 200 chars of response: [" << _responseData.substr(0, 200) << "]" << std::endl;
-
 	// Send remaining response data
 	const char* data = _responseData.c_str() + _bytesSent;
 	size_t remainingLean = _responseData.length() - _bytesSent;
@@ -433,6 +435,7 @@ bool Connection::sendResponse() {
 				return true;
 			}
 
+			std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Resetting for next request (keep-alive)." << std::endl;
 			resetForNextRequest(); // Reset client state for next request
 
 			return false;
