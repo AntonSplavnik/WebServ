@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 18:39:22 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 19:40:01 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,6 @@ void EventLoop::rebuildPollFds() {
 		switch (it->second.getState()) {
 			case READING_HEADERS:
 			case READING_BODY:
-			case EXECUTING_REQUEST:
 				connection.events = POLLIN;
 				break;
 			case SENDING_RESPONSE:
@@ -50,12 +49,13 @@ void EventLoop::rebuildPollFds() {
 			case WAITING_CGI:
 			case WRITING_DISK:
 			case ROUTING_REQUEST:
+			case EXECUTING_REQUEST:
 				continue;
 			default:
 				continue;
 		}
 		_pollFds.push_back(connection);
-		std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		// std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 	}
 
 	std::map<int, Cgi>& cgis = _cgiExecutor.getCGI();

@@ -149,6 +149,16 @@ bool Connection::readHeaders() {
 }
 bool Connection::readBody() {
 
+	size_t contentLength = _request.getContentLength();
+	size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
+	size_t bodyReceived = _requestBuffer.length() - bodyStart;
+
+	// Check if already complete
+	if (bodyReceived >= contentLength) {
+		_connectionState = EXECUTING_REQUEST;
+		return true;
+	}
+
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
@@ -159,16 +169,12 @@ bool Connection::readBody() {
 			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
 			return false;
 		} else { // bytes < 0
-
 			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
 			return false;
 		}
 	}
 
-
-/* 	updateClientActivity();
-
-	if (_request.getTransferEncoding() == "chunked") {
+/* if (_request.getTransferEncoding() == "chunked") {
 		if (_request.getVersion() == "HTTP/1.0"){
 			// Error: 400 Bad Request or 505 Version Not Supported
 			setStatusCode(400);
@@ -188,11 +194,10 @@ bool Connection::readBody() {
 		//no body
 	} */
 
+	updateClientActivity();
 	_requestBuffer.append(buffer, bytes);
 
-	size_t contentLength = _request.getContentLength();
-	size_t bodyStart = _requestBuffer.find("\r\n\r\n") + 4;
-	size_t bodyReceived = _requestBuffer.length() - bodyStart;
+	bodyReceived = _requestBuffer.length() - bodyStart;
 	std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
 
 	// Check if full body received
@@ -357,10 +362,6 @@ bool Connection::prepareResponse() {
 		response.setConnectionType("close");
 		_shouldClose = true;
 	}
-
-	std::cout << "[DEBUG] Response prepared for FD " << _fd << ": status=" << _statusCode
-			  << ", connectionType=" << _request.getConnectionType()
-			  << ", shouldClose=" << _shouldClose << std::endl;
 
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();

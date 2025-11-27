@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 18:32:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 20:39:53 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,54 +83,49 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			}
 			connection.setRequest(request);
 		}
+
 		state = connection.getState();
 
 		if (state == ROUTING_REQUEST) {
 
 			RequestRouter router(_configs);
 			RoutingResult result = router.route(connection);
+			connection.setRoutingResult(result);
 			if(!result.success){
 				connection.setStatusCode(result.errorCode);
 				connection.prepareResponse();
 				return;
 			}
-			connection.setRoutingResult(result);
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;
 			switch (type) { // Dispatch based on type
-
 				case GET:
 					reqHandler.handleGET(connection);
 					break;
-
 				case DELETE:
 					reqHandler.handleDELETE(connection);
 					break;
-
 				case POST:
 				case CGI_POST:
 					connection.setState(READING_BODY);
-					connection.readBody();
 					break;
-
 				case CGI_GET:
 					cgiExecutor.handleCGI(connection);
 					break;
-
 				case REDIRECT:
 					/* reqHandler.handleRedirect(connection); */
 					break;
-
 				default:
 					connection.setStatusCode(500);
 					connection.prepareResponse();
 					break;
 			}
-			return;
 		}
 
-		else if (state == READING_BODY) {
+		state = connection.getState();
+
+		if (state == READING_BODY) {
 
 			if(!connection.readBody()) return;
 
@@ -143,6 +138,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				return;
 			}
 		}
+
 		state = connection.getState();
 
 		if (state == EXECUTING_REQUEST) {

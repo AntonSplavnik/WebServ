@@ -6,15 +6,14 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 02:36:29 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 20:52:17 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request_router.hpp"
 #include "connection.hpp"
 
-static RoutingResult prepErrorResult(bool success, int errorCode) {
-	RoutingResult result;
+static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
 	result.success = success;
 	result.errorCode = errorCode;
 	return result;
@@ -33,19 +32,19 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	// Find matching location
 	const LocationConfig* location = serverConfig.findMatchingLocation(req.getPath());
 	if (!location) {
-		return prepErrorResult(false, 404);
+		return prepErrorResult(result, false, 404);
 	} else {
 		result.location = location;
 	}
 
 	// Validate method
 	if (!validateMethod(req, location)) {
-		return prepErrorResult(false, 405);
+		return prepErrorResult(result, false, 405);
 	}
 
 	// Validate body size BEFORE reading
 	if (!validateBodySize(connection.getRequest().getContentLength(), location)) {
-		return prepErrorResult(false, 413);
+		return prepErrorResult(result, false, 413);
 	}
 
 	// Map path
@@ -53,7 +52,7 @@ RoutingResult RequestRouter::route(Connection& connection) {
 
 	// Validate security
 	if (!validatePathSecurity(mappedPath, location->root)) {
-		return prepErrorResult(false, 403);
+		return prepErrorResult(result, false, 403);
 	}
 	result.mappedPath = mappedPath;
 
@@ -106,6 +105,10 @@ ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPor
 	}
 
 	// No match - return first server as default (nginx behavior)
+	if (matchedConfigs.empty()) {
+		std::cerr << "[FATAL] No config for port " << servrPort << std::endl;
+		exit(1);  // Die loudly so bug is found
+	}
 	return *matchedConfigs[0];
 }
 bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig*& location) {
