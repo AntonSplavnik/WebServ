@@ -6,14 +6,14 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 15:20:37 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:13:10 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CGI_HPP
 #define CGI_HPP
 
-#define CGI_TIMEOUT 20  // seconds — how long CGI may run before it's killed TODO: increase
+#define CGI_TIMEOUT 40  // seconds — how long CGI may run before it's killed TODO: increase
 
 #include <string>
 #include <unistd.h>
@@ -23,12 +23,13 @@
 #include <iostream>
 #include <map>
 
-#include "http_request.hpp"
-#include "client_info.hpp"
+#include "request.hpp"
 #include "config.hpp"
-#include "event_loop.hpp"
 
-enum CgiStatus{
+class EventLoop;
+class Connection;
+
+enum CgiState{
 	CGI_CONTINUE,
 	CGI_READY,
 	CGI_ERROR
@@ -36,53 +37,50 @@ enum CgiStatus{
 
 class Cgi {
 	public:
-		Cgi(EventLoop& controller, const HttpRequest &req, const ClientInfo& clientInfo,
-			ConfigData& config, const LocationConfig* loc, std::string &path, std::string cgiExt);
+		Cgi(EventLoop& eventLoop, const HttpRequest& request, int connectionFd);
+		Cgi(const Cgi& other);
 		~Cgi();
 
-		bool startCGI();
+		bool start(const Connection& onnection);
 
-		CgiStatus handleReadFromCGI();
-		CgiStatus handleWriteToCGI();
+		CgiState handleReadFromCGI();
+		CgiState handleWriteToCGI();
 
 		void cleanup();
 		void closeInFd();
 		void closeOutFd();
 		void terminate();
 
-		int getInFd() const;
-		int getOutFd() const;
-		int getPid() const;
-		int getClientFd() const;
-		HttpRequest getRequest() const;
-		std::string getResponseData() const;
-		time_t getStartTime() const;
-		size_t getBytesWrittenToCgi() const;
-		bool isFinished() const;
+		int getInFd() const { return _inFd; }
+		int getOutFd() const { return _outFd; }
+		int getPid() const { return _pid; }
+		int getClientFd() const { return _connectionFd; };
+
+		time_t getStartTime() const { return _startTime; }
+		const HttpRequest& getRequest() const { return _request; }
+		const std::string& getResponseData() const { return _responseData; }
+		size_t getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
+
+		bool isFinished() const {return _finished;}
 
 	private:
-		pid_t						_pid;
-		int							_inFd;
-		int							_outFd;
-		bool						_finished;
-		time_t						_startTime;
-		size_t						_bytesWrittenToCgi;
+		pid_t				_pid;
+		int					_inFd;
+		int					_outFd;
+		bool				_finished;
+		time_t				_startTime;
+		size_t				_bytesWrittenToCgi;
 
-		std::string					_ext;
-		std::string					_scriptPath;
-		std::string					_resonseData;
+		int					_connectionFd;
+		std::string			_responseData;
 
+		const HttpRequest&	_request;
+		EventLoop&			_eventLoop;
 
-		HttpRequest					_request;
-		const ClientInfo&			_client;
-		const LocationConfig*		_matchedLoc;
-		const ConfigData&			_config;
-		EventLoop&			_controller;
-
-		void prepEnv(const HttpRequest &request, const std::string &scriptPath);
-		bool chdirToScriptDir();
-		void executeCGI();
+		void executeCGI(const Connection& onnection);
+		char** prepEnvVariables(const Connection& onnection, const std::string& ext);
+		bool chdirToScriptDir(const std::string& mappedPath);
+		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 };
-
 
 #endif

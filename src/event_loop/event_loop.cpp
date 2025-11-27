@@ -6,27 +6,17 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 20:26:35 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 19:40:01 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "event_loop.hpp"
 
 #include <csignal>
 #include <cerrno>
 
-extern volatile sig_atomic_t g_shutdown;
+#include "event_loop.hpp"
 
-EventLoop::EventLoop(Config& config)
-	: _connectionPoolManager(),
-	  _cgiExecutor(_connectionPoolManager),
-	  _listenManager(_connectionPoolManager),
-	  _configs(config.getServers()),
-	  _listeningSocketCount(),
-	  _running(true) {}
-EventLoop::~EventLoop() {
-	stop();
-}
+
+extern volatile sig_atomic_t g_shutdown;
 
 void EventLoop::stop() {
 
@@ -40,39 +30,43 @@ void EventLoop::rebuildPollFds() {
 	if (_pollFds.size() > _listeningSocketCount)
 		_pollFds.resize(_listeningSocketCount);
 
-	std::map<int, Connection>& connections = _connectionPoolManager.getConnectionPool();
-	std::map<int, Connection>::iterator it = connections.begin();
-	for(;it != connections.end(); ++it) {
+	std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
+	std::map<int, Connection>::iterator it = conPool.begin();
+	for(;it != conPool.end(); ++it) {
 
 		struct pollfd connection;
 		connection.fd = it->first;
 		connection.revents = 0;
-		switch (it->second.getState())
-		{
-		case READING_REQUEST:
-			connection.events = POLLIN;
-			break;
-		case SENDING_RESPONSE:
-			connection.events = POLLOUT;
-			break;
-		case WAITING_CGI:
-			continue;
-		default:
-			continue;
+
+		switch (it->second.getState()) {
+			case READING_HEADERS:
+			case READING_BODY:
+				connection.events = POLLIN;
+				break;
+			case SENDING_RESPONSE:
+				connection.events = POLLOUT;
+				break;
+			case WAITING_CGI:
+			case WRITING_DISK:
+			case ROUTING_REQUEST:
+			case EXECUTING_REQUEST:
+				continue;
+			default:
+				continue;
 		}
 		_pollFds.push_back(connection);
-		std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		// std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 	}
 
-	std::map<int, Cgi*>& cgis = _cgiExecutor.getCGI();
-	std::map<int, Cgi*>::iterator cit = cgis.begin();
+	std::map<int, Cgi>& cgis = _cgiExecutor.getCGI();
+	std::map<int, Cgi>::iterator cit = cgis.begin();
 	for(; cit != cgis.end(); ++cit) {
 
 		struct pollfd cgiFd;
 		cgiFd.fd = cit->first;
-		if(cit->first == cit->second->getInFd())
+		if(cit->first == cit->second.getInFd())
 			cgiFd.events = POLLOUT;
-		else if(cit->first == cit->second->getOutFd())
+		else if(cit->first == cit->second.getOutFd())
 			cgiFd.events = POLLIN;
 		cgiFd.revents = 0;
 		_pollFds.push_back(cgiFd);
@@ -107,7 +101,9 @@ void EventLoop::run() {
 
 		rebuildPollFds();
 
-		int ret = poll(_pollFds.data(), _pollFds.size(), -1);
+		/* bool hasWork = !conPool.empty() && (hasWritingDisk || hasCGI);
+		int timeout = hasWork ? 10 : -1; */ //optimisation for timer on disc writes
+		int ret = poll(_pollFds.data(), _pollFds.size(), 10);
 
 		//errno != EINTR check for interrupted poll
 		if (ret < 0 && errno != EINTR) {
@@ -119,22 +115,24 @@ void EventLoop::run() {
 			std::cout << "[DEBUG] poll() returned " << ret << " (number of FDs with events)" << std::endl;
 			for(size_t i = 0; i < _pollFds.size(); i++) {
 
+				int fd = _pollFds[i].fd;
+				int revents = _pollFds[i].revents;
+
 				if (_pollFds[i].revents == 0) continue;
 
-				std::cout << "[DEBUG] Handling FD " << _pollFds[i].fd << " at index " << i << " with revents=" << _pollFds[i].revents << std::endl;
+				std::cout << "[DEBUG] Handling FD " << fd << " at index " << i << " with revents=" << revents << std::endl;
 
-				int fd = _pollFds[i].fd;
 				if (_listenManager.isListening(fd))
-					_listenManager.handleListenEvent(_pollFds[i].fd, _pollFds[i].revents);
+					_listenManager.handleListenEvent(fd, revents, _connectionPoolManager);
 				else if (_cgiExecutor.isCGI(fd))
-					_cgiExecutor.handleCGIevent(_pollFds[i].fd, _pollFds[i].revents);
+					_cgiExecutor.handleCGIevent(fd, revents, _connectionPoolManager);
 				else if (_connectionPoolManager.isConnection(fd))
-					_connectionPoolManager.handleConnectionEvent(_pollFds[i].fd, _pollFds[i].revents);
+					_connectionPoolManager.handleConnectionEvent(fd, revents, _cgiExecutor);
 			}
 		}
-
 		checkConnectionsTimeouts();
 		checkCgiTimeouts();
+		processDiskWrites();
 		reapZombieProcesses();
 	}
 }
@@ -166,30 +164,40 @@ void EventLoop::checkConnectionsTimeouts() {
 	}
 }
 
-bool EventLoop::isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd) {
+bool EventLoop::isCgiTimedOut(std::map<int, Cgi>& cgiMap, int fd) {
 	time_t now = time(NULL);
-	std::map<int, Cgi*>::iterator cgiIt = cgiMap.find(fd);
-	if (cgiIt == cgiMap.end() || !cgiIt->second)
-		return false;
-	return (now - cgiIt->second->getStartTime() > CGI_TIMEOUT);
+	std::map<int, Cgi>::iterator cgiIt = cgiMap.find(fd);
+	if (cgiIt == cgiMap.end()) return false;
+	return (now - cgiIt->second.getStartTime() > CGI_TIMEOUT);
 }
 void EventLoop::checkCgiTimeouts() {
 
-	std::map<int, Cgi*>& cgiMap = _cgiExecutor.getCGI();
-	std::map<int, Cgi*>::iterator cgiIt = cgiMap.begin();
+	std::map<int, Cgi>& cgiMap = _cgiExecutor.getCGI();
+	std::map<int, Cgi>::iterator cgiIt = cgiMap.begin();
 
 	while (cgiIt != cgiMap.end()) {
 
 		if (isCgiTimedOut(cgiMap, cgiIt->first)) {
 
-			std::cout << "[CGI TIMEOUT] Process pid=" << cgiIt->second->getPid()
+			std::cout << "[CGI TIMEOUT] Process pid=" << cgiIt->second.getPid()
 					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
 
-			_cgiExecutor.handleCGItimeout(cgiIt->second);
+			_cgiExecutor.handleCGItimeout(cgiIt->second, _connectionPoolManager);
 			cgiIt = cgiMap.begin();
 			continue;
 		}
 		++cgiIt;
+	}
+}
+
+void EventLoop::processDiskWrites() {
+
+	std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
+	std::map<int, Connection>::iterator it = conPool.begin();
+	for (; it != conPool.end(); ++it) {
+		if (it->second.getState() == WRITING_DISK) {
+			it->second.writeOnDisc();
+		}
 	}
 }
 

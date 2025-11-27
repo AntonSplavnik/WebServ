@@ -1,30 +1,24 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   connection_pool_manager.cpp                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/11/27 20:39:53 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "connection_pool_manager.hpp"
 #include "request_router.hpp"
+#include "request_handler.hpp"
+#include "cgi_executor.hpp"
 
-ConnectionPoolManager::ConnectionPoolManager() {}
-ConnectionPoolManager::~ConnectionPoolManager() {}
+void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
-void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
-
-	Connection* connection = &_connectionPool[fd];
-
-	if (revents & POLLERR || revents & POLLHUP) {
-		disconnectConnection(fd);
-		return;
-	} if (revents & POLLIN && connection->getState() == READING_REQUEST) {
-		if (!connection->readRequest()) {
-			return ;
-		} else {
-			// call router method()
-		}
-	} else if (revents & POLLOUT && connection->getState() == SENDING_RESPONSE) {
-		connection->sendResponse();
-	}
-}
-
-void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
-
-	Connection* conn = &_connectionPool[fd];
+	Connection& connection = getConnectionRef(fd);
+	ConnectionState state = connection.getState();
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
@@ -33,138 +27,171 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents) {
 	}
 
 	// ========== POLLHUP Events ==========
+	/*
+	POLLHUP alone:
+	- Socket error occurred (often combined with POLLERR)
+	- Write-side closed on a socket
+	- Some abnormal disconnect conditions
+
+	POLLIN | POLLHUP together:
+	- Normal TCP connection close (graceful shutdown with FIN)
+	- Remote peer called close() or shutdown(SHUT_WR)
+	- This is the common case for normal disconnects
+
+	*/
 	else if (revents & POLLHUP) {
-		if (revents & POLLIN) handleClientRead(fd); // half closed in case client is done sending and waiting for respose: shutdown(fd, SHUT_WR); recv(fd, ...);
-		std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
-		disconnectConnection(fd);
-		return;
+
+		if (revents & POLLIN) {
+			if (connection.getState() == READING_HEADERS) {	// client send last request and closed send, but still waiting for response.
+				connection.setShouldClose(true);
+				if (!connection.readHeaders()) {	// recv() returned 0
+					disconnectConnection(fd);
+					return;
+				}
+			} else if (connection.getState() == READING_BODY) {
+				connection.setShouldClose(true);
+				if (!connection.readBody()) {
+					disconnectConnection(fd);
+					return;
+				}
+			} else {
+				disconnectConnection(fd);
+				return;
+			}
+		} else {	// POLLOUT
+			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			disconnectConnection(fd);
+			return;
+		}
 	}
 
 	// ========== POLLIN Events ==========
 	else if (revents & POLLIN) {
 
-		// --- Phase 1: Reading headers ---
-		if (conn->getState() == READING_REQUEST) {
+		if (state == READING_HEADERS) {
 
 			// Read until headers complete
-			if (!conn->readRequest()) {
-				return; // Headers not complete yet
+			if (!connection.readHeaders()) return;
+
+			// Parse headers after received
+			HttpRequest request;
+			request.parseRequestHeaders(connection.getRequestBuffer());
+			if(!request.getStatus()) {
+				connection.setStatusCode(400);
+				connection.prepareResponse();
+				return;
 			}
+			connection.setRequest(request);
+		}
 
-			// ✅ Headers complete - start routing
-			const HttpRequest& req = conn->getRequest();
-			RequestRouter router;
+		state = connection.getState();
 
-			// Step 1: Find server config by port (virtual hosting)
-			ConfigData* serverConfig = findServerConfigByPort(conn->getServerPort());
-			if (!serverConfig) {
-				generateErrorResponse(conn, 500, "No server config found");
+		if (state == ROUTING_REQUEST) {
+
+			RequestRouter router(_configs);
+			RoutingResult result = router.route(connection);
+			connection.setRoutingResult(result);
+			if(!result.success){
+				connection.setStatusCode(result.errorCode);
+				connection.prepareResponse();
 				return;
 			}
 
-			// Step 2: Find matching location
-			const LocationConfig* location = router.findMatchingLocation(req.getPath(), serverConfig);
-			if (!location) {
-				generateErrorResponse(conn, 404, "Location not found");
-				return;
-			}
-
-			// Step 3: Validate method allowed
-			if (!router.validateMethod(req.getMethod(), location)) {
-				generateErrorResponse(conn, 405, "Method not allowed");
-				return;
-			}
-
-			// Step 4: Map and validate path
-			std::string mappedPath = router.mapPath(req.getPath(), location);
-			if (!router.validatePathSecurity(mappedPath, location->root)) {
-				generateErrorResponse(conn, 403, "Path traversal detected");
-				return;
-			}
-
-			// Step 5: Store routing context for later use
-			conn->setRoutingContext(serverConfig, location, mappedPath);
-
-			// Step 6: Classify request type
-			RequestType type = router.classify(req, location);
-
-			// Step 7: Dispatch based on type
-			switch (type) {
-
-				case STATIC_FILE:
-					handleGET(conn, serverConfig, location, mappedPath);
+			const RequestType& type = connection.getRoutingResult().type;
+			RequestHandler reqHandler;
+			switch (type) { // Dispatch based on type
+				case GET:
+					reqHandler.handleGET(connection);
 					break;
-
-				case DELETE_FILE:
-					handleDELETE(conn, serverConfig, location, mappedPath);
+				case DELETE:
+					reqHandler.handleDELETE(connection);
 					break;
-
-				case POST_UPLOAD: {
-					// Initialize streaming
-					std::string uploadPath = location->upload_path;
-					if (uploadPath.empty()) {
-						uploadPath = location->root; // Fallback
-					}
-
-					std::string tempPath = uploadPath + "/temp_" + generateUniqueId() + ".raw";
-
-					bool complete = conn->initBodyStream(tempPath);
-
-					if (complete) {
-						// Small upload completed immediately
-						handlePOST(conn, serverConfig, location);
-					}
-					// else: state changed to STREAMING_BODY, wait for next POLLIN
+				case POST:
+				case CGI_POST:
+					connection.setState(READING_BODY);
 					break;
-				}
-
-				case CGI_SCRIPT:
-					handleCGI(conn, serverConfig, location, mappedPath);
+				case CGI_GET:
+					cgiExecutor.handleCGI(connection);
 					break;
-
 				case REDIRECT:
-					handleRedirect(conn, location);
+					/* reqHandler.handleRedirect(connection); */
 					break;
-
 				default:
-					generateErrorResponse(conn, 500, "Unknown request type");
+					connection.setStatusCode(500);
+					connection.prepareResponse();
 					break;
 			}
 		}
 
-		// --- Phase 2: Streaming body ---
-		else if (conn->getState() == STREAMING_BODY) {
+		state = connection.getState();
 
-			bool streamingComplete = conn->streamBody();
+		if (state == READING_BODY) {
 
-			if (streamingComplete) {
-				// Retrieve stored routing context
-				ConfigData* serverConfig = conn->getRoutedServer();
-				const LocationConfig* location = conn->getRoutedLocation();
+			if(!connection.readBody()) return;
 
-				// ✅ Now handle POST with complete body
-				handlePOST(conn, serverConfig, location);
+			// Parse body after received
+			connection.moveBodyToRequest();
+			const HttpRequest& request = connection.getRequest();
+			if(!request.getStatus()) {
+				connection.setStatusCode(400);
+				connection.prepareResponse();
+				return;
 			}
-			// else: keep streaming on next POLLIN event
+		}
+
+		state = connection.getState();
+
+		if (state == EXECUTING_REQUEST) {
+
+			const RequestType& type = connection.getRoutingResult().type;
+			RequestHandler reqHandler;
+
+			switch(type) {
+				case (CGI_POST): {
+					cgiExecutor.handleCGI(connection);
+					break;
+				}
+				case (POST): {
+					reqHandler.handlePOST(connection);
+					break;
+				}
+				default: {
+					std::cout << "[DEBUG] Unknown reuest type" << std::endl;
+					break;
+				}
+				return;
+			}
 		}
 	}
 
 	// ========== POLLOUT Events ==========
 	else if (revents & POLLOUT) {
 
-		if (conn->getState() == SENDING_RESPONSE) {
+		if (connection.getState() == SENDING_RESPONSE) {
 
-			bool sendComplete = conn->sendResponse();
+			bool sendComplete = connection.sendResponse();
 
-			if (sendComplete && conn->shouldClose()) {
+			if (sendComplete && connection.getShouldClose()) {
 				disconnectConnection(fd);
 			}
 		}
 	}
 }
+/** returns NULL if connection doesn't exist! */
+Connection* ConnectionPoolManager::getConnection(int fd){
+	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
+	if(it != _connectionPool.end()) return &it->second;
+	return NULL;
+}
+
+Connection& ConnectionPoolManager::getConnectionRef(int fd){
+	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
+	return it->second;
+}
 
 void ConnectionPoolManager::addConnection(Connection& incomingConnection) {
-	_connectionPool[incomingConnection.getFd()] = incomingConnection;
+	int fd = incomingConnection.getFd();
+	_connectionPool.insert(std::make_pair(fd, incomingConnection));
 }
 void ConnectionPoolManager::disconnectConnection(short fd) {
 	close(fd);

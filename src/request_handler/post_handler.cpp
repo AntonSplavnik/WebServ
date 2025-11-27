@@ -6,57 +6,40 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/09 12:51:47 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 17:15:54 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "post_handler.hpp"
-#include "http_request.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
 
+#include "post_handler.hpp"
+#include "request.hpp"
+#include "connection.hpp"
+
+
 PostHandler::PostHandler(const std::string uploadPath)
     :_uploadPath(uploadPath){
     std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
 }
 
-bool PostHandler::saveRawContent(const std::string& filePath, const std::string& content) {
-    std::ofstream file(filePath.c_str(), std::ios::binary);
-    if (!file.is_open()) {
-        std::cout << "[ERROR] Failed to open file for writing: " << filePath << std::endl;
-        return false;
-    }
-
-    file.write(content.c_str(), content.size());
-    file.close();
-
-    if (file.good()) {
-        std::cout << "[SUCCESS] File saved: " << filePath
-                  << " (" << content.size() << " bytes)" << std::endl;
-        return true;
-    } else {
-        std::cout << "[ERROR] Failed to write to file: " << filePath << std::endl;
-        return false;
-    }
-}
-
-int PostHandler::handleFile(const HttpRequest& request, const std::string& contentType) {
+bool PostHandler::handleFile(Connection& connection, const std::string& contentType) {
     std::string extension = getExtensionFromContentType(contentType);
 
     std::string fileName = generateFilename(extension);
     std::string filePath = _uploadPath + fileName;
+    connection.setFilePath(_uploadPath, fileName);
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
-    if (saveRawContent(filePath, request.getBody())) {
+    return true;
+/*     if (saveRawContent(filePath, request.getBody())) {
         return 200;
     } else {
         return 500;
-    }
+    } */
 }
-
 std::string PostHandler::generateFilename(const std::string& extension) {
     static int counter = 0;
     counter++;
@@ -111,19 +94,28 @@ std::string PostHandler::getExtensionFromContentType(const std::string& contentT
         return "unknown";
     }
 }
-bool PostHandler::isSupportedContentType(const std::string& contentType)
-{
-		return (contentType.find("text/plain") != std::string::npos ||
-                contentType.find("text/css") != std::string::npos ||
-				contentType.find("image/jpeg") != std::string::npos ||
-				contentType.find("image/png") != std::string::npos ||
-				contentType.find("image/gif") != std::string::npos ||
-				contentType.find("application/javascript") != std::string::npos ||
-				contentType.find("application/json") != std::string::npos ||
-				contentType.find("application/octet-stream") != std::string::npos);
-}
 
-int PostHandler::handleMultipart(const HttpRequest& request) {
+/* bool PostHandler::saveRawContent(const std::string& filePath, const std::string& content) {
+    std::ofstream file(filePath.c_str(), std::ios::binary);
+    if (!file.is_open()) {
+        std::cout << "[ERROR] Failed to open file for writing: " << filePath << std::endl;
+        return false;
+    }
+
+    file.write(content.c_str(), content.size());
+    file.close();
+
+    if (file.good()) {
+        std::cout << "[SUCCESS] File saved: " << filePath
+                  << " (" << content.size() << " bytes)" << std::endl;
+        return true;
+    } else {
+        std::cout << "[ERROR] Failed to write to file: " << filePath << std::endl;
+        return false;
+    }
+} */
+
+int PostHandler::handleMultipart(Connection& connection) {
     /*
         POST /upload HTTP/1.1
         Host: localhost:8080
@@ -151,14 +143,27 @@ int PostHandler::handleMultipart(const HttpRequest& request) {
         ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
     */
-
-    std::string contentType = request.getContentType();
-    std::string requestBody = request.getBody();
-
+    std::string contentType = connection.getRequest().getContentType();
+    std::string requestBody = connection.getRequest().getBody();
     std::string boundary = extractBoundary(contentType);
+
     std::vector<MultipartPart> parts = parseMultipartData(requestBody, boundary);
-    int statusCode = processMultipartParts(parts);
-    return statusCode;
+
+    // Sanitize filenames
+    for (size_t i = 0; i < parts.size(); i++) {
+        if (!parts[i].fileName.empty()) {
+            std::string safe = sanitizeFilename(parts[i].fileName);
+            if (safe.empty()) {
+                return false;
+            }
+            parts[i].fileName = safe;
+        }
+    }
+    connection.setMultipart(_uploadPath, parts);
+    return true;
+
+/*     int statusCode = processMultipartParts(parts);
+    return statusCode; */
 }
 std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& body, const std::string& boundary) {
 	std::vector<MultipartPart> parts;
@@ -267,7 +272,7 @@ std::string PostHandler::extractContentTypeFromHeader(const std::string& headerL
     }
     return "";
 }
-int PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts) {
+/* int PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts) {
 
     std::string uploadDir = _uploadPath;
     std::cout << "[DEBUG] Upload directory: '" << uploadDir << "'" << std::endl;
@@ -293,8 +298,7 @@ int PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts) 
             std::string filePath = uploadDir + safeFilename;
 
             if (saveFileFromMultipart(filePath, part.content)) {
-                std::cout << "[DEBUG]File saved: " << part.fileName
-                        << " (" << part.content.size() << " bytes)" << std::endl;
+                std::cout << "[DEBUG]File saved: " << part.fileName << " (" << part.content.size() << " bytes)" << std::endl;
             } else {
                 std::cout << "[ERROR]: Failed to save file: " << part.fileName << std::endl;
                 return 500;
@@ -317,7 +321,6 @@ bool PostHandler::saveFileFromMultipart(const std::string& filePath, const std::
 
     return file.good();
 }
-
 void PostHandler::saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue) {
 
     std::string logFile = _uploadPath;
@@ -331,7 +334,7 @@ void PostHandler::saveFormFieldToLog(const std::string& fieldName, const std::st
         file << "Field: " << fieldName << " = " << fieldValue << std::endl;
         file.close();
     }
-}
+} */
 
 std::string PostHandler::extractBoundary(const std::string& contentType) {
 	std::string boundary;
@@ -341,7 +344,6 @@ std::string PostHandler::extractBoundary(const std::string& contentType) {
 	}
 	return boundary;
 }
-
 std::string PostHandler::sanitizeFilename(const std::string& filename) {
     if (filename.empty()) {
         return "";  // Signal invalid
@@ -380,4 +382,19 @@ std::string PostHandler::sanitizeFilename(const std::string& filename) {
     }
 
     return safe.empty() ? "" : safe;
+}
+
+bool PostHandler::isSupportedContentType(const std::string& contentType) {
+    return (contentType.find("text/plain") != std::string::npos ||
+            contentType.find("text/css") != std::string::npos ||
+            contentType.find("text/html") != std::string::npos ||
+            contentType.find("image/jpeg") != std::string::npos ||
+            contentType.find("image/png") != std::string::npos ||
+            contentType.find("image/gif") != std::string::npos ||
+            contentType.find("image/webp") != std::string::npos ||
+            contentType.find("image/svg+xml") != std::string::npos ||
+            contentType.find("application/javascript") != std::string::npos ||
+            contentType.find("application/json") != std::string::npos ||
+            contentType.find("application/pdf") != std::string::npos ||
+            contentType.find("application/octet-stream") != std::string::npos);
 }

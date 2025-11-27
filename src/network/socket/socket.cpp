@@ -6,11 +6,12 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:46 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/05 21:02:17 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/17 23:58:42 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "socket.hpp"
+#include <arpa/inet.h>
 
 Socket::Socket():_fd(-1){ }
 Socket::Socket(short fd): _fd(fd){}
@@ -39,22 +40,32 @@ void Socket::setReuseAddr(bool enable) {
 	std::cout << "[DEBUG] Set SO_REUSEADDR option on FD " << _fd << std::endl;
 }
 
-void Socket::binding(int port) {
+void Socket::binding(std::string address, unsigned short port) {
 
-	struct sockaddr_in	address;
-	std::memset(&address, 0, sizeof(address));
-	address.sin_family = AF_INET;
-	address.sin_port = htons(port);
- 	address.sin_addr.s_addr = INADDR_ANY;
+	struct sockaddr_in listener;
+	std::memset(&listener, 0, sizeof(listener));
+	listener.sin_family = AF_INET;
+	listener.sin_port = htons(port);
 
-	if (bind(_fd, (sockaddr*)&address, sizeof(address)) < 0) {
+	// Handle address conversion
+	if (address.empty() || address == "0.0.0.0") {
+		listener.sin_addr.s_addr = INADDR_ANY;  // Bind to all interfaces
+	} else {
+		if (inet_pton(AF_INET, address.c_str(), &listener.sin_addr) <= 0) {
+			throw std::runtime_error("Invalid IP address: " + address);
+		}
+	}
+
+	if (bind(_fd, (sockaddr*)&listener, sizeof(listener)) < 0) {
 		std::cerr << "[DEBUG] Bind failed: " << strerror(errno) << "\n";
 		close(_fd);
 		_fd = -1;
 		return;
 	}
+
 	_port = port;
-	std::cout << "[DEBUG] Bound socket FD " << _fd << " to port " << address.sin_port << std::endl;
+	std::cout << "[DEBUG] Bound socket FD " << _fd << " to "
+			<< address << ":" << port << std::endl;
 }
 
 void Socket::listening(int backlog) {

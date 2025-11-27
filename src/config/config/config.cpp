@@ -104,6 +104,24 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
     return bestMatch;
 }
 
+std::string ConfigData::getErrorPage(int statusCode, const LocationConfig* location) const {
+	// Try location-specific error page first
+	if (location) {
+		std::map<int, std::string>::const_iterator it = location->error_pages.find(statusCode);
+		if (it != location->error_pages.end()) {
+			return root + "/" + it->second;
+		}
+	}
+
+	// Fall back to server-level error page
+	std::map<int, std::string>::const_iterator it = error_pages.find(statusCode);
+	if (it != error_pages.end()) {
+		return root + "/" + it->second;
+	}
+
+	return "";  // No custom error page configured
+}
+
 
 // }
 // Validates that the given key is in the list of known directives
@@ -125,8 +143,6 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: index (and autoindex is off)");
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
-    if (config.max_clients <= 0)
-        throw ConfigParseException("Missing or invalid required config: max_clients");
     if (config.access_log.empty())
         throw ConfigParseException("Missing required config: access_log");
     if (config.error_log.empty())
@@ -142,6 +158,18 @@ void Config::validateConfig(ConfigData& config) {
         config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
         config.error_pages[413] = DEFAULT_ERROR_PAGE_413;
         std::cout << "Info: No error_pages specified, applying default error pages" << std::endl;
+    }
+    // Validate error page files exist (paths are relative to root)
+    for (std::map<int, std::string>::const_iterator it = config.error_pages.begin();
+         it != config.error_pages.end(); ++it)
+    {
+        std::string fullPath = config.root + "/" + it->second;
+        if (!isValidFile(fullPath, R_OK))
+        {
+            std::ostringstream oss;
+            oss << it->first;
+            throw ConfigParseException("Invalid or inaccessible error_page file for status " + oss.str() + ": " + fullPath);
+        }
     }
     if (config.allow_methods.empty())
     {
@@ -203,6 +231,18 @@ void Config::validateConfig(ConfigData& config) {
         	std::ostringstream oss;
 			oss << loc.redirect_code;
             throw ConfigParseException("Invalid redirect code in location " + loc.path + ": " + oss.str());
+        }
+        // Validate location error page files exist (paths are relative to server root, not location root)
+        for (std::map<int, std::string>::const_iterator it = loc.error_pages.begin();
+             it != loc.error_pages.end(); ++it)
+        {
+            std::string fullPath = config.root + "/" + it->second;
+            if (!isValidFile(fullPath, R_OK))
+            {
+                std::ostringstream oss;
+                oss << it->first;
+                throw ConfigParseException("Invalid or inaccessible error_page file for status " + oss.str() + " in location " + loc.path + ": " + fullPath);
+            }
         }
         if (!loc.autoindex)
           loc.autoindex = config.autoindex;
