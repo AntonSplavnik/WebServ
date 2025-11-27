@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 14:06:52 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 15:38:38 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
 	Connection& connection = getConnectionRef(fd);
-	const ConnectionState& state = connection.getState();
+	ConnectionState state = connection.getState();
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
@@ -30,12 +30,18 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 	else if (revents & POLLHUP) {
 
 		if (revents & POLLIN) {
-			if (connection.getState() == READING_HEADERS) {
-				connection.shouldClose();
-				connection.readHeaders();
+			if (connection.getState() == READING_HEADERS) { // client send last request and closed send, but still waiting for response.
+				connection.setShouldClose(true);
+				if (!connection.readHeaders()) {	// recv() returned 0
+					disconnectConnection(fd);
+					return;
+				}
 			} else if (connection.getState() == READING_BODY) {
-				connection.shouldClose();
-				connection.readBody();
+				connection.setShouldClose(true);
+				if (!connection.readBody()) {
+					disconnectConnection(fd);
+					return;
+				}
 			} else {
 				disconnectConnection(fd);
 				return;
@@ -64,10 +70,11 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				return;
 			}
 			connection.setRequest(request);
-
-			return;
 		}
-		else if (state == ROUTING_REQUEST) {
+
+		state = connection.getState();
+
+		if (state == ROUTING_REQUEST) {
 
 			RequestRouter router(_configs);
 			RoutingResult result = router.route(connection);
@@ -106,7 +113,6 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				default:
 					connection.setStatusCode(500);
 					connection.prepareResponse();
-					// generateErrorResponse(connection, 500, "Unknown request type");
 					break;
 			}
 			return;
@@ -156,7 +162,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 
 			bool sendComplete = connection.sendResponse();
 
-			if (sendComplete && connection.shouldClose()) {
+			if (sendComplete && connection.getShouldClose()) {
 				disconnectConnection(fd);
 			}
 		}

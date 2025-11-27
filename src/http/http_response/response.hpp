@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/11/26 12:55:39 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 16:15:56 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,9 @@ class HttpResponse {
 		void generateResponse(int statusCode);
 		void generateResponse(int statusCode, const std::string& cgiOutput);
 
+		void setProtocolVersion(const std::string& protVer);
 		void setBody(const std::string& body);
 		void setReasonPhrase(const std::string& reasonPhrase);
-		void setVersion(float version);
 		void setStatusCode(int code);
 		void setPath(const std::string& path);
 		void setCustomErrorPage(const std::string& errorPagePath);
@@ -41,7 +41,7 @@ class HttpResponse {
 		void setMethod(RequestType type);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
-		float getVersion() const;
+		const std::string& getProtocolVersion() const;
 		int getStatusCode() const;
 		unsigned long getContentLength() const;
 		const std::string& getResponse() const;
@@ -62,7 +62,7 @@ class HttpResponse {
 		RequestType		_requestType;
 
 		//status line
-		std::string		_protocolVer;
+		std::string		_protocolVersion;
 		int				_statusCode;
 		std::string		_reasonPhrase;
 

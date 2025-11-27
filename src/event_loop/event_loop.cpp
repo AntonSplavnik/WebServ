@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 02:38:21 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 15:54:01 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,16 +30,16 @@ void EventLoop::rebuildPollFds() {
 	if (_pollFds.size() > _listeningSocketCount)
 		_pollFds.resize(_listeningSocketCount);
 
-	std::map<int, Connection>& connections = _connectionPoolManager.getConnectionPool();
-	std::map<int, Connection>::iterator it = connections.begin();
-	for(;it != connections.end(); ++it) {
+	std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
+	std::map<int, Connection>::iterator it = conPool.begin();
+	for(;it != conPool.end(); ++it) {
 
 		struct pollfd connection;
 		connection.fd = it->first;
 		connection.revents = 0;
+
 		switch (it->second.getState()) {
 			case READING_HEADERS:
-			case ROUTING_REQUEST:
 			case READING_BODY:
 			case EXECUTING_REQUEST:
 				connection.events = POLLIN;
@@ -49,6 +49,7 @@ void EventLoop::rebuildPollFds() {
 				break;
 			case WAITING_CGI:
 			case WRITING_DISK:
+			case ROUTING_REQUEST:
 				continue;
 			default:
 				continue;
@@ -190,12 +191,12 @@ void EventLoop::checkCgiTimeouts() {
 void EventLoop::processDiskWrites() {
 
 	std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
-
-	for(size_t i = 0; i < conPool.size(); i++) {
-			if (conPool[i].getState() == WRITING_DISK) {
-				conPool[i].writeOnDisc();
-			}
+	std::map<int, Connection>::iterator it = conPool.begin();
+	for (; it != conPool.end(); ++it) {
+		if (it->second.getState() == WRITING_DISK) {
+			it->second.writeOnDisc();
 		}
+	}
 }
 
 void EventLoop::reapZombieProcesses() {

@@ -135,6 +135,10 @@ bool Connection::readHeaders() {
 
 		// Check if headers complete
 		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
+		std::cout << "[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "
+				  << headerEnd << " Buffer size: " << _requestBuffer.size() << std::endl;
+  		std::cout << "[DEBUG] Buffer content: [" << _requestBuffer << "]" << std::endl;
+
 		if(headerEnd == std::string::npos) {
 			return false;  // Keep receiving headers
 		}
@@ -329,6 +333,7 @@ bool Connection::prepareResponse() {
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
+	response.setProtocolVersion(_request.getProtocolVersion());
 
 	// Set body for GET request
 	if (!_bodyContent.empty()) {
@@ -401,13 +406,15 @@ bool Connection::sendResponse() {
 
 	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
 
+	std::cout << "[DEBUG] First 200 chars of response: [" << _responseData.substr(0, 200) << "]" << std::endl;
+
 	// Send remaining response data
 	const char* data = _responseData.c_str() + _bytesSent;
 	size_t remainingLean = _responseData.length() - _bytesSent;
 	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
 	int bytes_sent = send(_fd, data, bytesToWrite, 0);
-	std::cout << "send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
+	std::cout << "[DEBUG] send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
 
 	if (bytes_sent > 0) {
 
@@ -415,7 +422,7 @@ bool Connection::sendResponse() {
 
 		updateClientActivity();
 
-		std::cout << "Bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
+		std::cout << "[DEBUG] Total bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
 
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {

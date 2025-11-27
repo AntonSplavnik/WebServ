@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 12:42:09 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 16:03:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ Critical HTTP parsing test scenarios
 
 void HttpRequest::parseRequestHeaders(const std::string requestData) {
 
-	std::cout << "\n#######  HTTP PARTIAL PARSE REQUEST DATA #######" << std::endl;
+	std::cout << "\n#######  HTTP PARSE REQUEST HEADERS #######" << std::endl;
 
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
@@ -240,4 +240,3 @@ std::string HttpRequest::getUri() const {
 	return  _path + "?" + _query;
 
 }
-

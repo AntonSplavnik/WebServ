@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/26 11:18:50 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 14:03:19 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 13:56:46 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ class ConnectionPoolManager {
 
 	public:
 		ConnectionPoolManager(std::vector<ConfigData>& configs)
-			: _configs(configs){}
+			: _configs(configs) {}
 		~ConnectionPoolManager(){}
 
 		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);

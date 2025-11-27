@@ -86,7 +86,7 @@ class Connection {
 		}
 
 		// Keep-Alive & Lifecycle
-		bool shouldClose() const { return _shouldClose; }
+		bool getShouldClose() const { return _shouldClose; }
 		void setShouldClose(bool close) { _shouldClose = close; }
 		time_t getLastActivity() const { return _lastActivity; }
 		int getKeepAliveTimeout() const { return _keepAliveTimeout; }

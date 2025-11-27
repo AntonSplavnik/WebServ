@@ -25,7 +25,7 @@ class ListeningSocketManager {
 		std::vector<int>& getListeningSockets() { return _fd;}
 
 	private:
-		std::vector<Socket>		_listeningSockets;  // probably remove, not needed
+		std::vector<Socket>		_listeningSockets;
 		std::vector<int>		_fd;
 };
 

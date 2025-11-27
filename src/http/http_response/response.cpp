@@ -133,7 +133,7 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 	}
 
 	if (cgiOutput.find("Content-Type:") != std::string::npos) {
-		_response = _protocolVer + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
+		_response = _protocolVersion + " " + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
 		return;
 	} else {
 		_body = cgiOutput;
@@ -187,7 +187,7 @@ void HttpResponse::buildHttpResponse() {
 
 	std::ostringstream oss;
 
-	oss << _protocolVer << _statusCode << " " << _reasonPhrase << "\r\n";
+	oss << _protocolVersion << " " << _statusCode << " " << _reasonPhrase << "\r\n";
 	oss << "Date: " << _date << "\r\n"
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
@@ -204,9 +204,9 @@ void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {
     _customErrorPagePath = errorPagePath;
 }
 
+void HttpResponse::setProtocolVersion(const std::string& protVer) {_protocolVersion = protVer;}
 void HttpResponse::setBody(const std::string& body) {_body = body;}
 void HttpResponse::setReasonPhrase(const std::string& reasonPhrase){_reasonPhrase = reasonPhrase;}
-void HttpResponse::setVersion(float version) {_serverVersion = version;}
 void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
 void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
@@ -215,6 +215,6 @@ void HttpResponse::setMethod(RequestType type) {_requestType = type;}
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}
 const std::string& HttpResponse::getPath()const {return _filePath;}
-float HttpResponse::getVersion() const {return _serverVersion;}
+const std::string& HttpResponse::getProtocolVersion() const {return _protocolVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 const std::string& HttpResponse::getResponse() const {return _response;}

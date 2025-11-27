@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 11:50:47 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 16:19:11 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -181,7 +181,7 @@ char** Cgi::prepEnvVariables(const Connection& connection, const std::string& ex
     envp[i++] = strdup("GATEWAY_INTERFACE=CGI/1.1");
 
     // SERVER_PROTOCOL
-    buffer = "SERVER_PROTOCOL=" + _request.getVersion();  // request
+    buffer = "SERVER_PROTOCOL=" + _request.getProtocolVersion();  // request
     envp[i++] = strdup(buffer.c_str());
 
     // SERVER_NAME

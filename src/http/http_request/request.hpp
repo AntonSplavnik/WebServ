@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 11:17:41 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 16:18:24 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ class HttpRequest {
 		const std::string& getMethod() const { return _method; }
 		const std::string& getPath() const { return _path; }
 		const std::string& getQuery() const { return _query; }
-		const std::string& getVersion() const { return _version; }
+		const std::string& getProtocolVersion() const {return _version;}
 		std::string getUri() const;
 
 		// Headers getters
@@ -69,7 +69,7 @@ class HttpRequest {
 		void setRawHeaders(std::string rawHeaders) { _rawHeaders = rawHeaders; }
 		void setMethod(std::string method) { _method = method; }
 		void setPath(std::string path) { _path = path; }
-		void setVersion(std::string version) { _version = version; }
+		void setProtocolVersion(std::string version) { _version = version; }
 
 		// Status
 		bool getStatus() const { return _isValid; }
