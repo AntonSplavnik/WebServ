@@ -49,7 +49,7 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 		std::cout << "[DEBUG] Event detected on listening socket FD " << fd << std::endl;
 
 		Socket* listeningSocket = NULL;
-		for (int i = 0; i < _listeningSockets.size(); i++)
+		for (size_t i = 0; i < _listeningSockets.size(); i++)
 		{
 			if (_listeningSockets[i].getFd() == fd){
 				listeningSocket = &_listeningSockets[i];
@@ -90,5 +90,9 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 }
 
 bool ListeningSocketManager::isListening(int fd) {
-	return _fd.begin() != _fd.end();
+	for (size_t i = 0; i < _fd.size(); i++) {
+		if (_fd[i] == fd)
+			return true;
+	}
+	return false;
 }

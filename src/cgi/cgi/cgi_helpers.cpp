@@ -13,7 +13,7 @@ bool Cgi::chdirToScriptDir(const std::string& mappedPath) {
 	return true;
 }
 
-std::string extractCgiExtension(const std::string& path, const LocationConfig* location) {
+std::string Cgi::extractCgiExtension(const std::string& path, const LocationConfig* location) {
 	for (size_t i = 0; i < location->cgi_ext.size(); i++) {
 		std::string ext = location->cgi_ext[i];
 		if (path.size() > ext.size() && path.substr(path.length() - ext.length()) == ext) {

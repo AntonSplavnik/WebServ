@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/26 11:18:50 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 11:18:51 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 14:03:19 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class ConnectionPoolManager {
 
 		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);
 		Connection* getConnection(int fd);
+		Connection& getConnectionRef(int fd);
 		void addConnection(Connection& incomingConnection);
 		void disconnectConnection(short fd);
 		bool isConnection(int fd);

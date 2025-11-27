@@ -143,8 +143,6 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: index (and autoindex is off)");
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
-    if (config.max_clients <= 0)
-        throw ConfigParseException("Missing or invalid required config: max_clients");
     if (config.access_log.empty())
         throw ConfigParseException("Missing required config: access_log");
     if (config.error_log.empty())

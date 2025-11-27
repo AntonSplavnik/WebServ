@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../exceptions/config_exceptions.hpp"
-#include "../helpers/helpers.hpp"
+#include "config_exceptions.hpp"
+#include "helpers.hpp"
 #include "config.hpp"
 #include <unistd.h>
 #include <sstream>

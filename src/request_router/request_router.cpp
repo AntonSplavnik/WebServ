@@ -11,6 +11,14 @@
 /* ************************************************************************** */
 
 #include "request_router.hpp"
+#include "connection.hpp"
+
+static RoutingResult prepErrorResult(bool success, int errorCode) {
+	RoutingResult result;
+	result.success = success;
+	result.errorCode = errorCode;
+	return result;
+}
 
 
 RoutingResult RequestRouter::route(Connection& connection) {
@@ -72,7 +80,6 @@ ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPor
 	}
 
 	// Extract Host header
-	const HttpRequest& req = req;
 	const std::map<std::string, std::string>& headers = req.getHeaders();
 	std::map<std::string, std::string>::const_iterator it = headers.find("host");
 
@@ -246,10 +253,4 @@ RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig
 	if (method == "DELETE")  return DELETE;
 	else if (method == "POST") return POST;
 	return GET;
-}
-RoutingResult& prepErrorResult(bool success, int errorCode) {
-	RoutingResult result;
-	result.success = success;
-	result.errorCode = errorCode;
-	return result;
 }

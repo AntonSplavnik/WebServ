@@ -29,7 +29,10 @@ enum ConnectionState {
 class Connection {
 	public:
 		// Constructor & Destructor
+		Connection();
 		Connection(int fd, const std::string& ip, int connectionPort, int serverPort);
+		Connection(const Connection& other);
+		Connection& operator=(const Connection& other);
 		~Connection();
 
 		// I/O Operations
@@ -104,7 +107,7 @@ class Connection {
 		RoutingResult	_routingResult;		// data after routing request to a correct server block
 
 		// File Writing - Single File
-		std::ofstream	_fileStream;		// stram for disc writin. used in case of POST/ POST multipart
+		std::ofstream*	_fileStream;		// stram for disc writin. used in case of POST/ POST multipart
 		std::string		_uploadPath;		// path for the POST request to upload the file
 		std::string		_fileName;			// generated name for the file from the regular POST request, not multypart
 		int				_bytesWritten;		// data size written on disc from POST request should be set internally 32KB

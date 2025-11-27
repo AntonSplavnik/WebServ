@@ -2,12 +2,13 @@
 #include "post_handler.hpp"
 #include "response.hpp"
 
-Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
-	: _fd(fd),
+Connection::Connection()
+	: _fd(-1),
 	_connectionState(READING_HEADERS),
-	_ip(ip),
-	_connectionPort(connectionPort),
-	_serverPort(serverPort),
+	_ip(""),
+	_connectionPort(0),
+	_serverPort(0),
+	_fileStream(NULL),
 	_bytesWritten(0),
 	_multipart(),
 	_currentPartIndex(0),
@@ -19,9 +20,94 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_requestCount(0),
 	_shouldClose(false) {}
 
+Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
+	: _fd(fd),
+	_connectionState(READING_HEADERS),
+	_ip(ip),
+	_connectionPort(connectionPort),
+	_serverPort(serverPort),
+	_fileStream(NULL),
+	_bytesWritten(0),
+	_multipart(),
+	_currentPartIndex(0),
+	_bytesSent(0),
+	_statusCode(0),
+	_lastActivity(time(NULL)),
+	_keepAliveTimeout(15),
+	_maxRequests(100),
+	_requestCount(0),
+	_shouldClose(false) {}
+
+Connection::Connection(const Connection& other)
+	: _fd(other._fd),
+	_connectionState(other._connectionState),
+	_ip(other._ip),
+	_connectionPort(other._connectionPort),
+	_serverPort(other._serverPort),
+	_requestBuffer(other._requestBuffer),
+	_request(other._request),
+	_routingResult(other._routingResult),
+	_fileStream(NULL),
+	_uploadPath(other._uploadPath),
+	_fileName(other._fileName),
+	_bytesWritten(other._bytesWritten),
+	_multipart(other._multipart),
+	_currentPartIndex(other._currentPartIndex),
+	_bodyContent(other._bodyContent),
+	_responseData(other._responseData),
+	_bytesSent(other._bytesSent),
+	_statusCode(other._statusCode),
+	_lastActivity(other._lastActivity),
+	_keepAliveTimeout(other._keepAliveTimeout),
+	_maxRequests(other._maxRequests),
+	_requestCount(other._requestCount),
+	_shouldClose(other._shouldClose) {}
+
+Connection& Connection::operator=(const Connection& other) {
+	if (this != &other) {
+		// Clean up existing fileStream
+		if (_fileStream) {
+			if (_fileStream->is_open())
+				_fileStream->close();
+			delete _fileStream;
+			_fileStream = NULL;
+		}
+
+		// Copy all members
+		_fd = other._fd;
+		_connectionState = other._connectionState;
+		_ip = other._ip;
+		_connectionPort = other._connectionPort;
+		_serverPort = other._serverPort;
+		_requestBuffer = other._requestBuffer;
+		_request = other._request;
+		_routingResult = other._routingResult;
+		_uploadPath = other._uploadPath;
+		_fileName = other._fileName;
+		_bytesWritten = other._bytesWritten;
+		_multipart = other._multipart;
+		_currentPartIndex = other._currentPartIndex;
+		_bodyContent = other._bodyContent;
+		_responseData = other._responseData;
+		_bytesSent = other._bytesSent;
+		_statusCode = other._statusCode;
+		_lastActivity = other._lastActivity;
+		_keepAliveTimeout = other._keepAliveTimeout;
+		_maxRequests = other._maxRequests;
+		_requestCount = other._requestCount;
+		_shouldClose = other._shouldClose;
+		// _fileStream remains NULL (no deep copy of file streams)
+	}
+	return *this;
+}
+
 Connection::~Connection() {
-	if (_fileStream.is_open())
-		_fileStream.close();
+	if (_fileStream) {
+		if (_fileStream->is_open())
+			_fileStream->close();
+		delete _fileStream;
+		_fileStream = NULL;
+	}
 }
 
 bool Connection::readHeaders() {
@@ -121,8 +207,11 @@ bool Connection::writeOnDisc() {
 		std::string filePath = _uploadPath + _fileName;
 		if (processWriteChunck(_request.getBody(), filePath)) {
 			if (static_cast<size_t>(_bytesWritten) >= _request.getBody().length()) {
-				_fileStream.close();
-				setStatusCode(_fileStream.good()? 200 : 500);
+				bool success = _fileStream && _fileStream->good();
+				_fileStream->close();
+				delete _fileStream;
+				_fileStream = NULL;
+				setStatusCode(success ? 200 : 500);
 				prepareResponse();
 				return true;
 			}
@@ -147,7 +236,9 @@ bool Connection::writeOnDisc() {
 		std::string filePath = _uploadPath + part.fileName;
 		if (processWriteChunck(part.content, filePath)) {
 			if (static_cast<size_t>(_bytesWritten) >= part.content.length()) {
-				_fileStream.close();
+				_fileStream->close();
+				delete _fileStream;
+				_fileStream = NULL;
 				_currentPartIndex++;
 				_bytesWritten = 0;
 				return false;
@@ -172,9 +263,11 @@ void Connection::appendFormFieldToLog(const std::string& name, const std::string
 }
 bool Connection::processWriteChunck(const std::string& data, const std::string& filePath) {
 
-	if (!_fileStream.is_open()) {
-		_fileStream.open(filePath.c_str(), std::ios::binary);
-		if (!_fileStream.is_open()) {
+	if (!_fileStream || !_fileStream->is_open()) {
+		if (!_fileStream)
+			_fileStream = new std::ofstream();
+		_fileStream->open(filePath.c_str(), std::ios::binary);
+		if (!_fileStream->is_open()) {
 			setStatusCode(500);
 			prepareResponse();
 			return false;
@@ -184,11 +277,13 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	const char* writeData = data.c_str() + _bytesWritten;
 	size_t remainingLen = data.length() - _bytesWritten;
 	size_t bytesToWrite = std::min(remainingLen, static_cast<size_t>(BUFFER_SIZE_32));
-	_fileStream.write(writeData, bytesToWrite);
+	_fileStream->write(writeData, bytesToWrite);
 
-	if (_fileStream.fail()) {
+	if (_fileStream->fail()) {
 		std::cout << "[ERROR] File write failed" << std::endl;
-		_fileStream.close();
+		_fileStream->close();
+		delete _fileStream;
+		_fileStream = NULL;
 		setStatusCode(500);
 		prepareResponse();
 		return false;
@@ -352,8 +447,12 @@ void Connection::resetForNextRequest() {
 	_routingResult = RoutingResult();
 
 	// File upload
-	if (_fileStream.is_open())
-		_fileStream.close();
+	if (_fileStream) {
+		if (_fileStream->is_open())
+			_fileStream->close();
+		delete _fileStream;
+		_fileStream = NULL;
+	}
 	_uploadPath.clear();
 	_fileName.clear();
 	_bytesWritten = 0;

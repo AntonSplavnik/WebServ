@@ -1,4 +1,8 @@
 #include "cgi_executor.hpp"
+#include "connection.hpp"
+#include "connection_pool_manager.hpp"
+#include "response.hpp"
+#include <poll.h>
 
 void CgiExecutor::handleCGI(Connection& connection) {
 	Cgi cgi(_eventLoop, connection.getRequest() , connection.getFd());
@@ -10,8 +14,8 @@ void CgiExecutor::handleCGI(Connection& connection) {
 	//Register CGI process
 	int inFd= cgi.getInFd();
 	int outFd = cgi.getOutFd();
-	if (inFd >= 0) _cgi[inFd] = cgi;
-	_cgi[outFd] = cgi;
+	if (inFd >= 0) _cgi.insert(std::make_pair(inFd, cgi));
+	_cgi.insert(std::make_pair(outFd, cgi));
 	connection.setState(WAITING_CGI);
 
 	std::cout << "[DEBUG] Spawned CGI pid = " << cgi.getPid()
@@ -57,8 +61,8 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 
 void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 
-	Cgi& cgi = _cgi[cgiFd];
-	int connectionFd = cgi.getClientFd();
+	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
+	Cgi& cgi = it->second;
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
 
@@ -66,7 +70,6 @@ void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 
 		std::cerr << "[WARNING] CGI OutFd error" << std::endl;
 
-		HttpResponse response (cgi.getRequest());
 		if(cgi.isFinished()){
 			std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
 			connection.setStatusCode(200);
@@ -108,8 +111,9 @@ void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 	}
 }
 void CgiExecutor::handleCGIwrite(Connection& connection, int cgiFd) { /* write to CGI */
-
-	Cgi& cgi = _cgi[cgiFd];
+	(void)connection;
+	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
+	Cgi& cgi = it->second;
 	CgiState status = cgi.handleWriteToCGI();
 
 	if(status == CGI_CONTINUE) return;
@@ -122,13 +126,12 @@ void CgiExecutor::handleCGIwrite(Connection& connection, int cgiFd) { /* write t
 }
 void CgiExecutor::handleCGIread(Connection& connection, int cgiFd) { /* read from CGI */
 
-	Cgi& cgi = _cgi[cgiFd];
+	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
+	Cgi& cgi = it->second;
 	CgiState status = cgi.handleReadFromCGI();
 	if(status == CGI_CONTINUE) return;
 
 	int connectionFd = cgi.getClientFd();
-
-	HttpResponse response(cgi.getRequest());
 
 	if(status == CGI_READY) {
 		connection.setStatusCode(200);

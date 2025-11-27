@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 01:33:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 14:06:52 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
-	Connection& connection = _connectionPool[fd];
+	Connection& connection = getConnectionRef(fd);
 	const ConnectionState& state = connection.getState();
 
 	// ========== POLLERR Events ==========
@@ -168,10 +168,15 @@ Connection* ConnectionPoolManager::getConnection(int fd){
 	if(it != _connectionPool.end()) return &it->second;
 	return NULL;
 }
+/** Use ONLY when 100% sure that connection exists. Will create new input otherwise. */
+Connection& ConnectionPoolManager::getConnectionRef(int fd){
+	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
+	return it->second;
+}
 
 void ConnectionPoolManager::addConnection(Connection& incomingConnection) {
 	int fd = incomingConnection.getFd();
-	_connectionPool[fd] = incomingConnection;
+	_connectionPool.insert(std::make_pair(fd, incomingConnection));
 }
 void ConnectionPoolManager::disconnectConnection(short fd) {
 	close(fd);

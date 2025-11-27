@@ -38,6 +38,7 @@ enum CgiState{
 class Cgi {
 	public:
 		Cgi(EventLoop& eventLoop, const HttpRequest& request, int connectionFd);
+		Cgi(const Cgi& other);
 		~Cgi();
 
 		bool start(const Connection& onnection);

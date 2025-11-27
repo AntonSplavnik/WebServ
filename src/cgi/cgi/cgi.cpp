@@ -6,11 +6,13 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 11:19:47 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/27 11:50:47 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "cgi.hpp"
+#include "connection.hpp"
+#include "event_loop.hpp"
 #include "response.hpp"
 #include "logger.hpp"
 
@@ -32,9 +34,22 @@ Cgi::Cgi(EventLoop& eventLoop, const HttpRequest& request, int connectionFd)
           _finished(false),
           _startTime(0),
           _bytesWrittenToCgi(0),
-          _eventLoop(eventLoop),
+          _connectionFd(connectionFd),
           _request(request),
-          _connectionFd(connectionFd) {}
+          _eventLoop(eventLoop) {}
+
+Cgi::Cgi(const Cgi& other)
+        : _pid(other._pid),
+          _inFd(other._inFd),
+          _outFd(other._outFd),
+          _finished(other._finished),
+          _startTime(other._startTime),
+          _bytesWrittenToCgi(other._bytesWrittenToCgi),
+          _connectionFd(other._connectionFd),
+          _responseData(other._responseData),
+          _request(other._request),
+          _eventLoop(other._eventLoop) {}
+
 Cgi::~Cgi() {
     cleanup();
 }
@@ -290,8 +305,16 @@ CgiState Cgi::handleReadFromCGI() {
     if (bytesRead == -1) { //EAGAIN/EWOULDBLOCK
         return CGI_CONTINUE;
     }
+    else if (bytesRead == 0) { // --- EOF: child finished writing ---
+        std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
+        std::cout << "[DEBUG] SGI responseData: " << _responseData << std::endl;
 
-    if (bytesRead > 0) {
+        _finished = true;
+        closeOutFd();
+        terminate();
+        return CGI_READY;
+    }
+    else { // bytesRead > 0
         if (_responseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
             std::cerr << "[CGI] Output exceeds limit" << std::endl;
             terminate();
@@ -300,17 +323,6 @@ CgiState Cgi::handleReadFromCGI() {
         }
         _responseData.append(buf, bytesRead);
         return CGI_CONTINUE;
-    }
-
-    // --- EOF: child finished writing ---
-    if (bytesRead == 0) {
-        std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
-        std::cout << "[DEBUG] SGI responseData: " << _responseData << std::endl;
-
-        _finished = true;
-        closeOutFd();
-        terminate();
-        return CGI_READY;
     }
 }
 CgiState Cgi::handleWriteToCGI() {
@@ -328,10 +340,13 @@ CgiState Cgi::handleWriteToCGI() {
     if (bytesWritten < 0) { // the only error could be curnell buffer is full, so we do real error checks after POLL
         return CGI_CONTINUE;
     }
-    if (bytesWritten > 0){
+    else if (bytesWritten > 0){
         _bytesWrittenToCgi += bytesWritten;
         /* std::cout << "[CGI] Sending POST body to script: " << _scriptPath; */
         std::cout << "[CGI] wrote " << bytesWritten << " bytes to CGI stdin\n";
+        return CGI_CONTINUE;
+    }
+    else { // bytesWritten == 0 (shouldn't happen, but handle for completeness)
         return CGI_CONTINUE;
     }
 }
