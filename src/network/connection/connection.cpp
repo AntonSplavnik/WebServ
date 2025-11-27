@@ -371,6 +371,7 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
+	response.setProtocolVersion(_request.getProtocolVersion());
 
 	// Look up custom error page if status is an error
 	if (_statusCode >= 400 && _routingResult.serverConfig){
@@ -396,10 +397,10 @@ void Connection::setupErrorPage(HttpResponse& response) {
 		_statusCode,
 		_routingResult.location
 	);
+
 	if (!errorPage.empty()) {
 		response.setCustomErrorPage(errorPage);
 	}
-
 }
 
 bool Connection::sendResponse() {
