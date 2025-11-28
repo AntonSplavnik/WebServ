@@ -56,7 +56,10 @@ class HttpRequest {
 		const std::string& getHost() const;
 		std::vector<std::string> getCgiHeadersString() const;
 
-		// Body getters
+		// Cookie methods
+		const std::string& getCookie() const;
+		std::map<std::string, std::string> parseCookies() const;
+		std::string getCookieValue(const std::string& name) const;		// Body getters
 		const std::string& getBody() const { return _body; }
 		unsigned long getBodyLength() const { return _body.length(); }
 

@@ -67,6 +67,11 @@ class Connection {
 		void setResponseData(const std::string& responseData) { _responseData = responseData; }
 		void setBodyContent(const std::string& content) { _bodyContent = content; }
 
+		// Cookie management
+		void addCookie(const std::string& name, const std::string& value,
+					int maxAge = 0, const std::string& path = "/",
+					bool httpOnly = false, bool secure = false);
+		void clearResponseCookies() { _responseCookies.clear(); }
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
 		std::string getFileName() const { return _fileName; }
@@ -122,19 +127,30 @@ class Connection {
 		size_t			_bytesSent;		// data tracking for sending response should be set internally 32KB
 		int				_statusCode;	// code to determine if the request was sucessful or not
 
-		// Connection Lifecycle
-		time_t			_lastActivity;
-		int				_keepAliveTimeout;
-		int				_maxRequests;	// max number of requests for a client
-		int				_requestCount;
-		bool			_shouldClose;	// only setup in case of error code
+		// Cookie Data
+		struct CookieData {
+			std::string name;
+			std::string value;
+			int maxAge;
+			std::string path;
+			bool httpOnly;
+			bool secure;
+		};
 
-		// Private Helper Methods
-		void updateClientActivity();
-		bool processWriteChunck(const std::string& data, const std::string& filePath);
-		void appendFormFieldToLog(const std::string& name, const std::string& value);
-		void setupErrorPage(HttpResponse& response);
-		void resetForNextRequest();
+		std::vector<CookieData> _responseCookies;
+			// Connection Lifecycle
+			time_t			_lastActivity;
+			int				_keepAliveTimeout;
+			int				_maxRequests;
+			int				_requestCount;
+			bool			_shouldClose;
+
+			// Private Helper Methods
+			void updateClientActivity();
+			bool processWriteChunck(const std::string& data, const std::string& filePath);
+			void appendFormFieldToLog(const std::string& name, const std::string& value);
+			void setupErrorPage(HttpResponse& response);
+			void resetForNextRequest();
 };
 
 #endif

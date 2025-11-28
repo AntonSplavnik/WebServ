@@ -4,6 +4,14 @@
 void RequestHandler::handleGET(Connection& connection) {
 
 	const std::string& path = connection.getRoutingResult().mappedPath;
+
+	//Cookie: Track last visit time
+	time_t now = time(0);
+	struct tm* timeinfo = gmtime(&now);
+	char timestamp[100];
+	strftime(timestamp, 100, "%Y-%m-%d_%H:%M:%S", timeinfo);
+	connection.addCookie("last_visit", timestamp, 86400, "/", false, false);
+
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open()) {
 		// Differentiate 404 vs 403 if needed

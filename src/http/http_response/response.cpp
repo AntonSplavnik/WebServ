@@ -192,12 +192,20 @@ void HttpResponse::buildHttpResponse() {
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
 		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n";
+		<< "Connection: " << _connectionType << "\r\n";
+
+	// Add Set-Cookie headers
+	for (size_t i = 0; i < _setCookies.size(); ++i) {
+		oss << "Set-Cookie: " << _setCookies[i] << "\r\n";
+	}
+
+	oss << "\r\n";
 
 	if (!_body.empty()) {
 		oss << _body;
 	}
 	_response = oss.str();
+	std::cout << _response << std::endl;
 }
 
 void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {
@@ -218,3 +226,23 @@ const std::string& HttpResponse::getPath()const {return _filePath;}
 const std::string& HttpResponse::getProtocolVersion() const {return _protocolVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 const std::string& HttpResponse::getResponse() const {return _response;}
+
+void HttpResponse::setCookie(const std::string& name, const std::string& value, int maxAge, const std::string& path, bool httpOnly, bool secure) {
+	std::ostringstream cookie;
+	cookie << name << "=" << value;
+	
+	if (!path.empty())
+		cookie << "; Path=" << path;
+	
+	if (maxAge > 0)
+		cookie << "; Max-Age=" << maxAge;
+	
+	if (httpOnly)
+		cookie << "; HttpOnly";
+	
+	if (secure)
+		cookie << "; Secure";
+	
+	_setCookies.push_back(cookie.str());
+}
+

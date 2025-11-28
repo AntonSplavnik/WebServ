@@ -363,6 +363,13 @@ bool Connection::prepareResponse() {
 		_shouldClose = true;
 	}
 
+	// Add cookies to response
+	for (size_t i = 0; i < _responseCookies.size(); ++i) {
+		response.setCookie(_responseCookies[i].name, _responseCookies[i].value,
+		                  _responseCookies[i].maxAge, _responseCookies[i].path,
+		                  _responseCookies[i].httpOnly, _responseCookies[i].secure);
+	}
+
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
 	_bytesSent = 0;
@@ -388,6 +395,13 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	if (_shouldClose || _request.getConnectionType() == "close" || _requestCount + 1 >= _maxRequests){
 		response.setConnectionType("close");
 		_shouldClose = true;
+	}
+
+	// Add cookies to response
+	for (size_t i = 0; i < _responseCookies.size(); ++i) {
+		response.setCookie(_responseCookies[i].name, _responseCookies[i].value,
+							_responseCookies[i].maxAge, _responseCookies[i].path,
+							_responseCookies[i].httpOnly, _responseCookies[i].secure);
 	}
 
 	response.generateResponse(_statusCode, cgiOutput);
@@ -477,6 +491,9 @@ void Connection::resetForNextRequest() {
 	_bytesSent = 0;
 	_statusCode = 0;
 
+	// Clear cookies
+	_responseCookies.clear();
+
 	// State
 	_connectionState = READING_HEADERS;
 	_requestCount++;
@@ -491,4 +508,18 @@ void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) 
 	_maxRequests = maxRequests;
 }
 
+void Connection::addCookie(const std::string& name, const std::string& value,
+                          int maxAge, const std::string& path,
+                          bool httpOnly, bool secure) {
+	CookieData cookie;
+	cookie.name = name;
+	cookie.value = value;
+	cookie.maxAge = maxAge;
+	cookie.path = path;
+	cookie.httpOnly = httpOnly;
+	cookie.secure = secure;
+	_responseCookies.push_back(cookie);
+}
+
 /* bool isRequestComplete() {} */
+

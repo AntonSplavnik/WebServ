@@ -240,3 +240,50 @@ std::string HttpRequest::getUri() const {
 	return  _path + "?" + _query;
 
 }
+
+const std::string& HttpRequest::getCookie() const {
+	return getHeaderValue("cookie");
+}
+
+std::map<std::string, std::string> HttpRequest::parseCookies() const {
+	std::map<std::string, std::string> cookies;
+	std::string cookieHeader = getCookie();
+	
+	if (cookieHeader.empty()) return cookies;
+	
+	// Parse format: "name1=value1; name2=value2; name3=value3"
+	size_t start = 0;
+	while (start < cookieHeader.length()) {
+		// Find next semicolon
+		size_t end = cookieHeader.find(';', start);
+		if (end == std::string::npos) end = cookieHeader.length();
+		
+		std::string pair = cookieHeader.substr(start, end - start);
+		
+		// Trim spaces
+		size_t firstNonSpace = pair.find_first_not_of(" \t");
+		if (firstNonSpace != std::string::npos)
+			pair = pair.substr(firstNonSpace);
+		
+		// Split name=value
+		size_t equalPos = pair.find('=');
+		if (equalPos != std::string::npos) {
+			std::string name = pair.substr(0, equalPos);
+			std::string value = pair.substr(equalPos + 1);
+			cookies[name] = value;
+		}
+		
+		start = end + 1;
+	}
+	
+	return cookies;
+}
+
+std::string HttpRequest::getCookieValue(const std::string& name) const {
+	std::map<std::string, std::string> cookies = parseCookies();
+	std::map<std::string, std::string>::const_iterator it = cookies.find(name);
+	if (it != cookies.end())
+		return it->second;
+	return "";
+}
+

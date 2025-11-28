@@ -46,6 +46,11 @@ class HttpResponse {
 		unsigned long getContentLength() const;
 		const std::string& getResponse() const;
 
+	// Cookie methods
+		void setCookie(const std::string& name, const std::string& value,
+					int maxAge = 0, const std::string& path = "/",
+					bool httpOnly = false, bool secure = false);
+		void clearCookies() { _setCookies.clear(); }
 
 	private:
 		void buildHttpResponse();
@@ -75,14 +80,17 @@ class HttpResponse {
 		unsigned long	_contentLength;
 		std::string		_connectionType;
 
-		//body
-		std::string		_body;
+	//body
+	std::string		_body;
 
-		//response
-		std::string		_response;
+	//response
+	std::string		_response;
 
-		//error pages
-		std::string		_customErrorPagePath;
+	//error pages
+	std::string		_customErrorPagePath;
+
+	//cookies
+	std::vector<std::string> _setCookies;
 };
 
 #endif
