@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 16:03:13 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 20:33:53 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,7 +192,9 @@ void HttpRequest::parseBody() {
 	if (getContentLength() != _body.length()) {
 		_isValid = false;
 		std::cout << "Content-Length mismatch"
-				  << getContentLength() << ", got " << _body.length() << std::endl;
+				  << getContentLength()
+				  << ", got " << _body.length()
+				  << std::endl;
 	}
 }
 

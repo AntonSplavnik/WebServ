@@ -106,6 +106,12 @@ class Connection {
 		HttpRequest		_request;			// received and parsed request
 		RoutingResult	_routingResult;		// data after routing request to a correct server block
 
+		// Transfer Encoding
+		std::string		_chunkBuffer;		// Accumulates incomplete chunk data
+		size_t			_currentChunkSize;
+		bool			_readingChunkSize;	// true = reading size, false = reading data
+		bool			_finalChunkReceived;
+
 		// File Writing - Single File
 		std::ofstream*	_fileStream;		// stram for disc writin. used in case of POST/ POST multipart
 		std::string		_uploadPath;		// path for the POST request to upload the file
@@ -135,6 +141,7 @@ class Connection {
 		void appendFormFieldToLog(const std::string& name, const std::string& value);
 		void setupErrorPage(HttpResponse& response);
 		void resetForNextRequest();
+		std::string processChunkedData(const char* data, int dataLen);
 };
 
 #endif

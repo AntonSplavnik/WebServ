@@ -19,7 +19,6 @@ Connection::Connection()
 	_maxRequests(100),
 	_requestCount(0),
 	_shouldClose(false) {}
-
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
 	_connectionState(READING_HEADERS),
@@ -37,7 +36,6 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_maxRequests(100),
 	_requestCount(0),
 	_shouldClose(false) {}
-
 Connection::Connection(const Connection& other)
 	: _fd(other._fd),
 	_connectionState(other._connectionState),
@@ -62,7 +60,6 @@ Connection::Connection(const Connection& other)
 	_maxRequests(other._maxRequests),
 	_requestCount(other._requestCount),
 	_shouldClose(other._shouldClose) {}
-
 Connection& Connection::operator=(const Connection& other) {
 	if (this != &other) {
 		// Clean up existing fileStream
@@ -100,7 +97,6 @@ Connection& Connection::operator=(const Connection& other) {
 	}
 	return *this;
 }
-
 Connection::~Connection() {
 	if (_fileStream) {
 		if (_fileStream->is_open())
@@ -174,40 +170,41 @@ bool Connection::readBody() {
 		}
 	}
 
-/* if (_request.getTransferEncoding() == "chunked") {
-		if (_request.getVersion() == "HTTP/1.0"){
-			// Error: 400 Bad Request or 505 Version Not Supported
-			setStatusCode(400);
+	if (_request.getTransferEncoding() == "chunked") {
+
+		if (_request.getProtocolVersion() == "HTTP/1.0"){
+			setStatusCode(505); // Error: 400 Bad Request or 505 Version Not Supported
 			prepareResponse();
 			return false;
 		}
+
 		std::string unchunkedResult = processChunkedData(buffer, bytes);
-		// _requestBuffer.append(unchunkedResult);
-		// ❌ Missing: check if final chunk (0\r\n\r\n) received
-		// ❌ No state transition logic
+		_requestBuffer.append(unchunkedResult);
+
+		if (_finalChunkReceived) {	// Check if done
+			_connectionState = EXECUTING_REQUEST;
+			return true;
+		}
+		return false;
 	}
 	else if (contentLength > 0) {
+
 		// Read fixed-size body (both HTTP/1.0 and HTTP/1.1)
-		readFixedBody(contentLength);
-	}
-	else {
-		//no body
-	} */
+		_requestBuffer.append(buffer, bytes);
+		bodyReceived = _requestBuffer.length() - bodyStart;
+		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: "
+				  << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
 
-	updateClientActivity();
-	_requestBuffer.append(buffer, bytes);
-
-	bodyReceived = _requestBuffer.length() - bodyStart;
-	std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
-
-	// Check if full body received
-	if(bodyReceived < contentLength)
+		// Check if full body received
+		if(bodyReceived >= contentLength) {
+			_connectionState = EXECUTING_REQUEST;
+			return true; // Body fully received
+		}
 		return false;  // Keep receiving body
-	else {
-		_connectionState = EXECUTING_REQUEST;
-		return true;
 	}
-
+	else {
+		return false; // no body?
+	}
 }
 
 bool Connection::writeOnDisc() {
@@ -303,33 +300,44 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
 	return true;
 }
-/* bool Connection::processChunkedData() {
-	while (true) {
-		if (_chunkState == READING_SIZE) {
-			size_t crlf = _requestData.find("\r\n", bodyStart);
-			if (crlf == npos) return false; // Need more data
+std::string Connection::processChunkedData(const char* data, int dataLen) {
+	_chunkBuffer.append(data, dataLen);
+	std::string result;
+	size_t pos = 0;
 
-			std::string sizeStr = _requestData.substr(bodyStart, crlf - bodyStart);
-			_currentChunkSize = strtoul(sizeStr.c_str(), NULL, 16); // Hex
+	while (pos < _chunkBuffer.length()) {
+		if (_readingChunkSize) {
+			size_t crlf = _chunkBuffer.find("\r\n", pos);
+			if (crlf == std::string::npos)
+				break;  // Size line incomplete
+
+			std::string sizeStr = _chunkBuffer.substr(pos, crlf - pos);
+			_currentChunkSize = std::strtoul(sizeStr.c_str(), NULL, 16);
 
 			if (_currentChunkSize == 0) {
-				_connectionState = EXECUTING_REQUEST;
-				return true; // Done
+				_finalChunkReceived = true;
+				_chunkBuffer.clear();
+				return result;
 			}
-			bodyStart = crlf + 2;
-			_chunkState = READING_DATA;
+
+			pos = crlf + 2;
+			_readingChunkSize = false;
 		}
 
-		if (_chunkState == READING_DATA) {
-			if (_requestData.length() - bodyStart < _currentChunkSize + 2)
-				return false; // Need more data
+		if (!_readingChunkSize) {
+			if (_chunkBuffer.length() - pos < _currentChunkSize + 2)
+				break;  // Data incomplete
 
-			_dechunkedBody.append(_requestData, bodyStart, _currentChunkSize);
-			bodyStart += _currentChunkSize + 2; // Skip data + \r\n
-			_chunkState = READING_SIZE;
+			result.append(_chunkBuffer, pos, _currentChunkSize);
+			pos += _currentChunkSize + 2;
+			_readingChunkSize = true;  // Next iteration reads size
 		}
 	}
-} */
+
+	// Remove processed data from buffer
+	_chunkBuffer.erase(0, pos);
+	return result;
+}
 
 bool Connection::prepareResponse() {
 

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/22 17:15:54 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 21:35:35 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,11 +34,6 @@ bool PostHandler::handleFile(Connection& connection, const std::string& contentT
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     return true;
-/*     if (saveRawContent(filePath, request.getBody())) {
-        return 200;
-    } else {
-        return 500;
-    } */
 }
 std::string PostHandler::generateFilename(const std::string& extension) {
     static int counter = 0;
@@ -161,9 +156,6 @@ int PostHandler::handleMultipart(Connection& connection) {
     }
     connection.setMultipart(_uploadPath, parts);
     return true;
-
-/*     int statusCode = processMultipartParts(parts);
-    return statusCode; */
 }
 std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& body, const std::string& boundary) {
 	std::vector<MultipartPart> parts;
@@ -272,69 +264,6 @@ std::string PostHandler::extractContentTypeFromHeader(const std::string& headerL
     }
     return "";
 }
-/* int PostHandler::processMultipartParts(const std::vector<MultipartPart>& parts) {
-
-    std::string uploadDir = _uploadPath;
-    std::cout << "[DEBUG] Upload directory: '" << uploadDir << "'" << std::endl;
-
-    // Save every part
-    for (size_t i = 0; i < parts.size(); i++) {
-        const MultipartPart& part = parts[i];
-
-        std::cout << "[DEBUG] Part " << i << ": name='" << part.name
-                << "', fileName='" << part.fileName
-                << "', contentType='" << part.contentType
-                << "', content size=" << part.content.size() << " bytes" << std::endl;
-
-        if (!part.fileName.empty()) {
-
-            std::string safeFilename = sanitizeFilename(part.fileName);
-
-            if (safeFilename.empty()) {
-                std::cout << "[SECURITY ERROR] Invalid filename rejected: " << part.fileName << std::endl;
-                return 400;
-            }
-
-            std::string filePath = uploadDir + safeFilename;
-
-            if (saveFileFromMultipart(filePath, part.content)) {
-                std::cout << "[DEBUG]File saved: " << part.fileName << " (" << part.content.size() << " bytes)" << std::endl;
-            } else {
-                std::cout << "[ERROR]: Failed to save file: " << part.fileName << std::endl;
-                return 500;
-            }
-        } else {
-            std::cout << "[DEBUG] Form field: " << part.name << " = " << part.content << std::endl;
-            saveFormFieldToLog(part.name, part.content);
-        }
-    }
-    return 200;
-}
-
-bool PostHandler::saveFileFromMultipart(const std::string& filePath, const std::string& content) {
-    std::ofstream file(filePath.c_str(), std::ios::binary);
-    if (!file.is_open()) {
-        return false;
-    }
-    file.write(content.c_str(), content.size());
-    file.close();
-
-    return file.good();
-}
-void PostHandler::saveFormFieldToLog(const std::string& fieldName, const std::string& fieldValue) {
-
-    std::string logFile = _uploadPath;
-    if (!logFile.empty() && logFile[logFile.size() - 1] != '/') {
-        logFile += '/';
-    }
-    logFile += "form_data.log";
-
-    std::ofstream file(logFile.c_str(), std::ios::app);
-    if (file.is_open()) {
-        file << "Field: " << fieldName << " = " << fieldValue << std::endl;
-        file.close();
-    }
-} */
 
 std::string PostHandler::extractBoundary(const std::string& contentType) {
 	std::string boundary;

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/28 16:45:13 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 20:06:29 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,10 +46,10 @@ void EventLoop::rebuildPollFds() {
 			case SENDING_RESPONSE:
 				connection.events = POLLOUT;
 				break;
-			case WAITING_CGI:
-			case WRITING_DISK:
 			case ROUTING_REQUEST:
 			case EXECUTING_REQUEST:
+			case WAITING_CGI:
+			case WRITING_DISK:
 				continue;
 			default:
 				continue;
