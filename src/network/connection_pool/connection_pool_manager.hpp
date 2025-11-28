@@ -16,6 +16,7 @@
 #include <poll.h>
 
 #include "connection.hpp"
+#include "logger.hpp"
 
 class EventLoop; // Forward declaration
 class CgiExecutor; // Forward declaration
@@ -23,9 +24,8 @@ class CgiExecutor; // Forward declaration
 class ConnectionPoolManager {
 
 	public:
-		ConnectionPoolManager(std::vector<ConfigData>& configs)
-			: _configs(configs) {}
-		~ConnectionPoolManager(){}
+		ConnectionPoolManager(std::vector<ConfigData>& configs);
+		~ConnectionPoolManager();
 
 		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);
 		Connection* getConnection(int fd);
@@ -35,10 +35,12 @@ class ConnectionPoolManager {
 		bool isConnection(int fd);
 
 		std::map<int, Connection>& getConnectionPool() {return _connectionPool;}
+		Logger* getLoggerForConfig(ConfigData* config);
 
 	private:
 		std::map<int, Connection>	_connectionPool;
 		std::vector<ConfigData>&	_configs;
+		std::map<ConfigData*, Logger*>	_loggers; // One logger per server config
 };
 
 #endif

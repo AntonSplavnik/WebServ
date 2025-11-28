@@ -18,7 +18,8 @@ Connection::Connection()
 	_keepAliveTimeout(15),
 	_maxRequests(100),
 	_requestCount(0),
-	_shouldClose(false) {}
+	_shouldClose(false),
+	_logger(NULL) {}
 
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
@@ -36,7 +37,8 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_keepAliveTimeout(15),
 	_maxRequests(100),
 	_requestCount(0),
-	_shouldClose(false) {}
+	_shouldClose(false),
+	_logger(NULL) {}
 
 Connection::Connection(const Connection& other)
 	: _fd(other._fd),
@@ -61,7 +63,8 @@ Connection::Connection(const Connection& other)
 	_keepAliveTimeout(other._keepAliveTimeout),
 	_maxRequests(other._maxRequests),
 	_requestCount(other._requestCount),
-	_shouldClose(other._shouldClose) {}
+	_shouldClose(other._shouldClose),
+	_logger(other._logger) {}
 
 Connection& Connection::operator=(const Connection& other) {
 	if (this != &other) {
@@ -96,6 +99,7 @@ Connection& Connection::operator=(const Connection& other) {
 		_maxRequests = other._maxRequests;
 		_requestCount = other._requestCount;
 		_shouldClose = other._shouldClose;
+		_logger = other._logger;
 		// _fileStream remains NULL (no deep copy of file streams)
 	}
 	return *this;
@@ -120,10 +124,20 @@ bool Connection::readHeaders() {
 	if (bytes <= 0) {
 		if (bytes == 0) {
 			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
+			
+			if (_logger) {
+				_logger->logError("WARNING", "Client disconnected during header reading (FD " + std::to_string(_fd) + ")");
+			}
+			
 			return false;
 		} else { // bytes < 0
 
 			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			
+			if (_logger) {
+				_logger->logError("ERROR", "recv() error on FD " + std::to_string(_fd) + ": " + std::string(strerror(errno)));
+			}
+			
 			return false;
 		}
 	}
@@ -167,9 +181,19 @@ bool Connection::readBody() {
 	if (bytes <= 0) {
 		if (bytes == 0) {
 			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
+			
+			if (_logger) {
+				_logger->logError("WARNING", "Client disconnected during body reading (FD " + std::to_string(_fd) + ")");
+			}
+			
 			return false;
 		} else { // bytes < 0
 			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			
+			if (_logger) {
+				_logger->logError("ERROR", "recv() error on FD " + std::to_string(_fd) + ": " + std::string(strerror(errno)));
+			}
+			
 			return false;
 		}
 	}
@@ -293,6 +317,11 @@ bool Connection::processWriteChunck(const std::string& data, const std::string& 
 		_fileStream->close();
 		delete _fileStream;
 		_fileStream = NULL;
+		
+		if (_logger) {
+			_logger->logError("ERROR", "File write failed: " + filePath + " (" + std::string(strerror(errno)) + ")");
+		}
+		
 		setStatusCode(500);
 		prepareResponse();
 		return false;
@@ -431,6 +460,17 @@ bool Connection::sendResponse() {
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {
 
+			// Log access after complete response sent
+			if (_logger && _routingResult.serverConfig) {
+				_logger->logAccess(
+					_ip,
+					_request.getMethod(),
+					_request.getUri(),
+					_statusCode,
+					_responseData.length()
+				);
+			}
+
 			if(_shouldClose) {
 				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
 				return true;
@@ -448,6 +488,11 @@ bool Connection::sendResponse() {
 	} else {
 		// Send failed, close connection
 		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
+		
+		if (_logger) {
+			_logger->logError("ERROR", "send() failed on FD " + std::to_string(_fd) + ": " + std::string(strerror(errno)));
+		}
+		
 		return false;
 	}
 }
@@ -489,6 +534,30 @@ void Connection::updateClientActivity() {
 void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) {
 	_keepAliveTimeout = keepAliveTimeout;
 	_maxRequests = maxRequests;
+}
+
+void Connection::logRoutingError(int errorCode) {
+	if (!_logger) return;
+	
+	std::string errorMsg;
+	switch (errorCode) {
+		case 404:
+			errorMsg = "Not found: " + _request.getPath();
+			break;
+		case 405:
+			errorMsg = "Method not allowed: " + _request.getMethod() + " " + _request.getPath();
+			break;
+		case 413:
+			errorMsg = "Request body too large from " + _ip;
+			break;
+		case 403:
+			errorMsg = "Forbidden (path security violation): " + _request.getPath();
+			break;
+		default:
+			errorMsg = "Routing error " + std::to_string(errorCode) + " for " + _request.getPath();
+			break;
+	}
+	_logger->logError("ERROR", errorMsg);
 }
 
 /* bool isRequestComplete() {} */

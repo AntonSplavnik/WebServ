@@ -9,6 +9,7 @@
 #include "request.hpp"
 #include "request_router.hpp"
 #include "post_handler.hpp"
+#include "logger.hpp"
 
 // #define BUFFER_SIZE_4 4096    // 4 KB
 // // #define BUFFER_SIZE_8 8192    // 8 KB
@@ -92,6 +93,11 @@ class Connection {
 		int getKeepAliveTimeout() const { return _keepAliveTimeout; }
 		void updateKeepAliveSettings(int keepAliveTimeout, int maxRequests);
 
+		// Logger
+		void setLogger(Logger* logger) { _logger = logger; }
+		Logger* getLogger() const { return _logger; }
+		void logRoutingError(int errorCode);
+
 		/* bool processChunkedData(); */
 	private:
 		// Connection Metadata
@@ -128,6 +134,9 @@ class Connection {
 		int				_maxRequests;	// max number of requests for a client
 		int				_requestCount;
 		bool			_shouldClose;	// only setup in case of error code
+
+		// Logger
+		Logger*			_logger;		// pointer to server's logger
 
 		// Private Helper Methods
 		void updateClientActivity();

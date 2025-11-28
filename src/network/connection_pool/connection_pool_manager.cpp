@@ -15,6 +15,33 @@
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
 
+ConnectionPoolManager::ConnectionPoolManager(std::vector<ConfigData>& configs)
+	: _configs(configs) {
+	// Create one Logger per server config
+	for (size_t i = 0; i < _configs.size(); ++i) {
+		ConfigData* config = &_configs[i];
+		Logger* logger = new Logger(config->access_log, config->error_log);
+		_loggers[config] = logger;
+	}
+}
+
+ConnectionPoolManager::~ConnectionPoolManager() {
+	// Clean up all loggers
+	for (std::map<ConfigData*, Logger*>::iterator it = _loggers.begin(); 
+	     it != _loggers.end(); ++it) {
+		delete it->second;
+	}
+	_loggers.clear();
+}
+
+Logger* ConnectionPoolManager::getLoggerForConfig(ConfigData* config) {
+	std::map<ConfigData*, Logger*>::iterator it = _loggers.find(config);
+	if (it != _loggers.end()) {
+		return it->second;
+	}
+	return NULL;
+}
+
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
 	Connection& connection = getConnectionRef(fd);
@@ -91,9 +118,17 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			RequestRouter router(_configs);
 			RoutingResult result = router.route(connection);
 			connection.setRoutingResult(result);
+			
+			// Set logger for this connection based on server config
+			if (result.serverConfig) {
+				Logger* logger = getLoggerForConfig(result.serverConfig);
+				connection.setLogger(logger);
+			}
+			
 			if(!result.success){
 				connection.setStatusCode(result.errorCode);
-				connection.prepareResponse();
+				connection.logRoutingError(result.errorCode);  // Log error to admin log
+				connection.prepareResponse();  // Generate error page for client
 				return;
 			}
 
@@ -118,6 +153,12 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					break;
 				default:
 					connection.setStatusCode(500);
+					
+					Logger* logger = connection.getLogger();
+					if (logger) {
+						logger->logError("ERROR", "Unknown request type for " + connection.getRequest().getPath());
+					}
+					
 					connection.prepareResponse();
 					break;
 			}
@@ -134,6 +175,12 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			const HttpRequest& request = connection.getRequest();
 			if(!request.getStatus()) {
 				connection.setStatusCode(400);
+				
+				Logger* logger = connection.getLogger();
+				if (logger) {
+					logger->logError("ERROR", "Invalid request body from " + connection.getIp());
+				}
+				
 				connection.prepareResponse();
 				return;
 			}
