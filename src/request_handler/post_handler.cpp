@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/19 15:13:59 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/22 17:15:54 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <cstdlib>
 
 #include "post_handler.hpp"
-#include "http_request.hpp"
+#include "request.hpp"
 #include "connection.hpp"
 
 
@@ -25,13 +25,12 @@ PostHandler::PostHandler(const std::string uploadPath)
     std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
 }
 
-
 bool PostHandler::handleFile(Connection& connection, const std::string& contentType) {
     std::string extension = getExtensionFromContentType(contentType);
 
     std::string fileName = generateFilename(extension);
     std::string filePath = _uploadPath + fileName;
-    connection.setFilePath(filePath);
+    connection.setFilePath(_uploadPath, fileName);
     std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
 
     return true;
@@ -155,14 +154,12 @@ int PostHandler::handleMultipart(Connection& connection) {
         if (!parts[i].fileName.empty()) {
             std::string safe = sanitizeFilename(parts[i].fileName);
             if (safe.empty()) {
-                connection.setStatusCode(400);
                 return false;
             }
             parts[i].fileName = safe;
         }
     }
-
-    connection.setMultipart(parts, _uploadPath);
+    connection.setMultipart(_uploadPath, parts);
     return true;
 
 /*     int statusCode = processMultipartParts(parts);

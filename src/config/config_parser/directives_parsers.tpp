@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../config_exceptions/config_exceptions.hpp"
-#include "../config_helpers/helpers.hpp"
+#include "config_exceptions.hpp"
+#include "helpers.hpp"
 #include "config.hpp"
 #include <unistd.h>
 #include <sstream>
@@ -65,8 +65,6 @@ void Config::parseErrorPage(ConfigT& config, const std::vector<std::string>& tok
     if (tokens.size() < 2)
       throw ConfigParseException("error_page directive requires at least one status code and a file path");
     std::string path = tokens.back();
-    if (!isValidFile(path, R_OK))
-        throw ConfigParseException("Invalid or inaccessible error_page file: " + path);
     for (size_t i = 0; i < tokens.size() - 1; ++i)
     {
         if (tokens[i].empty()) continue;

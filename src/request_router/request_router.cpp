@@ -1,8 +1,117 @@
-#include "request_router.hpp"
-#include <sys/stat.h>
-#include <cerrno>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   request_router.cpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
+/*   Updated: 2025/11/27 20:52:17 by antonsplavn      ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig* location) {
+#include "request_router.hpp"
+#include "connection.hpp"
+
+static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
+	result.success = success;
+	result.errorCode = errorCode;
+	return result;
+}
+
+
+RoutingResult RequestRouter::route(Connection& connection) {
+
+	const HttpRequest& req = connection.getRequest();
+	RoutingResult result;
+
+	// Find server config (virtual hosting)
+	ConfigData& serverConfig = findServerConfig(req, connection.getServerPort());
+	result.serverConfig = &serverConfig;
+
+	// Find matching location
+	const LocationConfig* location = serverConfig.findMatchingLocation(req.getPath());
+	if (!location) {
+		return prepErrorResult(result, false, 404);
+	} else {
+		result.location = location;
+	}
+
+	// Validate method
+	if (!validateMethod(req, location)) {
+		return prepErrorResult(result, false, 405);
+	}
+
+	// Validate body size BEFORE reading
+	if (!validateBodySize(connection.getRequest().getContentLength(), location)) {
+		return prepErrorResult(result, false, 413);
+	}
+
+	// Map path
+	std::string mappedPath = mapPath(req, location);
+
+	// Validate security
+	if (!validatePathSecurity(mappedPath, location->root)) {
+		return prepErrorResult(result, false, 403);
+	}
+	result.mappedPath = mappedPath;
+
+	// Classify request type
+	RequestType type = classify(req, location);
+	result.type = type;
+
+	result.success = true;
+	return result;
+}
+
+ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPort) {
+
+	// Filter servers by port
+	std::vector<ConfigData*> matchedConfigs;
+
+	for (size_t i = 0; i < _configs.size(); i++) {
+		for (size_t j = 0; j < _configs[i].listeners.size(); j++) {
+			if (_configs[i].listeners[j].second == servrPort) {
+				matchedConfigs.push_back(&_configs[i]);
+				break;
+			}
+		}
+	}
+
+	// Extract Host header
+	const std::map<std::string, std::string>& headers = req.getHeaders();
+	std::map<std::string, std::string>::const_iterator it = headers.find("host");
+
+	std::string hostValue;
+	if (it != headers.end()) {
+		hostValue = it->second;
+
+		// Strip port from Host header (e.g., "example.com:8080" -> "example.com")
+		size_t colonPos = hostValue.find(':');
+		if (colonPos != std::string::npos) {
+			hostValue = hostValue.substr(0, colonPos);
+		}
+	}
+
+	// Match against server_names
+	for (size_t i = 0; i < matchedConfigs.size(); i++) {
+		const std::vector<std::string>& serverNames = matchedConfigs[i]->server_names;
+
+		for (size_t j = 0; j < serverNames.size(); j++) {
+			if (serverNames[j] == hostValue) {
+				return *matchedConfigs[i];  // Found match!
+			}
+		}
+	}
+
+	// No match - return first server as default (nginx behavior)
+	if (matchedConfigs.empty()) {
+		std::cerr << "[FATAL] No config for port " << servrPort << std::endl;
+		exit(1);  // Die loudly so bug is found
+	}
+	return *matchedConfigs[0];
+}
+bool RequestRouter::validateMethod(const HttpRequest& request, const LocationConfig*& location) {
 
 	bool methodAllowed = false;
 	for (size_t i = 0; i < location->allow_methods.size(); ++i) {
@@ -14,6 +123,17 @@ bool RequestRouter::validateMethod(const HttpRequest& request, const LocationCon
 
 	if (!methodAllowed) {
 		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+bool RequestRouter::validateBodySize(int contentLength, const LocationConfig*& location) {
+
+
+	if (contentLength > location->client_max_body_size) {
+		std::cout << "[DEBUG] Body size " << contentLength
+				  << " exceeds limit " << location->client_max_body_size << std::endl;
 		return false;
 	}
 
@@ -99,17 +219,41 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 	}
 	return true;
 }
+RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig* location) {
 
-bool RequestRouter::getPathInfo(const std::string& path, RequestType type, struct stat* statBuf) {
-	// For POST/UPLOAD, skip existence check (may create new files)
-	if (type == UPLOAD) {
-		return false; // Don't check, let handler deal with it
+	// Check for redirect
+	if (!location->redirect.empty()) {
+		return REDIRECT;
 	}
-	
-	// For GET/DELETE, check if path exists
-	if (stat(path.c_str(), statBuf) != 0) {
-		return false; // Path doesn't exist or error
+
+	// Check for CGI
+	// Check if path matches CGI extension
+	std::string path = req.getPath();
+	bool isCGI = false;
+
+	// Check against cgi_extension list
+	for (size_t i = 0; i < location->cgi_ext.size(); i++) {
+		std::string ext = location->cgi_ext[i];
+
+		// Check if path ends with this extension
+		if (path.size() > ext.size() && path.substr(path.length() - ext.length()) == ext) {
+				isCGI = true;
+				break;
+			}
 	}
-	
-	return true; // Path exists
+	const std::string& method = req.getMethod();
+
+	if (isCGI) {
+		if (method == "GET") {
+			return CGI_GET;
+		} else if (method == "POST") {
+			return CGI_POST;
+		}
+		// DELETE on CGI? Treat as regular DELETE
+	}
+
+	// Classify by method
+	if (method == "DELETE")  return DELETE;
+	else if (method == "POST") return POST;
+	return GET;
 }

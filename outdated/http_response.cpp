@@ -6,11 +6,11 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/18 14:10:40 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/08 15:22:03 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 11:17:49 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "http_response.hpp"
+#include "response.hpp"
 
 /*
 	Here's a typical HTTP response structure:
@@ -60,7 +60,6 @@
 HttpResponse::HttpResponse(HttpRequest request)
 	:_request(request), _method(), _protocolVer("HTTP/1.1 "),
 	_serverName("WebServ"), _serverVersion(1.0f){}
-
 HttpResponse::~HttpResponse(){}
 
 

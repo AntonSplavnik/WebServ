@@ -90,6 +90,9 @@ struct ConfigData
 	// Find location that matches the given request path
 	const LocationConfig* findMatchingLocation(const std::string& requestPath) const;
 
+	// Get error page path for given status code
+	std::string getErrorPage(int statusCode, const LocationConfig* location) const;
+
 	// Network binding
 	std::vector<std::pair<std::string, unsigned short> > listeners; // listen_addresses
 	std::vector<std::string> server_names;

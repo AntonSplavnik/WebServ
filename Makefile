@@ -22,7 +22,7 @@ INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connectio
 			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
 			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
-			  -Isrc/request_router -Isrc/server -Isrc/logging
+			  -Isrc/request_router -Isrc/statistics -Isrc/logging
 
 # Directories
 SRC_DIR		= src
@@ -56,8 +56,8 @@ CGI_EXEC_DIR	= $(SRC_DIR)/cgi/cgi_executor
 REQ_HANDLER_DIR	= $(SRC_DIR)/request_handler
 REQ_ROUTER_DIR	= $(SRC_DIR)/request_router
 
-# Server (legacy - to be removed)
-SERVER_DIR	= $(SRC_DIR)/server
+# Statistics
+STATISTICS_DIR	= $(SRC_DIR)/statistics
 
 # Source files
 SRC_FILES	= main.cpp \
@@ -65,8 +65,8 @@ SRC_FILES	= main.cpp \
 			  $(CONNECTION_DIR)/connection.cpp \
 			  $(CONN_POOL_DIR)/connection_pool_manager.cpp \
 			  $(LISTEN_MGR_DIR)/listening_socket_manager.cpp \
-			  $(HTTP_REQ_DIR)/http_request.cpp \
-			  $(HTTP_RES_DIR)/http_response.cpp \
+			  $(HTTP_REQ_DIR)/request.cpp \
+			  $(HTTP_RES_DIR)/response.cpp \
 			  $(EVENT_LOOP_DIR)/event_loop.cpp \
 			  $(CONFIG_DIR)/config.cpp \
 			  $(CONFIG_PARSER_DIR)/directives_parsers.cpp \
@@ -77,7 +77,7 @@ SRC_FILES	= main.cpp \
 			  $(REQ_HANDLER_DIR)/request_handler.cpp \
 			  $(REQ_HANDLER_DIR)/post_handler.cpp \
 			  $(REQ_ROUTER_DIR)/request_router.cpp \
-			  $(SERVER_DIR)/server.cpp \
+			  $(STATISTICS_DIR)/statistics_collector.cpp \
 			  $(LOGGING_DIR)/logger.cpp
 
 # Object files
@@ -88,8 +88,8 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(CONNECTION_DIR)/connection.hpp \
 			  $(CONN_POOL_DIR)/connection_pool_manager.hpp \
 			  $(LISTEN_MGR_DIR)/listening_socket_manager.hpp \
-			  $(HTTP_REQ_DIR)/http_request.hpp \
-			  $(HTTP_RES_DIR)/http_response.hpp \
+			  $(HTTP_REQ_DIR)/request.hpp \
+			  $(HTTP_RES_DIR)/response.hpp \
 			  $(EVENT_LOOP_DIR)/event_loop.hpp \
 			  $(CONFIG_DIR)/config.hpp \
 			  $(CONFIG_HELPERS_DIR)/helpers.hpp \
@@ -99,8 +99,7 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(REQ_HANDLER_DIR)/request_handler.hpp \
 			  $(REQ_HANDLER_DIR)/post_handler.hpp \
 			  $(REQ_ROUTER_DIR)/request_router.hpp \
-			  $(SERVER_DIR)/server.hpp \
-			  $(SERVER_DIR)/client_info.hpp \
+			  $(STATISTICS_DIR)/statistics_collector.hpp \
 			  $(LOGGING_DIR)/logger.hpp
 
 # Colors for pretty output

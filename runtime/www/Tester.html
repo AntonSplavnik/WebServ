@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webserv Test Page</title>
+    <title>NetRunner - WebServ Tester</title>
     <style>
         * {
             margin: 0;
@@ -11,296 +11,1389 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #fff;
             min-height: 100vh;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 0, 255, 0.03) 2px, rgba(255, 0, 255, 0.03) 4px);
+        }
+
+        /* Sticky Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #00ffff;
+            padding: 15px 0;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        nav .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            flex-wrap: wrap;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 900px;
-            width: 100%;
-            animation: fadeIn 0.8s ease-in-out;
+        nav .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        nav .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        h1 {
-            color: #667eea;
+        nav a {
+            color: #00ffff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        nav a:hover {
+            border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+            color: #ff00ff;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .subtitle {
-            text-align: center;
-            color: #666;
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 5em;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: neonPulse 2s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
             margin-bottom: 30px;
-            font-style: italic;
+        }
+
+        .hero .cta {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .hero .cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.6);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        section h2 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #ff00ff;
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+            border-bottom: 2px solid #ff00ff;
+            padding-bottom: 15px;
+        }
+
+        section p.description {
+            color: #00ffff;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
         }
 
         .test-section {
-            margin: 30px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow:
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.05);
+            transition: all 0.3s ease;
         }
 
-        .test-section h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+        .test-section:hover {
+            border-color: #ff00ff;
+            box-shadow:
+                0 0 30px rgba(255, 0, 255, 0.5),
+                inset 0 0 30px rgba(255, 0, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .test-section h3 {
+            color: #ff00ff;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            text-shadow: 0 0 15px rgba(255, 0, 255, 0.8);
+            border-bottom: 1px solid #ff00ff;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            color: #00ffff;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #00ffff;
+        }
+
+        .checkbox-group label {
+            color: #00ffff;
+            cursor: pointer;
         }
 
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000;
             border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
+            padding: 12px 25px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin: 10px 10px 10px 0;
+            font-size: 15px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            margin: 10px 10px 0 0;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
         }
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.6);
+            filter: brightness(1.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-type-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .file-type-row > div:first-child {
+            flex: 1;
+        }
+
+        .file-type-row > div:last-child {
+            width: 200px;
+        }
+
+        /* Console Output */
+        #consoleContainer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            transition: transform 0.3s ease;
+        }
+
+        #consoleContainer.collapsed {
+            transform: translateY(100%);
+        }
+
+        #consoleToggle {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #00ff00, #00ffff);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0, 255, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        #consoleToggle:hover {
+            box-shadow: 0 -5px 30px rgba(0, 255, 255, 0.6);
+            filter: brightness(1.2);
+        }
+
+        #resizeHandle {
+            height: 8px;
+            background: #00ff00;
+            cursor: ns-resize;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #resizeHandle:hover {
+            background: #00ffff;
+        }
+
+        #resizeHandle::before {
+            content: '═';
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
         }
 
         #output {
-            background: #2d3748;
-            color: #48bb78;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            margin-top: 15px;
-            min-height: 120px;
-            max-height: 300px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ff00;
+            border-bottom: none;
+            padding: 20px;
+            height: 300px;
             overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #00ff00;
+            box-shadow:
+                0 -5px 30px rgba(0, 255, 0, 0.3),
+                inset 0 0 20px rgba(0, 255, 0, 0.05);
             white-space: pre-wrap;
-            transition: all 0.3s ease-in-out;
+            word-wrap: break-word;
         }
 
-        .counter {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
+        #output::-webkit-scrollbar {
+            width: 10px;
         }
 
-        .spinner {
-            display: none;
-            width: 24px;
-            height: 24px;
-            border: 4px solid #667eea;
-            border-top: 4px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
+        #output::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        #output::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 5px;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #00ff00;
         }
 
-        .info-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .output-header h4 {
+            color: #00ff00;
+            font-size: 1em;
         }
 
-        .info-card strong {
-            display: block;
-            color: #667eea;
-            margin-bottom: 5px;
+        .output-header button {
+            padding: 5px 15px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .test-section {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 3em; }
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+            nav .container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            nav .nav-links {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Webserv Test Page</h1>
-        <p class="subtitle">HTTP Server Implementation Testing Suite</p>
-
-        <div class="test-section">
-            <h2>📡 Fetch Tests</h2>
-            <button onclick="testCurrentPage()">GET Current Page</button>
-            <button onclick="testNonExistent()">GET 404</button>
-            <button onclick="testLargeRequest()">GET with Headers</button>
-            <button onclick="testJsonPost()">POST JSON</button>
-            <div class="spinner" id="spinner"></div>
-            <div id="output">Console output will appear here...</div>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">NETRUNNER</div>
+            <div class="nav-links">
+                <a href="#files">File Uploads</a>
+                <a href="#sizes">Size Tests</a>
+                <a href="#content">Content-Type</a>
+                <a href="#edge">Edge Cases</a>
+                <a href="#stress">Stress Tests</a>
+            </div>
         </div>
+    </nav>
 
-        <div class="test-section">
-            <h2>📂 File Upload Test (POST)</h2>
-            <form id="uploadForm" enctype="multipart/form-data" onsubmit="uploadFiles(event)">
-                <input type="file" id="fileInput" name="file" multiple required>
-                <button type="submit">Upload File(s)</button>
-            </form>
-            <p id="uploadStatus"></p>
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-content">
+            <h1>NETRUNNER</h1>
+            <p>Advanced HTTP Server Testing Suite</p>
+            <a href="#files" class="cta">Start Testing</a>
         </div>
+    </div>
 
-        <div class="test-section">
-            <h2>🎮 Interactive Counter</h2>
-            <div class="counter" id="counter">0</div><br>
-            <button onclick="incrementCounter()">Increment</button>
-            <button onclick="resetCounter()">Reset</button>
+    <!-- File Upload Tests -->
+    <section id="files">
+        <h2>File Upload Tests</h2>
+        <p class="description">Test multipart and non-multipart file uploads with various configurations</p>
+
+        <div class="test-grid">
+            <!-- Single File Upload -->
+            <div class="test-section">
+                <h3>Single File Upload</h3>
+                <form id="singleFileForm">
+                    <div class="input-group file-type-row">
+                        <div>
+                            <label>Select File</label>
+                            <input type="file" id="singleFile" required>
+                        </div>
+                        <div>
+                            <label>File Type</label>
+                            <select id="singleFileType">
+                                <option value="image/png">PNG Image</option>
+                                <option value="image/jpeg">JPEG Image</option>
+                                <option value="image/gif">GIF Image</option>
+                                <option value="text/plain">Text File</option>
+                                <option value="application/pdf">PDF Document</option>
+                                <option value="application/json">JSON File</option>
+                                <option value="text/html">HTML File</option>
+                                <option value="application/octet-stream">Binary</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="singleMultipart" checked>
+                        <label for="singleMultipart">Use Multipart Encoding</label>
+                    </div>
+                    <button type="submit">Upload File</button>
+                </form>
+            </div>
+
+            <!-- Text Upload -->
+            <div class="test-section">
+                <h3>Text Content Upload</h3>
+                <form id="textForm">
+                    <div class="input-group">
+                        <label>Enter Text Content</label>
+                        <textarea id="textContent" placeholder="Type your text content here..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Filename</label>
+                        <input type="text" id="textFilename" value="test.txt">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="textMultipart" checked>
+                        <label for="textMultipart">Use Multipart Encoding</label>
+                    </div>
+                    <button type="submit">Upload Text</button>
+                </form>
+            </div>
+
+            <!-- Multiple Files -->
+            <div class="test-section">
+                <h3>Multiple Files Upload</h3>
+                <form id="multiFileForm">
+                    <div class="input-group">
+                        <label>Select Multiple Files</label>
+                        <input type="file" id="multiFiles" multiple required>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="multiMultipart" checked>
+                        <label for="multiMultipart">Use Multipart Encoding</label>
+                    </div>
+                    <button type="submit">Upload All Files</button>
+                    <button type="button" class="secondary" onclick="clearMultiFiles()">Clear</button>
+                </form>
+            </div>
+
+            <!-- Mixed Type Files -->
+            <div class="test-section">
+                <h3>Mixed Type Upload Test</h3>
+                <form id="mixedForm">
+                    <div class="input-group file-type-row">
+                        <div>
+                            <label>File 1</label>
+                            <input type="file" id="mixedFile1">
+                        </div>
+                        <div>
+                            <select id="mixedType1">
+                                <option value="image/png">PNG</option>
+                                <option value="image/jpeg">JPEG</option>
+                                <option value="text/plain">Text</option>
+                                <option value="application/pdf">PDF</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group file-type-row">
+                        <div>
+                            <label>File 2</label>
+                            <input type="file" id="mixedFile2">
+                        </div>
+                        <div>
+                            <select id="mixedType2">
+                                <option value="image/png">PNG</option>
+                                <option value="image/jpeg">JPEG</option>
+                                <option value="text/plain">Text</option>
+                                <option value="application/pdf">PDF</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group file-type-row">
+                        <div>
+                            <label>File 3</label>
+                            <input type="file" id="mixedFile3">
+                        </div>
+                        <div>
+                            <select id="mixedType3">
+                                <option value="image/png">PNG</option>
+                                <option value="image/jpeg">JPEG</option>
+                                <option value="text/plain">Text</option>
+                                <option value="application/pdf">PDF</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="mixedMultipart" checked>
+                        <label for="mixedMultipart">Use Multipart Encoding</label>
+                    </div>
+                    <button type="submit">Upload Mixed Files</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Size & Limits Tests -->
+    <section id="sizes">
+        <h2>Size & Limits Tests</h2>
+        <p class="description">Test different body sizes and server limits</p>
+
+        <div class="test-grid">
+            <!-- Small Body -->
+            <div class="test-section">
+                <h3>Small Body (&lt; 1KB)</h3>
+                <button onclick="testSmallBody()">Send Small POST</button>
+                <p style="color: #888; font-size: 0.85em; margin-top: 10px;">Sends ~500 bytes of data</p>
+            </div>
+
+            <!-- Medium Body -->
+            <div class="test-section">
+                <h3>Medium Body (~100KB)</h3>
+                <button onclick="testMediumBody()">Send Medium POST</button>
+                <p style="color: #888; font-size: 0.85em; margin-top: 10px;">Sends ~100KB of data</p>
+            </div>
+
+            <!-- Large Body -->
+            <div class="test-section">
+                <h3>Large Body (1-10MB)</h3>
+                <div class="input-group">
+                    <label>Size (MB)</label>
+                    <input type="number" id="largeBodySize" value="5" min="1" max="50">
+                </div>
+                <button onclick="testLargeBody()">Send Large POST</button>
+            </div>
+
+            <!-- Empty Body -->
+            <div class="test-section">
+                <h3>Empty Body POST</h3>
+                <button onclick="testEmptyBody()">Send Empty POST</button>
+                <p style="color: #888; font-size: 0.85em; margin-top: 10px;">POST with no body content</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content-Type Tests -->
+    <section id="content">
+        <h2>Content-Type Tests</h2>
+        <p class="description">Test various Content-Type headers and edge cases</p>
+
+        <div class="test-grid">
+            <!-- text/plain -->
+            <div class="test-section">
+                <h3>text/plain</h3>
+                <div class="input-group">
+                    <label>Plain Text</label>
+                    <textarea id="plainText" placeholder="Enter plain text...">Hello from NetRunner!</textarea>
+                </div>
+                <button onclick="testPlainText()">Send as text/plain</button>
+            </div>
+
+            <!-- application/octet-stream -->
+            <div class="test-section">
+                <h3>application/octet-stream</h3>
+                <div class="input-group">
+                    <label>Binary Data</label>
+                    <input type="file" id="binaryFile">
+                </div>
+                <button onclick="testBinaryData()">Send as Binary</button>
+            </div>
+
+            <!-- Missing Content-Type -->
+            <div class="test-section">
+                <h3>Missing Content-Type</h3>
+                <div class="input-group">
+                    <label>Data</label>
+                    <textarea id="noContentType" placeholder="Data without Content-Type header">Test data</textarea>
+                </div>
+                <button onclick="testMissingContentType()">Send Without Header</button>
+            </div>
+
+            <!-- Invalid Content-Type -->
+            <div class="test-section">
+                <h3>Invalid Content-Type</h3>
+                <div class="input-group">
+                    <label>Custom Header</label>
+                    <input type="text" id="invalidContentType" value="application/invalid-type-xyz">
+                </div>
+                <button onclick="testInvalidContentType()">Send Invalid Type</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Edge Cases Tests -->
+    <section id="edge">
+        <h2>Edge Cases Tests</h2>
+        <p class="description">Test special scenarios and boundary conditions</p>
+
+        <div class="test-grid">
+            <!-- Chunked Transfer -->
+            <div class="test-section">
+                <h3>Chunked Transfer Encoding</h3>
+                <div class="input-group">
+                    <label>Chunk Size (bytes)</label>
+                    <input type="number" id="chunkSize" value="1024" min="100">
+                </div>
+                <button onclick="testChunkedTransfer()">Send Chunked</button>
+            </div>
+
+            <!-- POST with Query Params -->
+            <div class="test-section">
+                <h3>POST with Query Parameters</h3>
+                <div class="input-group">
+                    <label>Query String</label>
+                    <input type="text" id="queryParams" value="?param1=value1&param2=value2">
+                </div>
+                <button onclick="testPostWithQuery()">Send POST + Query</button>
+            </div>
+
+            <!-- Very Long Field Names -->
+            <div class="test-section">
+                <h3>Very Long Field Names/Values</h3>
+                <div class="input-group">
+                    <label>Field Name Length</label>
+                    <input type="number" id="fieldLength" value="1000" min="100">
+                </div>
+                <button onclick="testLongFields()">Send Long Fields</button>
+            </div>
+
+            <!-- Special Characters -->
+            <div class="test-section">
+                <h3>Special Characters (Unicode)</h3>
+                <div class="input-group">
+                    <label>Unicode Text</label>
+                    <textarea id="unicodeText">Hello 世界 🌍 Привет مرحبا</textarea>
+                </div>
+                <button onclick="testUnicode()">Send Unicode</button>
+            </div>
+
+            <!-- Null Bytes -->
+            <div class="test-section">
+                <h3>Null Bytes in Body</h3>
+                <button onclick="testNullBytes()">Send Null Bytes</button>
+                <p style="color: #888; font-size: 0.85em; margin-top: 10px;">Tests binary null characters</p>
+            </div>
+
+            <!-- Malformed Multipart -->
+            <div class="test-section">
+                <h3>Malformed Multipart Boundary</h3>
+                <button onclick="testMalformedBoundary()">Send Malformed</button>
+                <p style="color: #888; font-size: 0.85em; margin-top: 10px;">Invalid boundary markers</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stress Tests -->
+    <section id="stress">
+        <h2>Stress Tests</h2>
+        <p class="description">Test server performance and limits under load</p>
+
+        <div class="test-grid">
+            <!-- Rapid Sequential -->
+            <div class="test-section">
+                <h3>Rapid Sequential POSTs</h3>
+                <div class="input-group">
+                    <label>Number of Requests</label>
+                    <input type="number" id="rapidCount" value="50" min="10" max="500">
+                </div>
+                <button onclick="testRapidSequential()" id="rapidBtn">Start Rapid Test</button>
+            </div>
+
+            <!-- Concurrent Uploads -->
+            <div class="test-section">
+                <h3>Concurrent Uploads</h3>
+                <div class="input-group">
+                    <label>Concurrent Requests</label>
+                    <input type="number" id="concurrentCount" value="10" min="5" max="50">
+                </div>
+                <div class="input-group">
+                    <label>Upload Size (KB)</label>
+                    <input type="number" id="concurrentSize" value="100" min="10">
+                </div>
+                <button onclick="testConcurrent()" id="concurrentBtn">Start Concurrent</button>
+            </div>
+
+            <!-- Slow Upload Timeout -->
+            <div class="test-section">
+                <h3>Slow Upload Simulation</h3>
+                <div class="input-group">
+                    <label>Delay (ms) per chunk</label>
+                    <input type="number" id="slowDelay" value="1000" min="100">
+                </div>
+                <button onclick="testSlowUpload()">Start Slow Upload</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Console Toggle Button -->
+    <button id="consoleToggle" onclick="toggleConsole()">▲ Console</button>
+
+    <!-- Console Output -->
+    <div id="consoleContainer" class="collapsed">
+        <div id="resizeHandle"></div>
+        <div id="output">
+            <div class="output-header">
+                <h4>[ CONSOLE OUTPUT ]</h4>
+                <button class="secondary" onclick="clearConsole()">Clear</button>
+            </div>
+            <div id="outputContent"></div>
         </div>
     </div>
 
     <script>
-        let counter = 0;
+        let testCounter = 0;
+        let consoleOpen = false;
 
-        const spinner = document.getElementById('spinner');
+        // Toggle Console
+        function toggleConsole() {
+            const container = document.getElementById('consoleContainer');
+            const btn = document.getElementById('consoleToggle');
+            consoleOpen = !consoleOpen;
 
-        function showSpinner(show) {
-            spinner.style.display = show ? 'inline-block' : 'none';
+            if (consoleOpen) {
+                container.classList.remove('collapsed');
+                btn.textContent = '▼ Console';
+            } else {
+                container.classList.add('collapsed');
+                btn.textContent = '▲ Console';
+            }
         }
+
+        // Resize Console
+        let isResizing = false;
+        let startY = 0;
+        let startHeight = 0;
+
+        document.getElementById('resizeHandle').addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startY = e.clientY;
+            startHeight = document.getElementById('output').offsetHeight;
+            document.body.style.cursor = 'ns-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const diff = startY - e.clientY;
+            const newHeight = Math.max(150, Math.min(window.innerHeight * 0.8, startHeight + diff));
+            document.getElementById('output').style.height = newHeight + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
 
         function log(message, type = 'info') {
-            const output = document.getElementById('output');
+            const output = document.getElementById('outputContent');
             const timestamp = new Date().toLocaleTimeString();
-            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[SUCCESS]' : '[INFO]';
             const line = `[${timestamp}] ${prefix} ${message}\n`;
             output.textContent += line;
-            output.scrollTop = output.scrollHeight;
+            document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
+
+            // Auto-open console on new log
+            if (!consoleOpen) {
+                toggleConsole();
+            }
         }
 
-        // Counter demo
-        function incrementCounter() {
-            counter++;
-            document.getElementById('counter').textContent = counter;
-            log(`Counter incremented to ${counter}`, 'success');
+        function clearConsole() {
+            document.getElementById('outputContent').textContent = 'Console cleared.\n';
         }
 
-        function resetCounter() {
-            counter = 0;
-            document.getElementById('counter').textContent = counter;
-            log('Counter reset to 0');
+        function clearMultiFiles() {
+            document.getElementById('multiFiles').value = '';
+            log('Multiple files input cleared', 'info');
         }
 
-        // GET Tests
-        function testCurrentPage() {
-            showSpinner(true);
-            log('Fetching current page...');
-            fetch(window.location.href)
-                .then(r => {
-                    log(`Status: ${r.status} ${r.statusText}`, 'success');
-                    showSpinner(false);
-                    return r.text();
-                })
-                .then(data => log(`Received ${data.length} bytes`, 'success'))
-                .catch(e => {
-                    log(e.message, 'error');
-                    showSpinner(false);
+        // File Upload Tests
+        document.getElementById('singleFileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('singleFile');
+            const fileType = document.getElementById('singleFileType').value;
+            const useMultipart = document.getElementById('singleMultipart').checked;
+
+            if (!fileInput.files[0]) {
+                log('No file selected', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            log(`Uploading: ${file.name} (${file.size} bytes) as ${fileType}`, 'info');
+            log(`Encoding: ${useMultipart ? 'multipart/form-data' : 'application/octet-stream'}`, 'info');
+
+            try {
+                let response;
+                if (useMultipart) {
+                    const formData = new FormData();
+                    formData.append('file', file, file.name);
+                    response = await fetch('/uploads', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('/uploads', {
+                        method: 'POST',
+                        headers: { 'Content-Type': fileType },
+                        body: file
+                    });
+                }
+
+                const text = await response.text();
+                log(`Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`Body: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}`, 'info');
+            } catch (error) {
+                log(`Upload failed: ${error.message}`, 'error');
+            }
+        });
+
+        document.getElementById('textForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('textContent').value;
+            const filename = document.getElementById('textFilename').value;
+            const useMultipart = document.getElementById('textMultipart').checked;
+
+            if (!text) {
+                log('No text content provided', 'error');
+                return;
+            }
+
+            log(`Uploading text as ${filename} (${text.length} chars)`, 'info');
+            log(`Encoding: ${useMultipart ? 'multipart/form-data' : 'text/plain'}`, 'info');
+
+            try {
+                let response;
+                if (useMultipart) {
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const formData = new FormData();
+                    formData.append('file', blob, filename);
+                    response = await fetch('/uploads', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('/uploads', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: text
+                    });
+                }
+
+                const responseText = await response.text();
+                log(`Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`Body: ${responseText.substring(0, 200)}`, 'info');
+            } catch (error) {
+                log(`Upload failed: ${error.message}`, 'error');
+            }
+        });
+
+        document.getElementById('multiFileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('multiFiles');
+            const useMultipart = document.getElementById('multiMultipart').checked;
+
+            if (!fileInput.files.length) {
+                log('No files selected', 'error');
+                return;
+            }
+
+            const files = Array.from(fileInput.files);
+            log(`Uploading ${files.length} files`, 'info');
+            log(`Encoding: ${useMultipart ? 'multipart/form-data' : 'sequential binary'}`, 'info');
+
+            if (useMultipart) {
+                const formData = new FormData();
+                files.forEach((file, i) => {
+                    formData.append(`file${i}`, file, file.name);
+                    log(`Added: ${file.name} (${file.size} bytes)`, 'info');
                 });
-        }
 
-        function testNonExistent() {
-            showSpinner(true);
-            log('Testing 404...');
-            fetch('/nonexistent-page.html')
-                .then(r => {
-                    log(`Status: ${r.status}`, r.status === 404 ? 'success' : 'error');
-                    showSpinner(false);
-                })
-                .catch(e => {
-                    log(e.message, 'error');
-                    showSpinner(false);
+                try {
+                    const response = await fetch('/uploads', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const text = await response.text();
+                    log(`Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                    log(`Body: ${text.substring(0, 200)}`, 'info');
+                } catch (error) {
+                    log(`Upload failed: ${error.message}`, 'error');
+                }
+            } else {
+                for (const file of files) {
+                    try {
+                        log(`Uploading: ${file.name}`, 'info');
+                        const response = await fetch('/uploads', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/octet-stream' },
+                            body: file
+                        });
+                        log(`${file.name}: ${response.status}`, response.ok ? 'success' : 'error');
+                    } catch (error) {
+                        log(`${file.name} failed: ${error.message}`, 'error');
+                    }
+                }
+            }
+        });
+
+        document.getElementById('mixedForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const useMultipart = document.getElementById('mixedMultipart').checked;
+
+            const files = [
+                { input: document.getElementById('mixedFile1'), type: document.getElementById('mixedType1').value },
+                { input: document.getElementById('mixedFile2'), type: document.getElementById('mixedType2').value },
+                { input: document.getElementById('mixedFile3'), type: document.getElementById('mixedType3').value }
+            ].filter(f => f.input.files[0]);
+
+            if (files.length === 0) {
+                log('No files selected', 'error');
+                return;
+            }
+
+            log(`Uploading ${files.length} mixed-type files`, 'info');
+            log(`Encoding: ${useMultipart ? 'multipart/form-data' : 'sequential with Content-Type'}`, 'info');
+
+            if (useMultipart) {
+                const formData = new FormData();
+                files.forEach((f, i) => {
+                    const file = f.input.files[0];
+                    formData.append(`file${i}`, file, file.name);
+                    log(`Added: ${file.name} as ${f.type}`, 'info');
                 });
-        }
 
-        function testLargeRequest() {
-            showSpinner(true);
-            log('Sending GET with headers...');
-            fetch(window.location.href, {
-                headers: { 'X-Test-Header': 'WebservTest', 'X-Custom': '12345' }
-            })
-                .then(r => {
-                    log(`Status: ${r.status}`, 'success');
-                    showSpinner(false);
-                })
-                .catch(e => {
-                    log(e.message, 'error');
-                    showSpinner(false);
+                try {
+                    const response = await fetch('/uploads', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const text = await response.text();
+                    log(`Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                    log(`Body: ${text.substring(0, 200)}`, 'info');
+                } catch (error) {
+                    log(`Upload failed: ${error.message}`, 'error');
+                }
+            } else {
+                for (const f of files) {
+                    const file = f.input.files[0];
+                    try {
+                        log(`Uploading: ${file.name} as ${f.type}`, 'info');
+                        const response = await fetch('/uploads', {
+                            method: 'POST',
+                            headers: { 'Content-Type': f.type },
+                            body: file
+                        });
+                        log(`${file.name}: ${response.status}`, response.ok ? 'success' : 'error');
+                    } catch (error) {
+                        log(`${file.name} failed: ${error.message}`, 'error');
+                    }
+                }
+            }
+        });
+
+        // Size Tests
+        async function testSmallBody() {
+            log('Testing small body (<1KB)', 'info');
+            const data = 'x'.repeat(500);
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: data
                 });
+                log(`Response: ${response.status} (sent ${data.length} bytes)`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
         }
 
-        // POST JSON
-        function testJsonPost() {
-            showSpinner(true);
-            log('Sending POST with JSON...');
-            fetch('/uploads', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: "Webserv", time: Date.now() })
-            })
-            .then(r => {
-                log(`Status: ${r.status}`, 'success');
-                showSpinner(false);
-                return r.text();
-            })
-            .then(data => log(`Response: ${data}`, 'info'))
-            .catch(e => {
-                log(e.message, 'error');
-                showSpinner(false);
+        async function testMediumBody() {
+            log('Testing medium body (~100KB)', 'info');
+            const data = 'x'.repeat(100 * 1024);
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: data
+                });
+                log(`Response: ${response.status} (sent ${data.length} bytes)`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLargeBody() {
+            const sizeMB = parseInt(document.getElementById('largeBodySize').value);
+            log(`Testing large body (${sizeMB}MB)`, 'info');
+            const data = 'x'.repeat(sizeMB * 1024 * 1024);
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: data
+                });
+                log(`Response: ${response.status} (sent ${data.length} bytes)`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEmptyBody() {
+            log('Testing empty body POST', 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: ''
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Content-Type Tests
+        async function testPlainText() {
+            const text = document.getElementById('plainText').value;
+            log('Testing text/plain', 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: text
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBinaryData() {
+            const fileInput = document.getElementById('binaryFile');
+            if (!fileInput.files[0]) {
+                log('No file selected', 'error');
+                return;
+            }
+            log('Testing application/octet-stream', 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: fileInput.files[0]
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMissingContentType() {
+            const text = document.getElementById('noContentType').value;
+            log('Testing missing Content-Type header', 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    body: text
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testInvalidContentType() {
+            const invalidType = document.getElementById('invalidContentType').value;
+            log(`Testing invalid Content-Type: ${invalidType}`, 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': invalidType },
+                    body: 'test data'
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Edge Cases Tests
+        async function testChunkedTransfer() {
+            const chunkSize = parseInt(document.getElementById('chunkSize').value);
+            log(`Testing chunked transfer (chunk size: ${chunkSize})`, 'info');
+            const data = 'x'.repeat(chunkSize * 5);
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Transfer-Encoding': 'chunked'
+                    },
+                    body: data
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPostWithQuery() {
+            const query = document.getElementById('queryParams').value;
+            log(`Testing POST with query: ${query}`, 'info');
+            try {
+                const response = await fetch('/uploads' + query, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'test' })
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLongFields() {
+            const length = parseInt(document.getElementById('fieldLength').value);
+            const fieldName = 'field_' + 'x'.repeat(length);
+            const fieldValue = 'value_' + 'y'.repeat(length);
+            log(`Testing long field name/value (${length} chars)`, 'info');
+            const data = {};
+            data[fieldName] = fieldValue;
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUnicode() {
+            const text = document.getElementById('unicodeText').value;
+            log('Testing unicode/special characters', 'info');
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                    body: text
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testNullBytes() {
+            log('Testing null bytes in body', 'info');
+            const buffer = new Uint8Array(100);
+            for (let i = 0; i < buffer.length; i += 10) {
+                buffer[i] = 0;
+            }
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: buffer
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMalformedBoundary() {
+            log('Testing malformed multipart boundary', 'info');
+            const boundary = 'invalid--boundary--';
+            const body = `--${boundary}\r\nContent-Disposition: form-data; name="file"\r\n\r\ntest data\r\n--WRONG_BOUNDARY--`;
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+                    body: body
+                });
+                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Stress Tests
+        async function testRapidSequential() {
+            const count = parseInt(document.getElementById('rapidCount').value);
+            const btn = document.getElementById('rapidBtn');
+            btn.disabled = true;
+            log(`Starting rapid sequential test (${count} requests)`, 'info');
+
+            let success = 0;
+            let failed = 0;
+            const startTime = Date.now();
+
+            for (let i = 0; i < count; i++) {
+                try {
+                    const response = await fetch('/uploads', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: `Request ${i + 1}`
+                    });
+                    if (response.ok) success++;
+                    else failed++;
+                } catch (error) {
+                    failed++;
+                }
+            }
+
+            const duration = Date.now() - startTime;
+            log(`Rapid test complete: ${success} success, ${failed} failed in ${duration}ms`, 'success');
+            btn.disabled = false;
+        }
+
+        async function testConcurrent() {
+            const count = parseInt(document.getElementById('concurrentCount').value);
+            const sizeKB = parseInt(document.getElementById('concurrentSize').value);
+            const btn = document.getElementById('concurrentBtn');
+            btn.disabled = true;
+            log(`Starting concurrent test (${count} requests, ${sizeKB}KB each)`, 'info');
+
+            const data = 'x'.repeat(sizeKB * 1024);
+            const startTime = Date.now();
+
+            const promises = [];
+            for (let i = 0; i < count; i++) {
+                promises.push(
+                    fetch('/uploads', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: data
+                    }).then(r => r.ok).catch(() => false)
+                );
+            }
+
+            const results = await Promise.all(promises);
+            const success = results.filter(r => r).length;
+            const failed = count - success;
+            const duration = Date.now() - startTime;
+
+            log(`Concurrent test complete: ${success} success, ${failed} failed in ${duration}ms`, 'success');
+            btn.disabled = false;
+        }
+
+        async function testSlowUpload() {
+            const delay = parseInt(document.getElementById('slowDelay').value);
+            log(`Starting slow upload test (${delay}ms delay per chunk)`, 'info');
+
+            const encoder = new TextEncoder();
+            const stream = new ReadableStream({
+                async start(controller) {
+                    for (let i = 0; i < 10; i++) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        controller.enqueue(encoder.encode(`chunk ${i}\n`));
+                        log(`Sent chunk ${i + 1}/10`, 'info');
+                    }
+                    controller.close();
+                }
             });
+
+            try {
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: stream
+                });
+                log(`Slow upload complete: ${response.status}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Slow upload failed: ${error.message}`, 'error');
+            }
         }
 
-        // Multipart upload
-        function uploadFiles(event) {
-            event.preventDefault();
-            showSpinner(true);
-            const form = document.getElementById('uploadForm');
-            const formData = new FormData(form);
-            log('Uploading file(s)...');
-
-            fetch('/uploads', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => {
-                log(`Status: ${r.status}`, r.ok ? 'success' : 'error');
-                showSpinner(false);
-                return r.text();
-            })
-            .then(data => log(`Upload response: ${data}`, 'info'))
-            .catch(e => {
-                log(`Upload error: ${e.message}`, 'error');
-                showSpinner(false);
-            });
-        }
-
-        window.onload = () => log('Test page ready! 🎉', 'success');
+        // Initialize without opening console
+        document.getElementById('outputContent').textContent = 'NetRunner initialized. Ready for testing...\n';
     </script>
 </body>
 </html>

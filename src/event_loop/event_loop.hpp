@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:18:43 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/19 00:36:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/26 02:07:18 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,16 +21,22 @@
 #include "connection.hpp"
 #include "config.hpp"
 #include "cgi.hpp"
-#include "server.hpp"
 
 class EventLoop {
 
 	public:
-		EventLoop(Config& config);
-		~EventLoop();
+		EventLoop(Config& config)
+			:_configs(config.getServers()),
+			 _connectionPoolManager(_configs),
+			 _listenManager(),
+			 _cgiExecutor(*this),
+			 _listeningSocketCount(),
+			 _running(true) {}
+		~EventLoop() { stop(); }
 
 		void run();
 		void addKilledPid(pid_t pid);
+
 
 	private:
 		void stop();
@@ -40,19 +46,19 @@ class EventLoop {
 		bool isConnectionTimedOut(std::map<int, Connection> &connections, int fd);
 		void checkConnectionsTimeouts();
 
-		bool isCgiTimedOut(std::map<int, Cgi*>& cgiMap, int fd);
+		bool isCgiTimedOut(std::map<int, Cgi>& cgiMap, int fd);
 		void checkCgiTimeouts();
 
-		void EventLoop::processDiskWrites();
+		void processDiskWrites();
 
 		void reapZombieProcesses();
 
+		std::vector<ConfigData>		_configs;
 		ConnectionPoolManager		_connectionPoolManager;
 		ListeningSocketManager		_listenManager;
 		CgiExecutor					_cgiExecutor;
 
 		std::vector<struct pollfd>	_pollFds;
-		std::vector<ConfigData>		_configs;
 		std::vector<int>			_killedPids;
 
 		size_t						_listeningSocketCount;
