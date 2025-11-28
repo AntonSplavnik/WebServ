@@ -22,9 +22,9 @@ class CgiExecutor {
 		std::map<int, Cgi>& getCGI() {return _cgi;};
 
 	private:
-		void handleCGIerror(Connection& connection, int cgiFd);
-		void handleCGIread(Connection& connection, int cgiFd);
-		void handleCGIwrite(Connection& connection, int cgiFd);
+		void handleCGIerror(Connection& connection, Cgi& cgi, int cgiFd);
+		void handleCGIread(Connection& connection, Cgi& cgi);
+		void handleCGIwrite(Connection& connection, Cgi& cgi);
 
 		void terminateCGI(Cgi& cgi);
 

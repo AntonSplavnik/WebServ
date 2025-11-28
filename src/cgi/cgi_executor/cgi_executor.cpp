@@ -5,6 +5,7 @@
 #include <poll.h>
 
 void CgiExecutor::handleCGI(Connection& connection) {
+
 	Cgi cgi(_eventLoop, connection.getRequest() , connection.getFd());
 	if (!cgi.start(connection)){
 		connection.setStatusCode(500);
@@ -12,13 +13,14 @@ void CgiExecutor::handleCGI(Connection& connection) {
 	}
 
 	//Register CGI process
-	int inFd= cgi.getInFd();
+	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
+	int pid = cgi.getPid();
 	if (inFd >= 0) _cgi.insert(std::make_pair(inFd, cgi));
 	_cgi.insert(std::make_pair(outFd, cgi));
 	connection.setState(WAITING_CGI);
 
-	std::cout << "[DEBUG] Spawned CGI pid = " << cgi.getPid()
+	std::cout << "[DEBUG] Spawned CGI pid = " << pid
 			<< " inFd = " << inFd
 			<< " outFd = " << outFd
 			<< " for client FD = " << connection.getFd() << std::endl;
@@ -31,38 +33,35 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 
 	Connection* connection = connectionPoolManager.getConnection(clientFd);
 
-	if (!connection) { // check if client is still there
-		std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
-		if (revents & POLLERR) {
-			std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
-			handleCGIerror(*connection, fd);
-		} else if (revents & POLLHUP) {
-			std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
-			if (revents & POLLIN) {
-				handleCGIread(*connection, fd);  // final read + cleanup
-				return;
-			}
-			// Send error response if client connection still exists
-			terminateCGI(cgiIt->second);
-		} else if (revents & POLLOUT) {
-			std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
-			handleCGIwrite(*connection, fd);
-		}
-		} else if (revents & POLLIN) {
-			std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
-			handleCGIread(*connection, fd);
-		return;
-	} else {
+	if (!connection) {
+		std::cout << "[DEBUG] Client disconnected, terminating CGI FD " << fd << std::endl;
 		terminateCGI(cgiIt->second);
 		return;
 	}
 
+	std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
+	if (revents & POLLERR) {
+		std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
+		handleCGIerror(*connection, cgiIt->second, fd);
+	} else if (revents & POLLHUP) {
+		std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+		if (revents & POLLIN) {
+			handleCGIread(*connection, cgiIt->second);
+			return;
+		}
+		terminateCGI(cgiIt->second);
+	} else if (revents & POLLOUT) {
+		std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
+		handleCGIwrite(*connection, cgiIt->second);
+	} else if (revents & POLLIN) {
+		std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
+		handleCGIread(*connection, cgiIt->second);
+	}
+
 }
 
-void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
+void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, int cgiFd) {
 
-	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
-	Cgi& cgi = it->second;
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
 
@@ -110,24 +109,24 @@ void CgiExecutor::handleCGIerror(Connection& connection, int cgiFd) {
 		}
 	}
 }
-void CgiExecutor::handleCGIwrite(Connection& connection, int cgiFd) { /* write to CGI */
+void CgiExecutor::handleCGIwrite(Connection& connection, Cgi& cgi) { /* write to CGI */
 	(void)connection;
-	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
-	Cgi& cgi = it->second;
+
 	CgiState status = cgi.handleWriteToCGI();
 
 	if(status == CGI_CONTINUE) return;
 
 	if(status == CGI_READY){
 		int inFd = cgi.getInFd();
-		cgi.closeInFd();
 		if (inFd >= 0) _cgi.erase(inFd);
+		cgi.closeInFd();
 	}
 }
-void CgiExecutor::handleCGIread(Connection& connection, int cgiFd) { /* read from CGI */
+void CgiExecutor::handleCGIread(Connection& connection, Cgi& cgi) { /* read from CGI */
 
-	std::map<int, Cgi>::iterator it = _cgi.find(cgiFd);
-	Cgi& cgi = it->second;
+	int inFd = cgi.getInFd();
+	int outFd = cgi.getOutFd();
+
 	CgiState status = cgi.handleReadFromCGI();
 	if(status == CGI_CONTINUE) return;
 
@@ -136,31 +135,28 @@ void CgiExecutor::handleCGIread(Connection& connection, int cgiFd) { /* read fro
 	if(status == CGI_READY) {
 		connection.setStatusCode(200);
 		connection.prepareResponse(cgi.getResponseData());
-		// response.generateResponse(200, true, cgi.getResponseData());
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI complete" << std::endl;
 	}
 	else if(status == CGI_ERROR) {
 		connection.setStatusCode(500);
+		connection.prepareResponse();
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI ERROR" << std::endl;
 	}
-	connection.prepareResponse();
 
-	std::cout << "[Server] Erasing CGI FD " << cgiFd << " from _cgi" << std::endl;
+	std::cout << "[DEBUG] Erasing CGI FD " << outFd << " from _cgi" << std::endl;
 
-	int inFd = cgi.getInFd();
-	int outFd = cgi.getOutFd();
 	if (inFd >= 0) _cgi.erase(inFd);
 	if (outFd >= 0) _cgi.erase(outFd);
 }
 
 void CgiExecutor::terminateCGI(Cgi& cgi) {
 
-	cgi.terminate();
-	cgi.cleanup();
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
+	cgi.terminate();
+	cgi.cleanup();
 	if (inFd >= 0) _cgi.erase(inFd);
 	if (outFd >= 0) _cgi.erase(outFd);
 }

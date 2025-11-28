@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:52 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 11:13:10 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 17:24:42 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,7 @@ class Cgi {
 		EventLoop&			_eventLoop;
 
 		void executeCGI(const Connection& onnection);
+		std::string findInterpreter(const std::string& name);
 		char** prepEnvVariables(const Connection& onnection, const std::string& ext);
 		bool chdirToScriptDir(const std::string& mappedPath);
 		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);

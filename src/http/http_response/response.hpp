@@ -56,6 +56,9 @@ class HttpResponse {
 		std::string	getReasonPhrase();
 		std::string	getContentType();
 
+		void parseCgiOutput(const std::string& cgiOutput, std::string& headers, std::string& body);
+		void parseCgiContentType(const std::string& cgiHeaders);
+
 		static std::map<std::string, std::string> initMimeTypes();
 		static const std::map<std::string, std::string> _mimeTypes;
 

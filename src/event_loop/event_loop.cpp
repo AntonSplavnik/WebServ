@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 19:40:01 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 16:45:13 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,7 +70,7 @@ void EventLoop::rebuildPollFds() {
 			cgiFd.events = POLLIN;
 		cgiFd.revents = 0;
 		_pollFds.push_back(cgiFd);
-		std::cout << "[DEBUG] Added CGI socket FD " << cgiFd.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		// std::cout << "[DEBUG] Added CGI socket FD " << cgiFd.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
 	}
 }
 

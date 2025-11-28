@@ -132,14 +132,12 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 		return;
 	}
 
-	if (cgiOutput.find("Content-Type:") != std::string::npos) {
-		_response = _protocolVersion + " " + std::to_string(_statusCode) + " " + _reasonPhrase + "\r\n" + cgiOutput;
-		return;
-	} else {
-		_body = cgiOutput;
-		_contentLength = _body.length();
-		_contentType = "text/html";
-	}
+	std::string cgiHeaders;
+	parseCgiOutput(cgiOutput, cgiHeaders, _body);
+
+	_contentLength = _body.length();
+
+	parseCgiContentType(cgiHeaders);
 
 	buildHttpResponse();
 }
@@ -218,3 +216,56 @@ const std::string& HttpResponse::getPath()const {return _filePath;}
 const std::string& HttpResponse::getProtocolVersion() const {return _protocolVersion;}
 int HttpResponse::getStatusCode() const {return _statusCode;}
 const std::string& HttpResponse::getResponse() const {return _response;}
+
+void HttpResponse::parseCgiOutput(const std::string& cgiOutput, std::string& headers, std::string& body) {
+	size_t headerEnd = cgiOutput.find("\r\n\r\n");
+
+	if (headerEnd == std::string::npos) {
+		headerEnd = cgiOutput.find("\n\n");
+		if (headerEnd != std::string::npos) {
+			headers = cgiOutput.substr(0, headerEnd);
+			body = cgiOutput.substr(headerEnd + 2);
+		} else {
+			// No header separator, treat entire output as body
+			headers = "";
+			body = cgiOutput;
+		}
+	} else {
+		headers = cgiOutput.substr(0, headerEnd);
+		body = cgiOutput.substr(headerEnd + 4);
+	}
+}
+void HttpResponse::parseCgiContentType(const std::string& cgiHeaders) {
+	if (cgiHeaders.empty()) {
+		return;
+	}
+
+	std::string line;
+	size_t pos = 0;
+	size_t nextPos = 0;
+
+	while ((nextPos = cgiHeaders.find('\n', pos)) != std::string::npos) {
+		line = cgiHeaders.substr(pos, nextPos - pos);
+
+		// Remove \r if present
+		if (!line.empty() && line[line.length() - 1] == '\r') {
+			line = line.substr(0, line.length() - 1);
+		}
+
+		// Check for Content-Type header (case-insensitive)
+		if (line.find("Content-Type:") == 0 || line.find("Content-type:") == 0) {
+			size_t colonPos = line.find(':');
+			if (colonPos != std::string::npos) {
+				_contentType = line.substr(colonPos + 1);
+				// Trim leading whitespace
+				size_t start = _contentType.find_first_not_of(" \t");
+				if (start != std::string::npos) {
+					_contentType = _contentType.substr(start);
+				}
+			}
+			break;
+		}
+
+		pos = nextPos + 1;
+	}
+}

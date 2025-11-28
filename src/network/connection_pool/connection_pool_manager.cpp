@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 20:39:53 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 13:48:05 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,13 +177,13 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 		}
 	}
 }
+
 /** returns NULL if connection doesn't exist! */
 Connection* ConnectionPoolManager::getConnection(int fd){
 	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
 	if(it != _connectionPool.end()) return &it->second;
 	return NULL;
 }
-
 Connection& ConnectionPoolManager::getConnectionRef(int fd){
 	std::map<int, Connection>::iterator it = _connectionPool.find(fd);
 	return it->second;

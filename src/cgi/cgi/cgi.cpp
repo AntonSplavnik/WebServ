@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 16:19:11 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/28 17:24:50 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,12 @@ Cgi::Cgi(const Cgi& other)
           _connectionFd(other._connectionFd),
           _responseData(other._responseData),
           _request(other._request),
-          _eventLoop(other._eventLoop) {}
+          _eventLoop(other._eventLoop) {
+	// Transfer ownership - prevent source from closing FDs (const_cast - removes const from the passed object)
+	const_cast<Cgi&>(other)._inFd = -1;
+	const_cast<Cgi&>(other)._outFd = -1;
+	const_cast<Cgi&>(other)._pid = -1;
+}
 
 Cgi::~Cgi() {
     cleanup();
@@ -56,7 +61,6 @@ Cgi::~Cgi() {
 
 bool Cgi::start(const Connection& connection) {
 
-    //TODO: unchunk (ask if Damien makes it, so maybe i can use it here)
     int inpipe[2];
     int outpipe[2];
 
@@ -94,13 +98,15 @@ bool Cgi::start(const Connection& connection) {
             */
             // Limit memory usage BEFORE execution
             struct rlimit mem_limit;
+            getrlimit(RLIMIT_AS, &mem_limit);
             mem_limit.rlim_cur = 50 * 1024 * 1024;
-            mem_limit.rlim_max = 100 * 1024 * 1024;
 
-            if (setrlimit(RLIMIT_AS, &mem_limit) != 0) {
-                perror("setrlimit");
-                _exit(126);
-            }
+            #ifndef __APPLE__
+                if (setrlimit(RLIMIT_AS, &mem_limit) != 0) {
+                    perror("setrlimit");
+                    _exit(126);
+                }
+            #endif
         }
 
         if (!chdirToScriptDir(connection.getRoutingResult().mappedPath)) {
@@ -130,6 +136,7 @@ bool Cgi::start(const Connection& connection) {
 
     return true;
 }
+
 void Cgi::executeCGI(const Connection& connection) {
 
     std::string ext = extractCgiExtension(connection.getRequest().getPath(), connection.getRoutingResult().location);
@@ -137,9 +144,14 @@ void Cgi::executeCGI(const Connection& connection) {
     // --- Determine interpreter ---
     std::string interpreter;
     if (ext == ".py")
-        interpreter = "/usr/bin/python3";
+        interpreter = findInterpreter("python3");
     else if (ext == ".php")
-        interpreter = "/usr/bin/php-cgi";
+        interpreter = findInterpreter("php-cgi");
+
+    if (interpreter.empty()) {
+        std::cerr << "[CGI] Interpreter not found for extension: " << ext << std::endl;
+        _exit(127);
+    }
 
     // --- Prepare args ---
     char *argv[3];
@@ -155,6 +167,22 @@ void Cgi::executeCGI(const Connection& connection) {
     // If we reach here, execve failed
     perror("execve");
     _exit(1);
+}
+std::string Cgi::findInterpreter(const std::string& name) {
+    const char* searchPaths[] = {
+        "/usr/bin/",
+        "/usr/local/bin/",
+        "/opt/homebrew/bin/",
+        NULL
+    };
+
+    for (int i = 0; searchPaths[i] != NULL; i++) {
+        std::string fullPath = std::string(searchPaths[i]) + name;
+        if (access(fullPath.c_str(), X_OK) == 0) {
+            return fullPath;
+        }
+    }
+    return "";
 }
 char** Cgi::prepEnvVariables(const Connection& connection, const std::string& ext) {
 
@@ -307,7 +335,7 @@ CgiState Cgi::handleReadFromCGI() {
     }
     else if (bytesRead == 0) { // --- EOF: child finished writing ---
         std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
-        std::cout << "[DEBUG] SGI responseData: " << _responseData << std::endl;
+        std::cout << "[DEBUG] CGI responseData: " << _responseData << std::endl;
 
         _finished = true;
         closeOutFd();
@@ -317,8 +345,8 @@ CgiState Cgi::handleReadFromCGI() {
     else { // bytesRead > 0
         if (_responseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
             std::cerr << "[CGI] Output exceeds limit" << std::endl;
-            terminate();
             closeOutFd();
+            terminate();
             return CGI_ERROR;
         }
         _responseData.append(buf, bytesRead);
@@ -352,9 +380,12 @@ CgiState Cgi::handleWriteToCGI() {
 }
 
 void Cgi::terminate() {
-    kill(_pid, SIGKILL);
-    waitpid(_pid, NULL, WNOHANG);
-    _eventLoop.addKilledPid(_pid);
+    if (_pid > 0) {
+        kill(_pid, SIGKILL);
+        int result = waitpid(_pid, NULL, WNOHANG);
+        if (result == 0) _eventLoop.addKilledPid(_pid);
+        _pid = -1;
+    }
 }
 void Cgi::cleanup() {
     closeInFd();
