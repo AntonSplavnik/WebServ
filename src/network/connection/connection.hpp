@@ -66,6 +66,7 @@ class Connection {
 		void setStatusCode(int statusCode) { _statusCode = statusCode; }
 		void setResponseData(const std::string& responseData) { _responseData = responseData; }
 		void setBodyContent(const std::string& content) { _bodyContent = content; }
+		void setLocationHeader(const std::string& location) { _locationHeader = location; }
 
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
@@ -127,6 +128,7 @@ class Connection {
 		std::string		_responseData;	// final response
 		size_t			_bytesSent;		// data tracking for sending response should be set internally 32KB
 		int				_statusCode;	// code to determine if the request was sucessful or not
+		std::string		_locationHeader;	// location header for redirects
 
 		// Connection Lifecycle
 		time_t			_lastActivity;

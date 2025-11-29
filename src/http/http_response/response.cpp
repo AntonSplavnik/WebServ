@@ -230,6 +230,7 @@ void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
 void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
 void HttpResponse::setMethod(RequestType type) {_requestType = type;}
+void HttpResponse::setLocation(const std::string& location) {_location = location;}
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}

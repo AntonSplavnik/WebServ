@@ -12,8 +12,7 @@ class RequestHandler {
 		void handleGET(Connection& connection);
 		void handlePOST(Connection& connection);
 		void handleDELETE(Connection& connection);
-		// void handleRedirect(Connection* conn, const LocationConfig* location);
-		// void handleError(Connection* conn, int statusCode, const ServerConfig* config);
+		void handleRedirect(Connection& connection);
 };
 
 #endif

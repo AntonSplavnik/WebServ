@@ -40,6 +40,7 @@ class HttpResponse {
 		void setCustomErrorPage(const std::string& errorPagePath);
 		void setConnectionType(const std::string& connectionType);
 		void setMethod(RequestType type);
+		void setLocation(const std::string& location);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
 		const std::string& getProtocolVersion() const;

@@ -114,7 +114,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					cgiExecutor.handleCGI(connection);
 					break;
 				case REDIRECT:
-					/* reqHandler.handleRedirect(connection); */
+					reqHandler.handleRedirect(connection);
 					break;
 				default:
 					connection.setStatusCode(500);

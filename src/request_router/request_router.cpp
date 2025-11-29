@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 20:52:17 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 21:54:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	return result;
 }
 
-ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPort) {
+ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPort) {c
 
 	// Filter servers by port
 	std::vector<ConfigData*> matchedConfigs;

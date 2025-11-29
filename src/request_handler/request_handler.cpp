@@ -88,3 +88,10 @@ void RequestHandler::handlePOST(Connection& connection) {
 	}
 
 }
+void RequestHandler::handleRedirect(Connection& connection) {
+
+	const LocationConfig* location = connection.getRoutingResult().location;
+	connection.setStatusCode(location->redirect_code);
+	connection.setLocationHeader(location->redirect);
+	connection.prepareResponse();
+}

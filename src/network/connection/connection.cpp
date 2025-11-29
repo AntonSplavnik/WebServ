@@ -65,6 +65,7 @@ Connection::Connection(const Connection& other)
 	_responseData(other._responseData),
 	_bytesSent(other._bytesSent),
 	_statusCode(other._statusCode),
+	_locationHeader(other._locationHeader),
 	_lastActivity(other._lastActivity),
 	_keepAliveTimeout(other._keepAliveTimeout),
 	_maxRequests(other._maxRequests),
@@ -102,6 +103,7 @@ Connection& Connection::operator=(const Connection& other) {
 		_responseData = other._responseData;
 		_bytesSent = other._bytesSent;
 		_statusCode = other._statusCode;
+		_locationHeader = other._locationHeader;
 		_lastActivity = other._lastActivity;
 		_keepAliveTimeout = other._keepAliveTimeout;
 		_maxRequests = other._maxRequests;
@@ -368,6 +370,12 @@ bool Connection::prepareResponse() {
 		_bodyContent.clear();
 	}
 
+	// Set location header for redirects
+	if (!_locationHeader.empty()) {
+		response.setLocation(_locationHeader);
+		_locationHeader.clear();
+	}
+
 	// Set path for MIME type detection (for GET)
 	if (!_routingResult.mappedPath.empty()) {
 		response.setPath(_routingResult.mappedPath);
@@ -505,6 +513,7 @@ void Connection::resetForNextRequest() {
 	// Response data
 	_bodyContent.clear();
 	_responseData.clear();
+	_locationHeader.clear();
 	_bytesSent = 0;
 	_statusCode = 0;
 
