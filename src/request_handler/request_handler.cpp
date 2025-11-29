@@ -63,6 +63,14 @@ void RequestHandler::handlePOST(Connection& connection) {
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
 	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
+	// Empty POST - no content to process
+	if (request.getBody().empty()) {
+		connection.setStatusCode(204);
+		connection.prepareResponse();
+		return;
+	}
+
+	// Has body - validate Content-Type
 	if (contentType.find("multipart/form-data") != std::string::npos) {
 		if(post.handleMultipart(connection)) {
 			connection.setState(WRITING_DISK);

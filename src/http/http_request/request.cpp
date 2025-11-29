@@ -184,6 +184,10 @@ void HttpRequest::parseHeaders() {
 void HttpRequest::parseBody() {
 
 	if (_body.empty()) {
+		// Empty body is valid if Content-Length is 0 or absent
+		if (getContentLength() == 0) {
+			return;
+		}
 		_isValid = false;
 		return;
 	}
