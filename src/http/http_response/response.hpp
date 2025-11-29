@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: Invalid date        by                   #+#    #+#             */
-/*   Updated: 2025/11/27 16:15:56 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 14:30:22 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <vector>
 #include <algorithm>
 
 #include "request_router.hpp"
@@ -51,13 +52,16 @@ class HttpResponse {
 		void buildHttpResponse();
 		void generateErrorResponse();
 
-		std::string	getTimeNow();
+		std::string	generateCurrentTime();
 		std::string	extractFileExtension(std::string filePath);
-		std::string	getReasonPhrase();
-		std::string	getContentType();
+		std::string	mapStatusToReason();
+		std::string	determineContentType();
 
 		void parseCgiOutput(const std::string& cgiOutput, std::string& headers, std::string& body);
 		void parseCgiContentType(const std::string& cgiHeaders);
+		void parseCgiSetCookie(const std::string& cgiHeaders);
+		void parseCgiLocation(const std::string& cgiHeaders);
+		void parseCgiStatus(const std::string& cgiHeaders);
 
 		static std::map<std::string, std::string> initMimeTypes();
 		static const std::map<std::string, std::string> _mimeTypes;
@@ -77,6 +81,11 @@ class HttpResponse {
 		std::string		_contentType;
 		unsigned long	_contentLength;
 		std::string		_connectionType;
+
+		//CGI headers
+		std::vector<std::string>	_setCookies;
+		std::string					_location;
+		int							_cgiStatus;
 
 		//body
 		std::string		_body;

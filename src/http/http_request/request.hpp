@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/27 16:18:24 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 15:22:32 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,11 +49,11 @@ class HttpRequest {
 
 		// Headers getters
 		const std::map<std::string, std::string>& getHeaders() const { return _headers; }
-		const std::string& getContentType() const;
-		const std::string& getConnectionType() const;
+		std::string getContentType() const;
+		std::string getConnectionType() const;
 		unsigned long getContentLength() const;
-		const std::string& getTransferEncoding() const;
-		const std::string& getHost() const;
+		std::string getTransferEncoding() const;
+		std::string getHost() const;
 		std::vector<std::string> getCgiHeadersString() const;
 
 		// Body getters
@@ -96,7 +96,7 @@ class HttpRequest {
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseHeaders();
-		const std::string& getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
+		std::string getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
 };
 
 #endif

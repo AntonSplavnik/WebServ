@@ -5,7 +5,8 @@ HttpResponse::HttpResponse()
 	:_statusCode(0),
 	 _serverName("WebServ"),
 	 _serverVersion(1.0f),
-	 _contentLength(0){}
+	 _contentLength(0),
+	 _cgiStatus(0){}
 
 HttpResponse::~HttpResponse(){}
 
@@ -76,7 +77,7 @@ std::string HttpResponse::extractFileExtension(std::string filePath) {
 	return extension;
 }
 
-std::string HttpResponse::getContentType() {
+std::string HttpResponse::determineContentType() {
 	std::string extension = extractFileExtension(_filePath);
 
 	std::map<std::string, std::string>::const_iterator it = _mimeTypes.find(extension);
@@ -85,14 +86,14 @@ std::string HttpResponse::getContentType() {
 	}
 	return "application/octet-stream";
 }
-std::string HttpResponse::getReasonPhrase() {
+std::string HttpResponse::mapStatusToReason() {
 
 	switch (_statusCode) {
 		// Success
 		case 200: return "OK";
+		case 204: return "No Content";
 		case 302: return "Found";
 		case 303: return "See Other";
-		case 204: return "No Content";
 		// Redirection
 		case 301: return "Moved Permanently";
 		case 304: return "Not Modified";
@@ -112,7 +113,7 @@ std::string HttpResponse::getReasonPhrase() {
 		default: return "Unknown";
 	}
 }
-std::string HttpResponse::getTimeNow() {
+std::string HttpResponse::generateCurrentTime() {
 
 	time_t now = time(0);
 	struct tm* gmtTime = gmtime(&now);
@@ -124,8 +125,8 @@ std::string HttpResponse::getTimeNow() {
 
 void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput) {
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase();
-	_date = getTimeNow();
+	_reasonPhrase = mapStatusToReason();
+	_date = generateCurrentTime();
 
 	if (_statusCode >= 400) {
 		generateErrorResponse();
@@ -138,13 +139,22 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 	_contentLength = _body.length();
 
 	parseCgiContentType(cgiHeaders);
+	parseCgiSetCookie(cgiHeaders);
+	parseCgiLocation(cgiHeaders);
+	parseCgiStatus(cgiHeaders);
+
+	// Override status code if CGI script
+	if (_cgiStatus > 0) {
+		_statusCode = _cgiStatus;
+		_reasonPhrase = mapStatusToReason();
+	}
 
 	buildHttpResponse();
 }
 void HttpResponse::generateResponse(int statusCode) {
 	_statusCode = statusCode;
-	_reasonPhrase = getReasonPhrase();
-	_date = getTimeNow();
+	_reasonPhrase = mapStatusToReason();
+	_date = generateCurrentTime();
 
 	if (_statusCode >= 400) {
 		generateErrorResponse();
@@ -152,7 +162,7 @@ void HttpResponse::generateResponse(int statusCode) {
 	}
 
 	if (_requestType == GET || _requestType == CGI_GET) {
-		_contentType = getContentType(); // path needed - setup externally via setPath()
+		_contentType = determineContentType(); // path needed - setup externally via setPath()
 		_contentLength = _body.length();
 	} else if (_requestType == DELETE || _requestType == POST || _requestType == CGI_POST) {
 		_body = "";
@@ -189,8 +199,19 @@ void HttpResponse::buildHttpResponse() {
 	oss << "Date: " << _date << "\r\n"
 		<< "Server: " << _serverName << _serverVersion << "\r\n"
 		<< "Content-Type: " << _contentType << "\r\n"
-		<< "Content-Length: " << _contentLength << "\r\n"
-		<< "Connection: " << _connectionType << "\r\n\r\n";
+		<< "Content-Length: " << _contentLength << "\r\n";
+
+	// Add Location header if present (for redirects)
+	if (!_location.empty()) {
+		oss << "Location: " << _location << "\r\n";
+	}
+
+	// Add Set-Cookie headers if present
+	for (size_t i = 0; i < _setCookies.size(); i++) {
+		oss << "Set-Cookie: " << _setCookies[i] << "\r\n";
+	}
+
+	oss << "Connection: " << _connectionType << "\r\n\r\n";
 
 	if (!_body.empty()) {
 		oss << _body;
@@ -262,6 +283,110 @@ void HttpResponse::parseCgiContentType(const std::string& cgiHeaders) {
 				if (start != std::string::npos) {
 					_contentType = _contentType.substr(start);
 				}
+			}
+			break;
+		}
+
+		pos = nextPos + 1;
+	}
+}
+void HttpResponse::parseCgiSetCookie(const std::string& cgiHeaders) {
+	if (cgiHeaders.empty()) {
+		return;
+	}
+
+	std::string line;
+	size_t pos = 0;
+	size_t nextPos = 0;
+
+	while ((nextPos = cgiHeaders.find('\n', pos)) != std::string::npos) {
+		line = cgiHeaders.substr(pos, nextPos - pos);
+
+		// Remove \r if present
+		if (!line.empty() && line[line.length() - 1] == '\r') {
+			line = line.substr(0, line.length() - 1);
+		}
+
+		// Check for Set-Cookie header (case-insensitive)
+		if (line.find("Set-Cookie:") == 0 || line.find("Set-cookie:") == 0) {
+			size_t colonPos = line.find(':');
+			if (colonPos != std::string::npos) {
+				std::string cookie = line.substr(colonPos + 1);
+				// Trim leading whitespace
+				size_t start = cookie.find_first_not_of(" \t");
+				if (start != std::string::npos) {
+					cookie = cookie.substr(start);
+				}
+				_setCookies.push_back(cookie);
+			}
+		}
+
+		pos = nextPos + 1;
+	}
+}
+void HttpResponse::parseCgiLocation(const std::string& cgiHeaders) {
+	if (cgiHeaders.empty()) {
+		return;
+	}
+
+	std::string line;
+	size_t pos = 0;
+	size_t nextPos = 0;
+
+	while ((nextPos = cgiHeaders.find('\n', pos)) != std::string::npos) {
+		line = cgiHeaders.substr(pos, nextPos - pos);
+
+		// Remove \r if present
+		if (!line.empty() && line[line.length() - 1] == '\r') {
+			line = line.substr(0, line.length() - 1);
+		}
+
+		// Check for Location header (case-insensitive)
+		if (line.find("Location:") == 0 || line.find("location:") == 0) {
+			size_t colonPos = line.find(':');
+			if (colonPos != std::string::npos) {
+				_location = line.substr(colonPos + 1);
+				// Trim leading whitespace
+				size_t start = _location.find_first_not_of(" \t");
+				if (start != std::string::npos) {
+					_location = _location.substr(start);
+				}
+			}
+			break;
+		}
+
+		pos = nextPos + 1;
+	}
+}
+void HttpResponse::parseCgiStatus(const std::string& cgiHeaders) {
+	if (cgiHeaders.empty()) {
+		return;
+	}
+
+	std::string line;
+	size_t pos = 0;
+	size_t nextPos = 0;
+
+	while ((nextPos = cgiHeaders.find('\n', pos)) != std::string::npos) {
+		line = cgiHeaders.substr(pos, nextPos - pos);
+
+		// Remove \r if present
+		if (!line.empty() && line[line.length() - 1] == '\r') {
+			line = line.substr(0, line.length() - 1);
+		}
+
+		// Check for Status header (case-insensitive)
+		if (line.find("Status:") == 0 || line.find("status:") == 0) {
+			size_t colonPos = line.find(':');
+			if (colonPos != std::string::npos) {
+				std::string statusStr = line.substr(colonPos + 1);
+				// Trim leading whitespace
+				size_t start = statusStr.find_first_not_of(" \t");
+				if (start != std::string::npos) {
+					statusStr = statusStr.substr(start);
+				}
+				// Extract status code (first 3 digits)
+				_cgiStatus = std::atoi(statusStr.c_str());
 			}
 			break;
 		}

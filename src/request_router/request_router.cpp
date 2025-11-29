@@ -185,17 +185,30 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 	if (realpath(mappedPath.c_str(), resolvedPath) == NULL) {
 
 		// File doesn't exist - for POST this is expected
-		// Validate the parent directory instead
-		std::string parentDir = mappedPath.substr(0, mappedPath.find_last_of('/'));
-		if (parentDir.empty()) parentDir = ".";
+		// Walk up directory tree to find existing parent
+		std::string checkPath = mappedPath;
+		std::string remainder = "";
 
-		if (realpath(parentDir.c_str(), resolvedPath) == NULL) {
-			std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
-			return false;
+		while (realpath(checkPath.c_str(), resolvedPath) == NULL) {
+			size_t lastSlash = checkPath.find_last_of('/');
+			if (lastSlash == std::string::npos) {
+				std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+				return false;
+			}
+
+			// Save the part we're removing
+			remainder = checkPath.substr(lastSlash) + remainder;
+			checkPath = checkPath.substr(0, lastSlash);
+
+			// Avoid infinite loop if we reach empty path
+			if (checkPath.empty()) {
+				std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+				return false;
+			}
 		}
-		// Add back the filename for comparison
-		std::string filename = mappedPath.substr(mappedPath.find_last_of('/'));
-		std::string fullPath = std::string(resolvedPath) + filename;
+
+		// Reconstruct full path with the non-existing parts
+		std::string fullPath = std::string(resolvedPath) + remainder;
 		strncpy(resolvedPath, fullPath.c_str(), PATH_MAX - 1);
 		resolvedPath[PATH_MAX - 1] = '\0';
 	}

@@ -8,6 +8,9 @@ Connection::Connection()
 	_ip(""),
 	_connectionPort(0),
 	_serverPort(0),
+	_currentChunkSize(0),
+	_readingChunkSize(true),
+	_finalChunkReceived(false),
 	_fileStream(NULL),
 	_bytesWritten(0),
 	_multipart(),
@@ -25,6 +28,9 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_ip(ip),
 	_connectionPort(connectionPort),
 	_serverPort(serverPort),
+	_currentChunkSize(0),
+	_readingChunkSize(true),
+	_finalChunkReceived(false),
 	_fileStream(NULL),
 	_bytesWritten(0),
 	_multipart(),
@@ -45,6 +51,10 @@ Connection::Connection(const Connection& other)
 	_requestBuffer(other._requestBuffer),
 	_request(other._request),
 	_routingResult(other._routingResult),
+	_chunkBuffer(other._chunkBuffer),
+	_currentChunkSize(other._currentChunkSize),
+	_readingChunkSize(other._readingChunkSize),
+	_finalChunkReceived(other._finalChunkReceived),
 	_fileStream(NULL),
 	_uploadPath(other._uploadPath),
 	_fileName(other._fileName),
@@ -79,6 +89,10 @@ Connection& Connection::operator=(const Connection& other) {
 		_requestBuffer = other._requestBuffer;
 		_request = other._request;
 		_routingResult = other._routingResult;
+		_chunkBuffer = other._chunkBuffer;
+		_currentChunkSize = other._currentChunkSize;
+		_readingChunkSize = other._readingChunkSize;
+		_finalChunkReceived = other._finalChunkReceived;
 		_uploadPath = other._uploadPath;
 		_fileName = other._fileName;
 		_bytesWritten = other._bytesWritten;
@@ -211,7 +225,7 @@ bool Connection::writeOnDisc() {
 
 	if(_multipart.empty()) {
 		std::string filePath = _uploadPath + _fileName;
-		if (processWriteChunck(_request.getBody(), filePath)) {
+		if (processWrite(_request.getBody(), filePath)) {
 			if (static_cast<size_t>(_bytesWritten) >= _request.getBody().length()) {
 				bool success = _fileStream && _fileStream->good();
 				_fileStream->close();
@@ -240,7 +254,7 @@ bool Connection::writeOnDisc() {
 		}
 
 		std::string filePath = _uploadPath + part.fileName;
-		if (processWriteChunck(part.content, filePath)) {
+		if (processWrite(part.content, filePath)) {
 			if (static_cast<size_t>(_bytesWritten) >= part.content.length()) {
 				_fileStream->close();
 				delete _fileStream;
@@ -267,7 +281,7 @@ void Connection::appendFormFieldToLog(const std::string& name, const std::string
 		file.close();
 	}
 }
-bool Connection::processWriteChunck(const std::string& data, const std::string& filePath) {
+bool Connection::processWrite(const std::string& data, const std::string& filePath) {
 
 	if (!_fileStream || !_fileStream->is_open()) {
 		if (!_fileStream)
@@ -370,6 +384,8 @@ bool Connection::prepareResponse() {
 		response.setConnectionType("close");
 		_shouldClose = true;
 	}
+	// else response.setConnectionType(_request.getConnectionType()); ??
+
 
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
@@ -397,6 +413,7 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 		response.setConnectionType("close");
 		_shouldClose = true;
 	}
+	// else response.setConnectionType(_request.getConnectionType()); ??
 
 	response.generateResponse(_statusCode, cgiOutput);
 	_responseData = response.getResponse();
@@ -465,6 +482,12 @@ void Connection::resetForNextRequest() {
 	_request = HttpRequest();
 	_requestBuffer.clear();
 	_routingResult = RoutingResult();
+
+	// Chunked encoding
+	_chunkBuffer.clear();
+	_currentChunkSize = 0;
+	_readingChunkSize = true;
+	_finalChunkReceived = false;
 
 	// File upload
 	if (_fileStream) {

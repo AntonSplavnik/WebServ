@@ -16,16 +16,18 @@ void RequestHandler::handleGET(Connection& connection) {
 	std::stringstream buffer;
 	buffer << file.rdbuf();
 	std::string content = buffer.str();
-	file.close();
 
-	// Check read errors
-	if (content.empty() && errno) {
+	// Check read errors (not EOF, which is normal)
+	if (file.fail() && !file.eof()) {
+		file.close();
 		connection.setStatusCode(500);
 		connection.prepareResponse();
 		return;
 	}
 
-	// Success
+	file.close();
+
+	// Success (even if content is empty - valid for 0-byte files)
 	connection.setStatusCode(200);
 	connection.setBodyContent(content);
 	connection.prepareResponse();

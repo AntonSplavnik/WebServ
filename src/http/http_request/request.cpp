@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/28 20:33:53 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 15:21:39 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -198,18 +198,25 @@ void HttpRequest::parseBody() {
 	}
 }
 
-const std::string& HttpRequest::getHeaderValue(const std::string& key, const std::string& defaultValue) const {
+std::string HttpRequest::getHeaderValue(const std::string& key, const std::string& defaultValue) const {
 	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
 	if (it != _headers.end())
 		return it->second;
 	else
 		return defaultValue;
 }
-const std::string& HttpRequest::getContentType() const {
+std::string HttpRequest::getContentType() const {
 	return getHeaderValue("content-type");
 }
-const std::string& HttpRequest::getConnectionType() const {
-	return getHeaderValue("connection", "close");
+std::string HttpRequest::getConnectionType() const {
+	// If client used HTTP/1.1 → default keep-alive
+	if (_version == "HTTP/1.1") {
+		return getHeaderValue("connection", "keep-alive");
+	}
+	// If client used HTTP/1.0 → default close
+	else {
+		return getHeaderValue("connection", "close");
+	}
 }
 unsigned long HttpRequest::getContentLength() const {
 	std::string value = getHeaderValue("content-length", "0");
@@ -217,10 +224,10 @@ unsigned long HttpRequest::getContentLength() const {
 		return 0;
 	return std::strtoul(value.c_str(), NULL, 10);
 }
-const std::string& HttpRequest::getTransferEncoding() const {
+std::string HttpRequest::getTransferEncoding() const {
 	return getHeaderValue("transfer-encoding");
 }
-const std::string& HttpRequest::getHost() const {
+std::string HttpRequest::getHost() const {
 	return getHeaderValue("host");
 }
 std::vector<std::string> HttpRequest::getCgiHeadersString() const {

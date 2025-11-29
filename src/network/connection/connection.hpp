@@ -137,7 +137,7 @@ class Connection {
 
 		// Private Helper Methods
 		void updateClientActivity();
-		bool processWriteChunck(const std::string& data, const std::string& filePath);
+		bool processWrite(const std::string& data, const std::string& filePath);
 		void appendFormFieldToLog(const std::string& name, const std::string& value);
 		void setupErrorPage(HttpResponse& response);
 		void resetForNextRequest();
