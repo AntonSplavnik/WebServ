@@ -44,11 +44,13 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 		std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
 		handleCGIerror(*connection, cgiIt->second, fd);
 	} else if (revents & POLLHUP) {
-		std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+		std::cerr << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
 		if (revents & POLLIN) {
 			handleCGIread(*connection, cgiIt->second);
 			return;
 		}
+		connection->setStatusCode(500);
+		connection->prepareResponse();
 		terminateCGI(cgiIt->second);
 	} else if (revents & POLLOUT) {
 		std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
