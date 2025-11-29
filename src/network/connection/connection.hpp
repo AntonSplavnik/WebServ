@@ -55,7 +55,10 @@ class Connection {
 		const std::string getRequestBuffer() const { return _requestBuffer; }
 		const HttpRequest& getRequest() const { return _request; }
 		void setRequest(HttpRequest& request) { _request = request; }
-		void moveBodyToRequest() { _request.addBody(_requestBuffer); }
+		void moveBodyToRequest() {
+			_request.addBody(_requestBuffer);
+			_requestBuffer.clear();
+		}
 
 		// Routing Accessors
 		const RoutingResult& getRoutingResult() const { return _routingResult; }

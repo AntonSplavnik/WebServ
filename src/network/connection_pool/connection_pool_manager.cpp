@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/28 13:48:05 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 22:25:39 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,6 +96,10 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				connection.prepareResponse();
 				return;
 			}
+			
+			int keepAliveTimeout = result.serverConfig->keepalive_timeout;
+			int keepaliveMaxRequests = result.serverConfig->keepalive_max_requests;
+			connection.updateKeepAliveSettings(keepAliveTimeout, keepaliveMaxRequests);
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;

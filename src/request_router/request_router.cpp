@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/29 21:54:34 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/29 22:35:10 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@ static RoutingResult prepErrorResult(RoutingResult& result, bool success, int er
 	result.errorCode = errorCode;
 	return result;
 }
-
 
 RoutingResult RequestRouter::route(Connection& connection) {
 
@@ -64,7 +63,7 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	return result;
 }
 
-ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPort) {c
+ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPort) {
 
 	// Filter servers by port
 	std::vector<ConfigData*> matchedConfigs;
