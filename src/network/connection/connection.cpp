@@ -17,6 +17,8 @@ Connection::Connection()
 	_currentPartIndex(0),
 	_bytesSent(0),
 	_statusCode(0),
+	_redirectUrl(""),
+	_indexPath(""),
 	_lastActivity(time(NULL)),
 	_keepAliveTimeout(15),
 	_maxRequests(100),
@@ -37,6 +39,8 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_currentPartIndex(0),
 	_bytesSent(0),
 	_statusCode(0),
+	_redirectUrl(""),
+	_indexPath(""),
 	_lastActivity(time(NULL)),
 	_keepAliveTimeout(15),
 	_maxRequests(100),
@@ -65,7 +69,8 @@ Connection::Connection(const Connection& other)
 	_responseData(other._responseData),
 	_bytesSent(other._bytesSent),
 	_statusCode(other._statusCode),
-	_locationHeader(other._locationHeader),
+	_redirectUrl(other._redirectUrl),
+	_indexPath(other._indexPath),
 	_lastActivity(other._lastActivity),
 	_keepAliveTimeout(other._keepAliveTimeout),
 	_maxRequests(other._maxRequests),
@@ -103,7 +108,8 @@ Connection& Connection::operator=(const Connection& other) {
 		_responseData = other._responseData;
 		_bytesSent = other._bytesSent;
 		_statusCode = other._statusCode;
-		_locationHeader = other._locationHeader;
+		_redirectUrl = other._redirectUrl;
+		_indexPath = other._indexPath;
 		_lastActivity = other._lastActivity;
 		_keepAliveTimeout = other._keepAliveTimeout;
 		_maxRequests = other._maxRequests;
@@ -364,20 +370,24 @@ bool Connection::prepareResponse() {
 	response.setConnectionType(_request.getConnectionType());
 	response.setProtocolVersion(_request.getProtocolVersion());
 
-	// Set body for GET request
+	// Set body for GET request and index
 	if (!_bodyContent.empty()) {
 		response.setBody(_bodyContent);
 		_bodyContent.clear();
 	}
 
-	// Set location header for redirects
-	if (!_locationHeader.empty()) {
-		response.setLocation(_locationHeader);
-		_locationHeader.clear();
+	// Set redirect URL for redirect responses
+	if (!_redirectUrl.empty()) {
+		response.setRedirectUrl(_redirectUrl);
+		_redirectUrl.clear();
 	}
 
 	// Set path for MIME type detection (for GET)
-	if (!_routingResult.mappedPath.empty()) {
+	if (!_indexPath.empty()) {
+		response.setPath(_indexPath);
+		_indexPath.clear();
+	}
+	else if (!_routingResult.mappedPath.empty()) {
 		response.setPath(_routingResult.mappedPath);
 	}
 
@@ -513,7 +523,8 @@ void Connection::resetForNextRequest() {
 	// Response data
 	_bodyContent.clear();
 	_responseData.clear();
-	_locationHeader.clear();
+	_redirectUrl.clear();
+	_indexPath.clear();
 	_bytesSent = 0;
 	_statusCode = 0;
 

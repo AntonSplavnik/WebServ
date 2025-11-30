@@ -141,6 +141,11 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: root");
     if (config.index.empty() && !config.autoindex)
         throw ConfigParseException("Missing required config: index (and autoindex is off)");
+    // Validate index file exists if specified and autoindex is off
+    if (!config.index.empty() && !config.autoindex) {
+        if (!isValidFile(config.index, R_OK))
+            throw ConfigParseException("Invalid or inaccessible index file: " + config.index);
+    }
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
     if (config.access_log.empty())
@@ -202,6 +207,8 @@ void Config::validateConfig(ConfigData& config) {
           loc.cgi_ext = config.cgi_ext;
         if (loc.cgi_path.empty())
           loc.cgi_path = config.cgi_path;
+        // NOTE: autoindex does NOT inherit from server (nginx behavior)
+        // Each location defaults to 'off' unless explicitly set to 'on'
         // Validations
 		if (loc.path.empty() || loc.path[0] != '/')
     		throw ConfigParseException("Invalid location config: path must start with '/': " + loc.path);
@@ -211,6 +218,11 @@ void Config::validateConfig(ConfigData& config) {
     		throw ConfigParseException("Inaccessible root path for location " + loc.path + ": " + loc.root);
         if (loc.index.empty() && loc.autoindex == false)
             throw ConfigParseException("Missing index and autoindex is off in location: " + loc.path);
+        // Validate index file exists if specified and autoindex is off
+        if (!loc.index.empty() && !loc.autoindex) {
+            if (!isValidFile(loc.index, R_OK))
+                throw ConfigParseException("Invalid or inaccessible index file in location " + loc.path + ": " + loc.index);
+        }
         if (loc.allow_methods.empty())
             throw ConfigParseException("Missing required location config: allow_methods");
         if (loc.client_max_body_size <= 0)
@@ -244,8 +256,6 @@ void Config::validateConfig(ConfigData& config) {
                 throw ConfigParseException("Invalid or inaccessible error_page file for status " + oss.str() + " in location " + loc.path + ": " + fullPath);
             }
         }
-        if (!loc.autoindex)
-          loc.autoindex = config.autoindex;
 
     }
 }

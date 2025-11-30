@@ -40,7 +40,7 @@ class HttpResponse {
 		void setCustomErrorPage(const std::string& errorPagePath);
 		void setConnectionType(const std::string& connectionType);
 		void setMethod(RequestType type);
-		void setLocation(const std::string& location);
+		void setRedirectUrl(const std::string& url);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
 		const std::string& getProtocolVersion() const;
@@ -85,7 +85,7 @@ class HttpResponse {
 
 		//CGI headers
 		std::vector<std::string>	_setCookies;
-		std::string					_location;
+		std::string					_redirectUrl;
 		int							_cgiStatus;
 
 		//body

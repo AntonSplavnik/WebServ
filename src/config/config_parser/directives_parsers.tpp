@@ -26,8 +26,6 @@ template<typename ConfigT>
 void Config::parseIndex(ConfigT& config, const std::vector<std::string>& tokens) {
     if (!config.index.empty())
         throw ConfigParseException("Duplicate index directive");
-    if (!isValidFile(tokens[0], R_OK))
-        throw ConfigParseException("Invalid or inaccessible index file: " + tokens[0]);
     config.index = tokens[0];
 }
 

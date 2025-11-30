@@ -69,7 +69,8 @@ class Connection {
 		void setStatusCode(int statusCode) { _statusCode = statusCode; }
 		void setResponseData(const std::string& responseData) { _responseData = responseData; }
 		void setBodyContent(const std::string& content) { _bodyContent = content; }
-		void setLocationHeader(const std::string& location) { _locationHeader = location; }
+		void setRedirectUrl(const std::string& url) { _redirectUrl = url; }
+		void setIndexPath(const std::string& indPath) { _indexPath = indPath; }
 
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
@@ -127,18 +128,19 @@ class Connection {
 		int				_currentPartIndex;		// index for tracking position when writing on sick in chunks
 
 		// Response Data
-		std::string		_bodyContent;	// body from GET for response
-		std::string		_responseData;	// final response
-		size_t			_bytesSent;		// data tracking for sending response should be set internally 32KB
-		int				_statusCode;	// code to determine if the request was sucessful or not
-		std::string		_locationHeader;	// location header for redirects
+		std::string		_bodyContent;		// body from GET for response
+		std::string		_responseData;		// final response
+		size_t			_bytesSent;			// data tracking for sending response should be set internally 32KB
+		int				_statusCode;		// code to determine if the request was sucessful or not
+		std::string		_redirectUrl;		// URL for redirect responses (Location header)
+		std::string		_indexPath;			// Index path for MIME type detection in response.
 
 		// Connection Lifecycle
 		time_t			_lastActivity;
 		int				_keepAliveTimeout;
-		int				_maxRequests;	// max number of requests for a client
+		int				_maxRequests;		// max number of requests for a client
 		int				_requestCount;
-		bool			_shouldClose;	// only setup in case of error code
+		bool			_shouldClose;		// only setup in case of error code
 
 		// Private Helper Methods
 		void updateClientActivity();

@@ -202,8 +202,8 @@ void HttpResponse::buildHttpResponse() {
 		<< "Content-Length: " << _contentLength << "\r\n";
 
 	// Add Location header if present (for redirects)
-	if (!_location.empty()) {
-		oss << "Location: " << _location << "\r\n";
+	if (!_redirectUrl.empty()) {
+		oss << "Location: " << _redirectUrl << "\r\n";
 	}
 
 	// Add Set-Cookie headers if present
@@ -230,7 +230,7 @@ void HttpResponse::setStatusCode(int statusCode) {_statusCode = statusCode;}
 void HttpResponse::setPath(const std::string& path) {_filePath = path;}
 void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
 void HttpResponse::setMethod(RequestType type) {_requestType = type;}
-void HttpResponse::setLocation(const std::string& location) {_location = location;}
+void HttpResponse::setRedirectUrl(const std::string& url) {_redirectUrl = url;}
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}
@@ -346,11 +346,11 @@ void HttpResponse::parseCgiLocation(const std::string& cgiHeaders) {
 		if (line.find("Location:") == 0 || line.find("location:") == 0) {
 			size_t colonPos = line.find(':');
 			if (colonPos != std::string::npos) {
-				_location = line.substr(colonPos + 1);
+				_redirectUrl = line.substr(colonPos + 1);
 				// Trim leading whitespace
-				size_t start = _location.find_first_not_of(" \t");
+				size_t start = _redirectUrl.find_first_not_of(" \t");
 				if (start != std::string::npos) {
-					_location = _location.substr(start);
+					_redirectUrl = _redirectUrl.substr(start);
 				}
 			}
 			break;
