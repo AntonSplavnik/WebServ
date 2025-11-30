@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/28 17:24:50 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/30 17:26:42 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include <poll.h>
 #include <algorithm>
 #include <signal.h>
+#include <sys/resource.h> 
 
 #define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 

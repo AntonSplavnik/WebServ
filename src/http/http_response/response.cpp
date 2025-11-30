@@ -184,7 +184,9 @@ void HttpResponse::generateErrorResponse() {
 		}
 	}
 	if (_body.empty()) {
-		_body = "<html><body><h1>Error " + std::to_string(_statusCode) + "</h1></body></html>";
+		std::stringstream oss;
+		oss << "<html><body><h1>Error " << _statusCode << "</h1></body></html>";
+		_body = oss.str();
 	}
 	_contentType = "text/html";
 	_contentLength = _body.length();

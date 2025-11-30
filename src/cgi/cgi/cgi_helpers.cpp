@@ -1,5 +1,6 @@
 #include "cgi.hpp"
-
+#include <cerrno>
+#include <cstring>
 
 bool Cgi::chdirToScriptDir(const std::string& mappedPath) {
 	std::string::size_type slash = mappedPath.find_last_of('/');

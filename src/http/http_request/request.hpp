@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/29 15:22:32 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/30 15:56:15 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cstdlib>
+#include <vector>
 
 class HttpRequest {
 

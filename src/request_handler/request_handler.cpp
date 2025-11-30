@@ -10,7 +10,6 @@ void RequestHandler::handleGET(Connection& connection) {
 		serveFile(connection, path);
 	}
 }
-
 void RequestHandler::handleDirectory(Connection& connection, const std::string& dirPath) {
 	std::string path = dirPath;
 	const RoutingResult& result = connection.getRoutingResult();
@@ -88,6 +87,7 @@ void RequestHandler::serveFile(Connection& connection, const std::string& filePa
 	connection.setBodyContent(content);
 	connection.prepareResponse();
 }
+
 void RequestHandler::handleDELETE(Connection& connection) {
 
 	const std::string& path = connection.getRoutingResult().mappedPath;
@@ -107,6 +107,7 @@ void RequestHandler::handleDELETE(Connection& connection) {
 	}
 	connection.prepareResponse();
 }
+
 void RequestHandler::handlePOST(Connection& connection) {
 
 	const std::string& path = connection.getRoutingResult().mappedPath;
@@ -144,6 +145,7 @@ void RequestHandler::handlePOST(Connection& connection) {
 	}
 
 }
+
 void RequestHandler::handleRedirect(Connection& connection) {
 
 	const LocationConfig* location = connection.getRoutingResult().location;

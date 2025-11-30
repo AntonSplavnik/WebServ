@@ -6,12 +6,13 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/29 22:35:10 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/30 17:27:32 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request_router.hpp"
 #include "connection.hpp"
+#include <climits>
 
 static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
 	result.success = success;
