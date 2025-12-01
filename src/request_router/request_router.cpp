@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/30 17:27:32 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/30 21:21:34 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,10 +31,9 @@ RoutingResult RequestRouter::route(Connection& connection) {
 
 	// Find matching location
 	const LocationConfig* location = serverConfig.findMatchingLocation(req.getPath());
-	if (!location) {
+	result.location = location;
+	if (!location){
 		return prepErrorResult(result, false, 404);
-	} else {
-		result.location = location;
 	}
 
 	// Validate method

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:44:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/26 11:19:07 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/11/30 20:14:55 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,8 @@ struct RoutingResult {
 	std::string mappedPath;
 	RequestType type;
 	std::string cgiExtension;
+	
+	RoutingResult() : success(false), errorCode(0), serverConfig(NULL), location(NULL) {}
 };
 
 class RequestRouter {

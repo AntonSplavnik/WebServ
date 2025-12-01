@@ -55,9 +55,7 @@ ConfigData::ConfigData()
       error_log(""),
       locations() {}
 
-std::vector<ConfigData> Config::getServers() const {
-    return _servers;
-}
+std::vector<ConfigData> Config::getServers() const { return _servers; }
 
 const LocationConfig* ConfigData::findMatchingLocation(const std::string& requestPath) const {
 
@@ -111,30 +109,32 @@ std::string ConfigData::getErrorPage(int statusCode, const LocationConfig* locat
 		if (it != location->error_pages.end()) {
 			return root + "/" + it->second;
 		}
+
 	}
 
 	// Fall back to server-level error page
 	std::map<int, std::string>::const_iterator it = error_pages.find(statusCode);
 	if (it != error_pages.end()) {
 		return root + "/" + it->second;
+
 	}
 
 	return "";  // No custom error page configured
 }
 
 
-// }
 // Validates that the given key is in the list of known directives
 void Config::validateDirective(const char* const* directives, size_t count, const std::string& key) {
     if (std::find(directives, directives + count, key) == directives + count)
         throw ConfigParseException("Unknown directive: " + key);
 }
 
-// validates both minimum required directives and also applies default values,
-// performs fallbacks, and checks for consistency and correctness of various
-// configuration fields (including location-specific settings, CGI, uploads,
-// and redirects). It ensures not only presence but also validity and proper
-// relationships between directives.
+/*
+validates both minimum required directives and also applies default values,
+performs fallbacks, and checks for consistency and correctness of various
+configuration fields (including location-specific settings, CGI, uploads,
+and redirects). It ensures not only presence but also validity and proper
+relationships between directives. */
 void Config::validateConfig(ConfigData& config) {
     // --- Top-level required fields ---
     if (config.root.empty())
