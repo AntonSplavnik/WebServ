@@ -137,13 +137,12 @@ bool Connection::readHeaders() {
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
-			return false;
+			std::cout << "[DEBUG] Client FD " << _fd << " disconnected before headers received." << std::endl;
 		} else { // bytes < 0
-
 			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
-			return false;
 		}
+		_shouldClose = true;
+		return false;
 	}
 	else {
 
@@ -184,10 +183,13 @@ bool Connection::readBody() {
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected" << std::endl;
+			std::cout << "[DEBUG] Client FD " << _fd << " disconnected during body read - incomplete body" << std::endl;
+			setStatusCode(400);
+			prepareResponse();
 			return false;
 		} else { // bytes < 0
 			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			_shouldClose = true;
 			return false;
 		}
 	}

@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/29 22:25:39 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/01 21:49:05 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,16 @@
 #include "request_router.hpp"
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
+
+/*
+ Linux:
+  - Graceful FIN: POLLHUP | POLLIN together
+  - May have buffered data before FIN
+
+ BSD/macOS:
+  - Graceful FIN: Often just POLLIN, no POLLHUP
+  - recv() == 0 signals FIN
+*/
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
@@ -37,11 +47,10 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 	- Normal TCP connection close (graceful shutdown with FIN)
 	- Remote peer called close() or shutdown(SHUT_WR)
 	- This is the common case for normal disconnects
-
 	*/
 	else if (revents & POLLHUP) {
 
-		if (revents & POLLIN) {
+		if (revents & POLLIN) {	// connection closed, but there's data in the buffer
 			if (connection.getState() == READING_HEADERS) {	// client send last request and closed send, but still waiting for response.
 				connection.setShouldClose(true);
 				if (!connection.readHeaders()) {	// recv() returned 0
@@ -50,7 +59,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				}
 			} else if (connection.getState() == READING_BODY) {
 				connection.setShouldClose(true);
-				if (!connection.readBody()) {
+				if (!connection.readBody()) {	// recv() returned 0
 					disconnectConnection(fd);
 					return;
 				}
@@ -71,7 +80,12 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 		if (state == READING_HEADERS) {
 
 			// Read until headers complete
-			if (!connection.readHeaders()) return;
+			if (!connection.readHeaders()) {
+				if (connection.getShouldClose()) {
+					disconnectConnection(fd);
+				}
+				return;
+			}
 
 			// Parse headers after received
 			HttpRequest request;
@@ -96,7 +110,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				connection.prepareResponse();
 				return;
 			}
-			
+
 			int keepAliveTimeout = result.serverConfig->keepalive_timeout;
 			int keepaliveMaxRequests = result.serverConfig->keepalive_max_requests;
 			connection.updateKeepAliveSettings(keepAliveTimeout, keepaliveMaxRequests);
