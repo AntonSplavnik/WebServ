@@ -50,6 +50,7 @@ void EventLoop::rebuildPollFds() {
 			case EXECUTING_REQUEST:
 			case WAITING_CGI:
 			case WRITING_DISK:
+			case READING_DISK:
 				continue;
 			default:
 				continue;
@@ -133,6 +134,7 @@ void EventLoop::run() {
 		checkConnectionsTimeouts();
 		checkCgiTimeouts();
 		processDiskWrites();
+		processDiskReads();
 		reapZombieProcesses();
 	}
 }
@@ -197,6 +199,17 @@ void EventLoop::processDiskWrites() {
 	for (; it != conPool.end(); ++it) {
 		if (it->second.getState() == WRITING_DISK) {
 			it->second.writeOnDisc();
+		}
+	}
+}
+
+void EventLoop::processDiskReads() {
+
+	std::map<int, Connection>& conPool = _connectionPoolManager.getConnectionPool();
+	std::map<int, Connection>::iterator it = conPool.begin();
+	for (; it != conPool.end(); ++it) {
+		if (it->second.getState() == READING_DISK) {
+			it->second.readFromDisc();
 		}
 	}
 }

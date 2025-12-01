@@ -50,6 +50,7 @@ class EventLoop {
 		void checkCgiTimeouts();
 
 		void processDiskWrites();
+		void processDiskReads();
 
 		void reapZombieProcesses();
 

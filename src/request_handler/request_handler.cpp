@@ -66,26 +66,11 @@ void RequestHandler::serveFile(Connection& connection, const std::string& filePa
 		connection.prepareResponse();
 		return;
 	}
+	file.close(); // Just checking if file exists and is readable
 
-	// Read content
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string content = buffer.str();
-
-	// Check read errors (not EOF, which is normal)
-	if (file.fail() && !file.eof()) {
-		file.close();
-		connection.setStatusCode(500);
-		connection.prepareResponse();
-		return;
-	}
-
-	file.close();
-
-	// Success (even if content is empty - valid for 0-byte files)
-	connection.setStatusCode(200);
-	connection.setBodyContent(content);
-	connection.prepareResponse();
+	// Set up non-blocking disk read
+	connection.setReadFilePath(filePath);
+	connection.setState(READING_DISK);
 }
 
 void RequestHandler::handleDELETE(Connection& connection) {

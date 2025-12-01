@@ -15,6 +15,9 @@ Connection::Connection()
 	_bytesWritten(0),
 	_multipart(),
 	_currentPartIndex(0),
+	_inputFileStream(NULL),
+	_readFilePath(""),
+	_bytesRead(0),
 	_bytesSent(0),
 	_statusCode(0),
 	_redirectUrl(""),
@@ -37,6 +40,9 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_bytesWritten(0),
 	_multipart(),
 	_currentPartIndex(0),
+	_inputFileStream(NULL),
+	_readFilePath(""),
+	_bytesRead(0),
 	_bytesSent(0),
 	_statusCode(0),
 	_redirectUrl(""),
@@ -65,6 +71,9 @@ Connection::Connection(const Connection& other)
 	_bytesWritten(other._bytesWritten),
 	_multipart(other._multipart),
 	_currentPartIndex(other._currentPartIndex),
+	_inputFileStream(NULL),
+	_readFilePath(other._readFilePath),
+	_bytesRead(other._bytesRead),
 	_bodyContent(other._bodyContent),
 	_responseData(other._responseData),
 	_bytesSent(other._bytesSent),
@@ -86,6 +95,14 @@ Connection& Connection::operator=(const Connection& other) {
 			_fileStream = NULL;
 		}
 
+		// Clean up existing input file stream
+		if (_inputFileStream) {
+			if (_inputFileStream->is_open())
+				_inputFileStream->close();
+			delete _inputFileStream;
+			_inputFileStream = NULL;
+		}
+
 		// Copy all members
 		_fd = other._fd;
 		_connectionState = other._connectionState;
@@ -104,6 +121,8 @@ Connection& Connection::operator=(const Connection& other) {
 		_bytesWritten = other._bytesWritten;
 		_multipart = other._multipart;
 		_currentPartIndex = other._currentPartIndex;
+		_readFilePath = other._readFilePath;
+		_bytesRead = other._bytesRead;
 		_bodyContent = other._bodyContent;
 		_responseData = other._responseData;
 		_bytesSent = other._bytesSent;
@@ -115,7 +134,7 @@ Connection& Connection::operator=(const Connection& other) {
 		_maxRequests = other._maxRequests;
 		_requestCount = other._requestCount;
 		_shouldClose = other._shouldClose;
-		// _fileStream remains NULL (no deep copy of file streams)
+		// _fileStream and _inputFileStream remain NULL (no deep copy of file streams)
 	}
 	return *this;
 }
@@ -125,6 +144,13 @@ Connection::~Connection() {
 			_fileStream->close();
 		delete _fileStream;
 		_fileStream = NULL;
+	}
+
+	if (_inputFileStream) {
+		if (_inputFileStream->is_open())
+			_inputFileStream->close();
+		delete _inputFileStream;
+		_inputFileStream = NULL;
 	}
 }
 
@@ -278,6 +304,64 @@ bool Connection::writeOnDisc() {
 	}
 	return false;
 }
+
+bool Connection::readFromDisc() {
+
+	// Open file on first call
+	if (!_inputFileStream || !_inputFileStream->is_open()) {
+		if (!_inputFileStream)
+			_inputFileStream = new std::ifstream();
+		_inputFileStream->open(_readFilePath.c_str(), std::ios::binary);
+
+		if (!_inputFileStream->is_open()) {
+			std::cout << "[ERROR] Failed to open file for reading: " << _readFilePath << std::endl;
+			delete _inputFileStream;
+			_inputFileStream = NULL;
+			setStatusCode(errno == ENOENT ? 404 : 403);
+			prepareResponse();
+			return true; // Transition to SENDING_RESPONSE with error
+		}
+	}
+
+	// Read 32KB chunk
+	char buffer[BUFFER_SIZE_32];
+	_inputFileStream->read(buffer, BUFFER_SIZE_32);
+	std::streamsize bytesRead = _inputFileStream->gcount();
+
+	if (bytesRead > 0) {
+		_bodyContent.append(buffer, bytesRead);
+		_bytesRead += bytesRead;
+		updateClientActivity();
+		std::cout << "[DEBUG] Read " << bytesRead << " bytes from disk ("
+				  << _bytesRead << " total)" << std::endl;
+	}
+
+	// Check for errors (not EOF, which is normal completion)
+	if (_inputFileStream->fail() && !_inputFileStream->eof()) {
+		std::cout << "[ERROR] File read failed: " << _readFilePath << std::endl;
+		_inputFileStream->close();
+		delete _inputFileStream;
+		_inputFileStream = NULL;
+		setStatusCode(500);
+		prepareResponse();
+		return true; // Transition to SENDING_RESPONSE with error
+	}
+
+	// Check if EOF reached (file complete)
+	if (_inputFileStream->eof() || bytesRead == 0) {
+		_inputFileStream->close();
+		delete _inputFileStream;
+		_inputFileStream = NULL;
+
+		std::cout << "[DEBUG] File read complete: " << _bytesRead << " bytes total" << std::endl;
+		setStatusCode(200);
+		prepareResponse();
+		return true; // Transition to SENDING_RESPONSE
+	}
+
+	return false; // Continue reading next iteration
+}
+
 void Connection::appendFormFieldToLog(const std::string& name, const std::string& value) {
 	std::string logFilePath = _uploadPath;
 	if (!logFilePath.empty() && logFilePath[logFilePath.size() - 1] != '/') {
@@ -521,6 +605,16 @@ void Connection::resetForNextRequest() {
 	_bytesWritten = 0;
 	_multipart.clear();
 	_currentPartIndex = 0;
+
+	// File reading (GET)
+	if (_inputFileStream) {
+		if (_inputFileStream->is_open())
+			_inputFileStream->close();
+		delete _inputFileStream;
+		_inputFileStream = NULL;
+	}
+	_readFilePath.clear();
+	_bytesRead = 0;
 
 	// Response data
 	_bodyContent.clear();

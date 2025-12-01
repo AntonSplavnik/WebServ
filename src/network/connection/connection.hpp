@@ -22,6 +22,7 @@ enum ConnectionState {
 	READING_BODY,
 	EXECUTING_REQUEST,
 	WRITING_DISK,
+	READING_DISK,
 	SENDING_RESPONSE,
 	WAITING_CGI
 };
@@ -39,6 +40,7 @@ class Connection {
 		bool readHeaders();
 		bool readBody();
 		bool writeOnDisc();
+		bool readFromDisc();
 		bool prepareResponse();
 		bool prepareResponse(const std::string& cgiOutput); // For CGI
 		bool sendResponse();
@@ -71,6 +73,10 @@ class Connection {
 		void setBodyContent(const std::string& content) { _bodyContent = content; }
 		void setRedirectUrl(const std::string& url) { _redirectUrl = url; }
 		void setIndexPath(const std::string& indPath) { _indexPath = indPath; }
+		void setReadFilePath(const std::string& path) {
+			_readFilePath = path;
+			_bytesRead = 0;
+		}
 
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
@@ -126,6 +132,11 @@ class Connection {
 		// File Writing - Multipart
 		std::vector<MultipartPart>	_multipart;	// vector with all parst of multypart POST request
 		int				_currentPartIndex;		// index for tracking position when writing on sick in chunks
+
+		// File Reading (for GET requests)
+		std::ifstream*	_inputFileStream;	// stream for disk reading (GET)
+		std::string		_readFilePath;		// path to file being read
+		size_t			_bytesRead;			// bytes read from disk so far
 
 		// Response Data
 		std::string		_bodyContent;		// body from GET for response
