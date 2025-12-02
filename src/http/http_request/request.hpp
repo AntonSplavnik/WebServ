@@ -57,6 +57,10 @@ class HttpRequest {
 		std::string getHost() const;
 		std::vector<std::string> getCgiHeadersString() const;
 
+		// Cookie support
+		std::string getCookie(const std::string& name) const;
+		const std::map<std::string, std::string>& getCookies() const { return _cookies; }
+
 		// Body getters
 		const std::string& getBody() const { return _body; }
 		unsigned long getBodyLength() const { return _body.length(); }
@@ -90,6 +94,9 @@ class HttpRequest {
 		// Parsed headers
 		std::map<std::string, std::string>	_headers;
 
+		// Parsed cookies (from Cookie header)
+		std::map<std::string, std::string>	_cookies;
+
 		// State
 		bool	_isValid;
 
@@ -97,6 +104,7 @@ class HttpRequest {
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseHeaders();
+		void parseCookies();
 		std::string getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
 };
 

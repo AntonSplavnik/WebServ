@@ -22,7 +22,7 @@ INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connectio
 			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
 			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
-			  -Isrc/request_router -Isrc/statistics -Isrc/logging
+			  -Isrc/request_router -Isrc/statistics -Isrc/logging -Isrc/session
 
 # Directories
 SRC_DIR		= src
@@ -59,6 +59,9 @@ REQ_ROUTER_DIR	= $(SRC_DIR)/request_router
 # Statistics
 STATISTICS_DIR	= $(SRC_DIR)/statistics
 
+# Session
+SESSION_DIR	= $(SRC_DIR)/session
+
 # Source files
 SRC_FILES	= main.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
@@ -78,7 +81,9 @@ SRC_FILES	= main.cpp \
 			  $(REQ_HANDLER_DIR)/post_handler.cpp \
 			  $(REQ_ROUTER_DIR)/request_router.cpp \
 			  $(STATISTICS_DIR)/statistics_collector.cpp \
-			  $(LOGGING_DIR)/logger.cpp
+			  $(LOGGING_DIR)/logger.cpp \
+			  $(SESSION_DIR)/session.cpp \
+			  $(SESSION_DIR)/session_handler.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -100,7 +105,9 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(REQ_HANDLER_DIR)/post_handler.hpp \
 			  $(REQ_ROUTER_DIR)/request_router.hpp \
 			  $(STATISTICS_DIR)/statistics_collector.hpp \
-			  $(LOGGING_DIR)/logger.hpp
+			  $(LOGGING_DIR)/logger.hpp \
+			  $(SESSION_DIR)/session.hpp \
+			  $(SESSION_DIR)/session_handler.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

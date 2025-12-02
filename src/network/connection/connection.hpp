@@ -9,6 +9,7 @@
 #include "request.hpp"
 #include "request_router.hpp"
 #include "post_handler.hpp"
+#include "session.hpp"
 
 // #define BUFFER_SIZE_4 4096    // 4 KB
 // // #define BUFFER_SIZE_8 8192    // 8 KB
@@ -103,6 +104,11 @@ class Connection {
 		int getKeepAliveTimeout() const { return _keepAliveTimeout; }
 		void updateKeepAliveSettings(int keepAliveTimeout, int maxRequests);
 
+		// Session support
+		Session* getSession() { return _session; }
+		void setSession(Session* session) { _session = session; }
+		bool validateCSRF(const std::string& clientToken) const;
+
 		/* bool processChunkedData(); */
 	private:
 		// Connection Metadata
@@ -152,6 +158,9 @@ class Connection {
 		int				_maxRequests;		// max number of requests for a client
 		int				_requestCount;
 		bool			_shouldClose;		// only setup in case of error code
+
+		// Session
+		Session*		_session;			// Pointer to user session (NULL if not authenticated)
 
 		// Private Helper Methods
 		void updateClientActivity();

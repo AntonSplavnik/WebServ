@@ -14,6 +14,8 @@
 #include "request_router.hpp"
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
+#include "session.hpp"
+#include "session_handler.hpp"
 
 /*
  Linux:
@@ -96,11 +98,40 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				return;
 			}
 			connection.setRequest(request);
+
+			// Session middleware: attach session if cookie present
+			std::string sid = request.getCookie("webserv_sid");
+			if (!sid.empty()) {
+				SessionStore& store = SessionStore::getInstance();
+				Session* session = store.getSession(sid);
+				if (session && !session->isExpired()) {
+					connection.setSession(session);
+					store.touchSession(sid);  // Update last_access
+					std::cout << "[SESSION] Session found for FD " << fd << ": user_id=" << session->user_id << std::endl;
+				} else {
+					std::cout << "[SESSION] Invalid or expired session for FD " << fd << std::endl;
+				}
+			}
 		}
 
 		state = connection.getState();
 
 		if (state == ROUTING_REQUEST) {
+
+			// Check for session endpoints BEFORE routing
+			const HttpRequest& req = connection.getRequest();
+			std::string path = req.getPath();
+
+			if (path == "/api/login" && req.getMethod() == "POST") {
+				SessionHandler::handleLogin(connection);
+				connection.setState(SENDING_RESPONSE);
+				return;
+			}
+			if (path == "/api/logout" && req.getMethod() == "POST") {
+				SessionHandler::handleLogout(connection);
+				connection.setState(SENDING_RESPONSE);
+				return;
+			}
 
 			RequestRouter router(_configs);
 			RoutingResult result = router.route(connection);
@@ -114,6 +145,18 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			int keepAliveTimeout = result.serverConfig->keepalive_timeout;
 			int keepaliveMaxRequests = result.serverConfig->keepalive_max_requests;
 			connection.updateKeepAliveSettings(keepAliveTimeout, keepaliveMaxRequests);
+
+			// Protect /admin.html - require valid session
+			if (path == "/admin.html" && req.getMethod() == "GET") {
+				Session* session = connection.getSession();
+				if (!session || session->user_id == 0) {
+					std::cout << "[SESSION] Unauthorized access to /admin.html, redirecting to /login.html" << std::endl;
+					connection.setStatusCode(303);
+					connection.setRedirectUrl("/login.html");
+					connection.prepareResponse();
+					return;
+				}
+			}
 
 			const RequestType& type = connection.getRoutingResult().type;
 			RequestHandler reqHandler;

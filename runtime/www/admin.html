@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #11998e;
+            margin-bottom: 10px;
+        }
+        .welcome {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #11998e;
+        }
+        .stat-card h3 {
+            color: #11998e;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        .actions {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        button, .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #11998e;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0d7a6f;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .session-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+        }
+        .session-info h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .session-info p {
+            color: #856404;
+            line-height: 1.6;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👑 Admin Dashboard</h1>
+        <p class="welcome">Welcome back, Administrator!</p>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Active Sessions</h3>
+                <div class="value">1</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Requests</h3>
+                <div class="value">42</div>
+            </div>
+            <div class="stat-card">
+                <h3>Server Status</h3>
+                <div class="value">✓</div>
+            </div>
+        </div>
+
+        <div class="session-info">
+            <h3>🔒 Session Active</h3>
+            <p>
+                Your session is protected with:<br>
+                • <code>HttpOnly</code> cookie (XSS protection)<br>
+                • <code>SameSite=Lax</code> (CSRF protection)<br>
+                • Session ID stored server-side<br>
+                • Auto-expiration after inactivity
+            </p>
+        </div>
+
+        <div class="actions">
+            <h3 style="margin-bottom: 15px;">Actions</h3>
+            <a href="/admin.html" class="btn btn-primary">Refresh</a>
+            <form action="/api/logout" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger">Logout</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -48,6 +48,11 @@ class HttpResponse {
 		unsigned long getContentLength() const;
 		const std::string& getResponse() const;
 
+		// Session cookie support
+		void setCookie(const std::string& name, const std::string& value, 
+		               int maxAge, bool httpOnly, bool secure, const std::string& sameSite);
+		void clearCookie(const std::string& name);
+
 
 	private:
 		void buildHttpResponse();

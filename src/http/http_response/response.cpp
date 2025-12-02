@@ -397,3 +397,50 @@ void HttpResponse::parseCgiStatus(const std::string& cgiHeaders) {
 		pos = nextPos + 1;
 	}
 }
+
+/*
+ * Set session cookie with security attributes
+ * 
+ * @param name: Cookie name (e.g., "webserv_sid")
+ * @param value: Cookie value (session ID)
+ * @param maxAge: Expiration in seconds (0 = session cookie)
+ * @param httpOnly: Prevent JavaScript access
+ * @param secure: Only send over HTTPS
+ * @param sameSite: CSRF protection ("Strict", "Lax", or "None")
+ */
+void HttpResponse::setCookie(const std::string& name, const std::string& value,
+                             int maxAge, bool httpOnly, bool secure, const std::string& sameSite) {
+	std::ostringstream oss;
+	oss << name << "=" << value;
+
+	if (maxAge > 0) {
+		oss << "; Max-Age=" << maxAge;
+	}
+
+	if (httpOnly) {
+		oss << "; HttpOnly";
+	}
+
+	if (secure) {
+		oss << "; Secure";
+	}
+
+	if (!sameSite.empty()) {
+		oss << "; SameSite=" << sameSite;
+	}
+
+	oss << "; Path=/";
+
+	_setCookies.push_back(oss.str());
+}
+
+/*
+ * Clear cookie by setting Max-Age=0
+ * 
+ * @param name: Cookie name to clear
+ */
+void HttpResponse::clearCookie(const std::string& name) {
+	std::ostringstream oss;
+	oss << name << "=; Max-Age=0; Path=/";
+	_setCookies.push_back(oss.str());
+}

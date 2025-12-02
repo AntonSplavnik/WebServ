@@ -36,6 +36,8 @@ void HttpRequest::parseRequestHeaders(const std::string requestData) {
 	parseHeaders();
 	if (!_isValid) return;
 
+	parseCookies();  // Parse cookies after headers
+
 	std::cout << "#################################\n" << std::endl;
 }
 void HttpRequest::addBody(const std::string& requestBuffer){
@@ -252,4 +254,54 @@ std::string HttpRequest::getUri() const {
 		return _path;
 	return  _path + "?" + _query;
 
+}
+
+/*
+ * Parse cookies from Cookie header
+ * 
+ * Format: Cookie: name1=value1; name2=value2; name3=value3
+ * 
+ * Note: Cookies are semicolon-separated, not comma-separated
+ */
+void HttpRequest::parseCookies() {
+	std::string cookieHeader = getHeaderValue("cookie");
+	if (cookieHeader.empty()) {
+		return;  // No cookies, not an error
+	}
+
+	std::istringstream iss(cookieHeader);
+	std::string pair;
+
+	while (std::getline(iss, pair, ';')) {
+		// Trim leading/trailing whitespace
+		size_t start = pair.find_first_not_of(" \t");
+		size_t end = pair.find_last_not_of(" \t");
+		if (start == std::string::npos) continue;
+		pair = pair.substr(start, end - start + 1);
+
+		// Split name=value
+		size_t pos = pair.find('=');
+		if (pos == std::string::npos) continue;
+
+		std::string name = pair.substr(0, pos);
+		std::string value = pair.substr(pos + 1);
+
+		if (!name.empty()) {
+			_cookies[name] = value;
+		}
+	}
+}
+
+/*
+ * Get cookie value by name
+ * 
+ * @param name: Cookie name
+ * @return: Cookie value (empty string if not found)
+ */
+std::string HttpRequest::getCookie(const std::string& name) const {
+	std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
+	if (it != _cookies.end()) {
+		return it->second;
+	}
+	return "";
 }

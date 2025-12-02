@@ -26,7 +26,8 @@ Connection::Connection()
 	_keepAliveTimeout(15),
 	_maxRequests(100),
 	_requestCount(0),
-	_shouldClose(false) {}
+	_shouldClose(false),
+	_session(NULL) {}
 Connection::Connection(int fd, const std::string& ip, int connectionPort, int serverPort)
 	: _fd(fd),
 	_connectionState(READING_HEADERS),
@@ -51,7 +52,8 @@ Connection::Connection(int fd, const std::string& ip, int connectionPort, int se
 	_keepAliveTimeout(15),
 	_maxRequests(100),
 	_requestCount(0),
-	_shouldClose(false) {}
+	_shouldClose(false),
+	_session(NULL) {}
 Connection::Connection(const Connection& other)
 	: _fd(other._fd),
 	_connectionState(other._connectionState),
@@ -84,7 +86,8 @@ Connection::Connection(const Connection& other)
 	_keepAliveTimeout(other._keepAliveTimeout),
 	_maxRequests(other._maxRequests),
 	_requestCount(other._requestCount),
-	_shouldClose(other._shouldClose) {}
+	_shouldClose(other._shouldClose),
+	_session(other._session) {}
 Connection& Connection::operator=(const Connection& other) {
 	if (this != &other) {
 		// Clean up existing fileStream
@@ -134,6 +137,7 @@ Connection& Connection::operator=(const Connection& other) {
 		_maxRequests = other._maxRequests;
 		_requestCount = other._requestCount;
 		_shouldClose = other._shouldClose;
+		_session = other._session;
 		// _fileStream and _inputFileStream remain NULL (no deep copy of file streams)
 	}
 	return *this;
@@ -627,6 +631,9 @@ void Connection::resetForNextRequest() {
 	// State
 	_connectionState = READING_HEADERS;
 	_requestCount++;
+
+	// Session: keep session pointer (don't reset)
+	// Session is persistent across requests until logout or expiration
 }
 
 void Connection::updateClientActivity() {
@@ -636,6 +643,19 @@ void Connection::updateClientActivity() {
 void Connection::updateKeepAliveSettings(int keepAliveTimeout, int maxRequests) {
 	_keepAliveTimeout = keepAliveTimeout;
 	_maxRequests = maxRequests;
+}
+
+/*
+ * Validate CSRF token from client against session token
+ * 
+ * @param clientToken: Token from request (header or form field)
+ * @return: true if tokens match, false otherwise
+ */
+bool Connection::validateCSRF(const std::string& clientToken) const {
+	if (!_session) {
+		return false;  // No session = no CSRF protection
+	}
+	return clientToken == _session->csrf_token;
 }
 
 /* bool isRequestComplete() {} */

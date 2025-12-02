@@ -82,6 +82,9 @@ std::string PostHandler::getExtensionFromContentType(const std::string& contentT
     else if (contentType.find("application/json") != std::string::npos) {
         return "json";
     }
+    else if (contentType.find("application/x-www-form-urlencoded") != std::string::npos) {
+        return "form";
+    }
     else if (contentType.find("application/octet-stream") != std::string::npos) {
         return "bin";
     }
@@ -325,5 +328,6 @@ bool PostHandler::isSupportedContentType(const std::string& contentType) {
             contentType.find("application/javascript") != std::string::npos ||
             contentType.find("application/json") != std::string::npos ||
             contentType.find("application/pdf") != std::string::npos ||
+            contentType.find("application/x-www-form-urlencoded") != std::string::npos ||
             contentType.find("application/octet-stream") != std::string::npos);
 }
