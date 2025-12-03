@@ -67,9 +67,8 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	std::cout << "[DEBUG] PATH_INFO: " << result.pathInfo << std::endl;
 	std::cout << "[DEBUG] PATH_TRANSLATED: " << result.pathTranslated << std::endl;
 
-	// Classify request type
-	RequestType type = classify(req, location);
-	result.type = type;
+	// Classify request type (use cgiExtension to detect CGI with PATH_INFO)
+	result.type = classify(req, location, result.cgiExtension);
 
 	result.success = true;
 	return result;
@@ -295,28 +294,15 @@ std::string RequestRouter::buildPathTranslated(const std::string& root, const st
 	}
 	return root + pathInfo;
 }
-RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig* location) {
+RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig* location, const std::string& cgiExtension) {
 
 	// Check for redirect
 	if (!location->redirect.empty()) {
 		return REDIRECT;
 	}
 
-	// Check for CGI
-	// Check if path matches CGI extension
-	std::string path = req.getPath();
-	bool isCGI = false;
-
-	// Check against cgi_extension list
-	for (size_t i = 0; i < location->cgi_ext.size(); i++) {
-		std::string ext = location->cgi_ext[i];
-
-		// Check if path ends with this extension
-		if (path.size() > ext.size() && path.substr(path.length() - ext.length()) == ext) {
-				isCGI = true;
-				break;
-			}
-	}
+	// Check for CGI (using pre-extracted extension to handle PATH_INFO correctly)
+	bool isCGI = !cgiExtension.empty();
 	const std::string& method = req.getMethod();
 
 	if (isCGI) {

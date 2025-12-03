@@ -59,7 +59,7 @@ class RequestRouter {
 		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 		std::string mapPath(const std::string& requestPath, const LocationConfig*& matchedLocation);
 		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
-		RequestType classify(const HttpRequest& req, const LocationConfig* location);
+		RequestType classify(const HttpRequest& req, const LocationConfig* location, const std::string& cgiExtension);
 		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 		std::string extractPathInfo(const std::string& requestPath, const LocationConfig* location, std::string& cleanedPath);
 		std::string buildPathTranslated(const std::string& root, const std::string& pathInfo);
