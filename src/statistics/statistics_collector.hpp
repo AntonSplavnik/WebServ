@@ -18,6 +18,7 @@
 #include <deque>
 #include <ctime>
 #include <sys/types.h>
+#include <vector>
 
 struct RequestRecord {
 	time_t timestamp;
