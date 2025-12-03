@@ -89,7 +89,7 @@ void HttpRequest::parseRequestLine() {
 		_isValid = false;
 		return;
 	}
-	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+	if (_method != "GET" && _method != "POST" && _method != "DELETE" && _method != "HEAD") {
 		std::cout << " Error: Unknown HTTP method: " << _method << std::endl;
 		_isValid = false;
 		return;

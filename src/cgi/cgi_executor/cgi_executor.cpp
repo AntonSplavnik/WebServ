@@ -170,6 +170,7 @@ void CgiExecutor::handleCGItimeout(Cgi& cgi, ConnectionPoolManager& _connectionP
 	//  Prepare 504 Gateway Timeout response
 	if(connection){
 		connection->setStatusCode(504);
+		connection->setShouldClose(true);  // Force connection close after timeout
 		connection->prepareResponse();
 		std::cout << "[CGI TIMEOUT] Response 504 sent to Connection FD = " << connectionFd << std::endl;
 	}

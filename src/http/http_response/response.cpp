@@ -161,7 +161,7 @@ void HttpResponse::generateResponse(int statusCode) {
 		return;
 	}
 
-	if (_requestType == GET || _requestType == CGI_GET) {
+	if (_requestType == GET || _requestType == CGI_GET || _requestType == HEAD) {
 		_contentType = determineContentType(); // path needed - setup externally via setPath()
 		_contentLength = _body.length();
 	} else if (_requestType == DELETE || _requestType == POST || _requestType == CGI_POST) {
@@ -215,10 +215,19 @@ void HttpResponse::buildHttpResponse() {
 
 	oss << "Connection: " << _connectionType << "\r\n\r\n";
 
-	if (!_body.empty()) {
+	if (_requestType != HEAD && !_body.empty()) {
 		oss << _body;
 	}
 	_response = oss.str();
+
+	// Debug: print response headers (limit to avoid huge output)
+	std::cout << "[DEBUG] HTTP Response (" << _statusCode << "):" << std::endl;
+	size_t headerEnd = _response.find("\r\n\r\n");
+	if (headerEnd != std::string::npos) {
+		std::cout << _response.substr(0, headerEnd + 4) << std::endl;
+	} else {
+		std::cout << _response << std::endl;
+	}
 }
 
 void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {

@@ -4,7 +4,11 @@
 void RequestHandler::handleGET(Connection& connection) {
 	std::string path = connection.getRoutingResult().mappedPath;
 
-	if (isDirectory(path)) {
+	std::cout << "[DEBUG] handleGET path: " << path << std::endl;
+	bool isDir = isDirectory(path);
+	std::cout << "[DEBUG] isDirectory: " << (isDir ? "true" : "false") << std::endl;
+
+	if (isDir) {
 		handleDirectory(connection, path);
 	} else {
 		serveFile(connection, path);
@@ -19,6 +23,8 @@ void RequestHandler::handleDirectory(Connection& connection, const std::string& 
 		path += "/";
 	}
 
+	std::cout << "[DEBUG] handleDirectory path: " << path << std::endl;
+
 	// Try to find index file
 	std::string indexFile;
 	if (result.location && !result.location->index.empty()) {
@@ -27,16 +33,21 @@ void RequestHandler::handleDirectory(Connection& connection, const std::string& 
 		indexFile = result.serverConfig->index;
 	}
 
+	std::cout << "[DEBUG] Index file configured: " << indexFile << std::endl;
+
 	// Check if index file exists
 	if (!indexFile.empty()) {
 		std::string indexPath = path + indexFile;
+		std::cout << "[DEBUG] Checking index path: " << indexPath << std::endl;
 		std::ifstream indexTest(indexPath.c_str());
 		if (indexTest.is_open()) {
 			indexTest.close();
+			std::cout << "[DEBUG] Index file found, serving it" << std::endl;
 			connection.setIndexPath(indexPath);
 			serveFile(connection, indexPath);
 			return;
 		} else {
+			std::cout << "[DEBUG] Index file not found" << std::endl;
 			// Index file configured but not found - check autoindex
 			bool autoindex = false;
 			if (result.location) {
@@ -44,6 +55,7 @@ void RequestHandler::handleDirectory(Connection& connection, const std::string& 
 			} else if (result.serverConfig) {
 				autoindex = result.serverConfig->autoindex;
 			}
+			std::cout << "[DEBUG] Autoindex: " << (autoindex ? "on" : "off") << std::endl;
 			handleAutoindex(connection, path, autoindex);
 			return;
 		}
@@ -280,7 +292,8 @@ void RequestHandler::handleAutoindex(Connection& connection, const std::string& 
 		connection.setIndexPath("autoindex.html");
 		connection.prepareResponse();
 	} else {
-		connection.setStatusCode(403);
+		// When autoindex is off and no index file exists, return 404
+		connection.setStatusCode(404);
 		connection.prepareResponse();
 	}
 }

@@ -162,6 +162,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			RequestHandler reqHandler;
 			switch (type) { // Dispatch based on type
 				case GET:
+				case HEAD:
 					reqHandler.handleGET(connection);
 					break;
 				case DELETE:

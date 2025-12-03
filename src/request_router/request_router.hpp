@@ -23,6 +23,7 @@ enum RequestType{
 	GET,
 	DELETE,
 	POST,
+	HEAD,
 	CGI_POST,
 	CGI_GET,
 	REDIRECT

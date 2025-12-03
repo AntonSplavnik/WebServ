@@ -267,5 +267,6 @@ RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig
 	// Classify by method
 	if (method == "DELETE")  return DELETE;
 	else if (method == "POST") return POST;
+	else if (method == "HEAD") return HEAD;
 	return GET;
 }

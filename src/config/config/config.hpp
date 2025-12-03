@@ -20,7 +20,7 @@ static const char *AUTOINDEX_VALUES[] = {"on", "off", "true", "false", "1", "0"}
 static const size_t AUTOINDEX_VALUES_COUNT = sizeof(AUTOINDEX_VALUES) / sizeof(AUTOINDEX_VALUES[0]);
 
 // Valid HTTP methods
-static const char *HTTP_METHODS[] = {"GET", "POST", "DELETE"};
+static const char *HTTP_METHODS[] = {"GET", "POST", "DELETE", "HEAD"};
 static const size_t HTTP_METHODS_COUNT = sizeof(HTTP_METHODS) / sizeof(HTTP_METHODS[0]);
 
 //Valid location directives (used in config.cpp)
