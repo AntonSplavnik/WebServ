@@ -107,7 +107,7 @@ std::string ConfigData::getErrorPage(int statusCode, const LocationConfig* locat
 	if (location) {
 		std::map<int, std::string>::const_iterator it = location->error_pages.find(statusCode);
 		if (it != location->error_pages.end()) {
-			return root + "/" + it->second;
+			return normalizePath(root + it->second);
 		}
 
 	}
@@ -115,7 +115,7 @@ std::string ConfigData::getErrorPage(int statusCode, const LocationConfig* locat
 	// Fall back to server-level error page
 	std::map<int, std::string>::const_iterator it = error_pages.find(statusCode);
 	if (it != error_pages.end()) {
-		return root + "/" + it->second;
+		return normalizePath(root + it->second);
 
 	}
 
@@ -168,7 +168,7 @@ void Config::validateConfig(ConfigData& config) {
     for (std::map<int, std::string>::const_iterator it = config.error_pages.begin();
          it != config.error_pages.end(); ++it)
     {
-        std::string fullPath = config.root + "/" + it->second;
+        std::string fullPath = normalizePath(config.root + it->second);
         if (!isValidFile(fullPath, R_OK))
         {
             std::ostringstream oss;
@@ -181,6 +181,34 @@ void Config::validateConfig(ConfigData& config) {
         config.allow_methods.push_back("GET");
         std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
     }
+
+    // Auto-create '/' location if none exists (nginx behavior)
+    bool hasRootLocation = false;
+    for (size_t i = 0; i < config.locations.size(); ++i)
+    {
+        if (config.locations[i].path == "/")
+        {
+            hasRootLocation = true;
+            break;
+        }
+    }
+
+    if (!hasRootLocation)
+    {
+        LocationConfig rootLoc;
+        rootLoc.path = "/";
+        rootLoc.root = config.root;
+        rootLoc.index = config.index;
+        rootLoc.autoindex = config.autoindex;
+        rootLoc.allow_methods = config.allow_methods;
+        rootLoc.error_pages = config.error_pages;
+        rootLoc.client_max_body_size = config.client_max_body_size;
+        rootLoc.cgi_ext = config.cgi_ext;
+        rootLoc.cgi_path = config.cgi_path;
+        config.locations.push_back(rootLoc);
+        std::cout << "Info: No '/' location found, created default from server directives" << std::endl;
+    }
+
     // --- Each location ---
     for (size_t i = 0; i < config.locations.size(); ++i)
     {
@@ -248,7 +276,7 @@ void Config::validateConfig(ConfigData& config) {
         for (std::map<int, std::string>::const_iterator it = loc.error_pages.begin();
              it != loc.error_pages.end(); ++it)
         {
-            std::string fullPath = config.root + "/" + it->second;
+            std::string fullPath = normalizePath(config.root + it->second);
             if (!isValidFile(fullPath, R_OK))
             {
                 std::ostringstream oss;

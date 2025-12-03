@@ -20,6 +20,10 @@ void Config::parseRoot(ConfigT& config, const std::vector<std::string>& tokens) 
     if (!isValidPath(tokens[0], R_OK | X_OK))
         throw ConfigParseException("Invalid or inaccessible root path: " + tokens[0]);
     config.root = normalizePath(tokens[0]);
+    // Ensure trailing slash for directory paths (required for proper concatenation)
+    if (!config.root.empty() && config.root[config.root.length() - 1] != '/') {
+        config.root += '/';
+    }
 }
 
 template<typename ConfigT>
