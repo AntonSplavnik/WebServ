@@ -143,8 +143,9 @@ void Config::validateConfig(ConfigData& config) {
         throw ConfigParseException("Missing required config: index (and autoindex is off)");
     // Validate index file exists if specified and autoindex is off
     if (!config.index.empty() && !config.autoindex) {
-        if (!isValidFile(config.index, R_OK))
-            throw ConfigParseException("Invalid or inaccessible index file: " + config.index);
+        std::string fullPath = normalizePath(config.root + config.index);
+        if (!isValidFile(fullPath, R_OK))
+            throw ConfigParseException("Invalid or inaccessible index file: " + fullPath);
     }
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
@@ -248,8 +249,9 @@ void Config::validateConfig(ConfigData& config) {
             throw ConfigParseException("Missing index and autoindex is off in location: " + loc.path);
         // Validate index file exists if specified and autoindex is off
         if (!loc.index.empty() && !loc.autoindex) {
-            if (!isValidFile(loc.index, R_OK))
-                throw ConfigParseException("Invalid or inaccessible index file in location " + loc.path + ": " + loc.index);
+            std::string fullPath = normalizePath(loc.root + loc.index);
+            if (!isValidFile(fullPath, R_OK))
+                throw ConfigParseException("Invalid or inaccessible index file in location " + loc.path + ": " + fullPath);
         }
         if (loc.allow_methods.empty())
             throw ConfigParseException("Missing required location config: allow_methods");
