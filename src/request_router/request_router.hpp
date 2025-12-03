@@ -36,7 +36,10 @@ struct RoutingResult {
 	std::string mappedPath;
 	RequestType type;
 	std::string cgiExtension;
-	
+	std::string scriptName;
+	std::string pathInfo;
+	std::string pathTranslated;
+
 	RoutingResult() : success(false), errorCode(0), serverConfig(NULL), location(NULL) {}
 };
 
@@ -54,10 +57,12 @@ class RequestRouter {
 		ConfigData& findServerConfig(const HttpRequest& request, int serverPort);	// Virtual hosting FindServerConfigByPort + MatchServerByHost
 		bool validateBodySize(int contentLength, const LocationConfig*& location);
 		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
-		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
+		std::string mapPath(const std::string& requestPath, const LocationConfig*& matchedLocation);
 		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
 		RequestType classify(const HttpRequest& req, const LocationConfig* location);
 		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
+		std::string extractPathInfo(const std::string& requestPath, const LocationConfig* location, std::string& cleanedPath);
+		std::string buildPathTranslated(const std::string& root, const std::string& pathInfo);
 };
 
 #endif

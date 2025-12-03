@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/30 21:21:34 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/03 21:51:47 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,14 +46,26 @@ RoutingResult RequestRouter::route(Connection& connection) {
 		return prepErrorResult(result, false, 413);
 	}
 
-	// Map path
-	std::string mappedPath = mapPath(req, location);
+	// Extract PATH_INFO for CGI requests
+	std::string cleanedPath;
+	result.pathInfo = extractPathInfo(req.getPath(), location, cleanedPath);
+
+	// Map path (uses cleanedPath for CGI, original path for non-CGI)
+	result.mappedPath = mapPath(cleanedPath, location);
 
 	// Validate security
-	if (!validatePathSecurity(mappedPath, location->root)) {
+	if (!validatePathSecurity(result.mappedPath, location->root)) {
 		return prepErrorResult(result, false, 403);
 	}
-	result.mappedPath = mappedPath;
+
+	result.cgiExtension = extractCgiExtension(req.getPath(), location);
+	result.scriptName = cleanedPath;
+	result.pathTranslated = buildPathTranslated(location->root, result.pathInfo);
+
+	std::cout << "[DEBUG] CGI Extension: " << result.cgiExtension << std::endl;
+	std::cout << "[DEBUG] Script Name: " << result.scriptName << std::endl;
+	std::cout << "[DEBUG] PATH_INFO: " << result.pathInfo << std::endl;
+	std::cout << "[DEBUG] PATH_TRANSLATED: " << result.pathTranslated << std::endl;
 
 	// Classify request type
 	RequestType type = classify(req, location);
@@ -138,11 +150,10 @@ bool RequestRouter::validateBodySize(int contentLength, const LocationConfig*& l
 
 	return true;
 }
-std::string RequestRouter::mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation) {
+std::string RequestRouter::mapPath(const std::string& requestPath, const LocationConfig*& matchedLocation) {
 
 	std::string locationRoot = matchedLocation->root;
 	std::string locationPath = matchedLocation->path;
-	std::string requestPath = request.getPath();
 	std::string relativePath;
 
 	if(requestPath.compare(0, locationPath.length(), locationPath) == 0)
@@ -230,6 +241,59 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 		return false;
 	}
 	return true;
+}
+std::string RequestRouter::extractCgiExtension(const std::string& path, const LocationConfig* location) {
+	for (size_t i = 0; i < location->cgi_ext.size(); i++) {
+		std::string ext = location->cgi_ext[i];
+		size_t extPos = path.find(ext);
+		if (extPos != std::string::npos) {
+			// Check if this is at a reasonable position (not just any substring)
+			size_t afterExt = extPos + ext.length();
+			if (afterExt == path.length() || path[afterExt] == '/') {
+				return ext;
+			}
+		}
+	}
+	return "";
+}
+std::string RequestRouter::extractPathInfo(const std::string& requestPath, const LocationConfig* location, std::string& cleanedPath) {
+	std::string ext = extractCgiExtension(requestPath, location);
+
+	if (ext.empty()) {
+		// Not a CGI request - return original path
+		cleanedPath = requestPath;
+		return "";
+	}
+
+	// Find extension position
+	size_t extPos = requestPath.find(ext);
+	if (extPos == std::string::npos) {
+		cleanedPath = requestPath;
+		return "";
+	}
+
+	size_t scriptEnd = extPos + ext.length();
+
+	// Extract PATH_INFO if present
+	if (scriptEnd < requestPath.length()) {
+		cleanedPath = requestPath.substr(0, scriptEnd);
+		return requestPath.substr(scriptEnd);
+	}
+
+	// No PATH_INFO
+	cleanedPath = requestPath;
+	return "";
+}
+std::string RequestRouter::buildPathTranslated(const std::string& root, const std::string& pathInfo) {
+	if (pathInfo.empty()) {
+		return "";
+	}
+
+	// Avoid double slash when concatenating root + pathInfo
+	if (!root.empty() && root[root.length() - 1] == '/' && pathInfo[0] == '/') {
+		return root + pathInfo.substr(1);
+	}
+	return root + pathInfo;
 }
 RequestType RequestRouter::classify(const HttpRequest& req, const LocationConfig* location) {
 

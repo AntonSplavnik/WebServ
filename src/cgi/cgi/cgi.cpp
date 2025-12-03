@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/30 17:26:42 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/03 21:36:52 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@
 #include <poll.h>
 #include <algorithm>
 #include <signal.h>
-#include <sys/resource.h> 
+#include <sys/resource.h>
 
 #define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 
@@ -140,7 +140,7 @@ bool Cgi::start(const Connection& connection) {
 
 void Cgi::executeCGI(const Connection& connection) {
 
-    std::string ext = extractCgiExtension(connection.getRequest().getPath(), connection.getRoutingResult().location);
+    std::string ext = connection.getRoutingResult().cgiExtension;
 
     // --- Determine interpreter ---
     std::string interpreter;
@@ -161,7 +161,7 @@ void Cgi::executeCGI(const Connection& connection) {
     argv[2] = NULL;
 
     // --- Build environment array ---
-    char** envp = prepEnvVariables(connection, ext);
+    char** envp = prepEnvVariables(connection);
 
     execve(argv[0], argv, envp);
 
@@ -185,7 +185,7 @@ std::string Cgi::findInterpreter(const std::string& name) {
     }
     return "";
 }
-char** Cgi::prepEnvVariables(const Connection& connection, const std::string& ext) {
+char** Cgi::prepEnvVariables(const Connection& connection) {
 
     std::vector<std::string> cgiHeaders =  _request.getCgiHeadersString();
 
@@ -239,33 +239,16 @@ char** Cgi::prepEnvVariables(const Connection& connection, const std::string& ex
     buffer = std::string("QUERY_STRING=") + _request.getQuery(); // request
     envp[i++] = strdup(buffer.c_str());
 
-    std::string requestPath = _request.getPath();  // e.g., "/cgi-bin/script.py/extra/path"
-    std::string scriptName = requestPath;
-    std::string pathInfo = "";
-
-    // Find script extension in URL
-    size_t extPos = requestPath.find(ext);  // find ".py" or ".php"
-    if (extPos != std::string::npos) {
-        size_t scriptEnd = extPos + ext.length();  // position after extension
-        scriptName = requestPath.substr(0, scriptEnd);  // "/cgi-bin/script.py"
-
-        if (scriptEnd < requestPath.length()) {
-            pathInfo = requestPath.substr(scriptEnd);  // "/extra/path"
-        }
-    }
-
     // SCRIPT_NAME
-    buffer = "SCRIPT_NAME=" + scriptName; // request
+    buffer = "SCRIPT_NAME=" + connection.getRoutingResult().scriptName;
     envp[i++] = strdup(buffer.c_str());
 
     // PATH_INFO
-    buffer = "PATH_INFO=" + pathInfo; // request
+    buffer = "PATH_INFO=" + connection.getRoutingResult().pathInfo;
     envp[i++] = strdup(buffer.c_str());
 
     // PATH_TRANSLATED
-    std::string documentRoot = connection.getRoutingResult().location->root;
-    std::string pathTranslated = documentRoot + pathInfo;
-    buffer = "PATH_TRANSLATED=" + pathTranslated; // request
+    buffer = "PATH_TRANSLATED=" + connection.getRoutingResult().pathTranslated;
     envp[i++] = strdup(buffer.c_str());
 
     // CONTENT_LENGTH

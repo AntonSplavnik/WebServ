@@ -79,9 +79,8 @@ class Cgi {
 
 		void executeCGI(const Connection& onnection);
 		std::string findInterpreter(const std::string& name);
-		char** prepEnvVariables(const Connection& onnection, const std::string& ext);
+		char** prepEnvVariables(const Connection& onnection);
 		bool chdirToScriptDir(const std::string& mappedPath);
-		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 };
 
 #endif
