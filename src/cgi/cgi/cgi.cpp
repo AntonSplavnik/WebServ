@@ -239,33 +239,47 @@ char** Cgi::prepEnvVariables(const Connection& connection, const std::string& ex
     buffer = std::string("QUERY_STRING=") + _request.getQuery(); // request
     envp[i++] = strdup(buffer.c_str());
 
-    std::string requestPath = _request.getPath();  // e.g., "/cgi-bin/script.py/extra/path"
-    std::string scriptName = requestPath;
-    std::string pathInfo = "";
-
-    // Find script extension in URL
-    size_t extPos = requestPath.find(ext);  // find ".py" or ".php"
+    // Use pathInfo and scriptPath from RoutingResult (already calculated in request router)
+    std::string pathInfo = connection.getRoutingResult().pathInfo;
+    std::string scriptName = _request.getPath();
+    
+    // Calculate SCRIPT_NAME from request path (up to and including the script)
+    // For CGI requests, scriptName should be the path up to the script file
+    std::string requestPath = _request.getPath();
+    size_t extPos = requestPath.find(ext);
     if (extPos != std::string::npos) {
-        size_t scriptEnd = extPos + ext.length();  // position after extension
+        size_t scriptEnd = extPos + ext.length();
         scriptName = requestPath.substr(0, scriptEnd);  // "/cgi-bin/script.py"
-
-        if (scriptEnd < requestPath.length()) {
-            pathInfo = requestPath.substr(scriptEnd);  // "/extra/path"
-        }
     }
-
+    
+    std::cout << "[DEBUG] [CGI ENV] pathInfo: " << pathInfo << std::endl;
+    std::cout << "[DEBUG] [CGI ENV] scriptName: " << scriptName << std::endl;
+    
     // SCRIPT_NAME
-    buffer = "SCRIPT_NAME=" + scriptName; // request
+    buffer = "SCRIPT_NAME=" + scriptName;
     envp[i++] = strdup(buffer.c_str());
-
+    
     // PATH_INFO
-    buffer = "PATH_INFO=" + pathInfo; // request
+    buffer = "PATH_INFO=" + pathInfo;
     envp[i++] = strdup(buffer.c_str());
 
-    // PATH_TRANSLATED
+    // PATH_TRANSLATED - maps PATH_INFO to filesystem path
     std::string documentRoot = connection.getRoutingResult().location->root;
-    std::string pathTranslated = documentRoot + pathInfo;
-    buffer = "PATH_TRANSLATED=" + pathTranslated; // request
+    std::string pathTranslated;
+    if (!pathInfo.empty()) {
+        bool hasTrailing = !documentRoot.empty() && documentRoot.back() == '/';
+        bool hasLeading  = !pathInfo.empty() && pathInfo.front() == '/';
+        if (hasTrailing && hasLeading)
+            pathTranslated = documentRoot + pathInfo.substr(1);
+        else if (!hasTrailing && !hasLeading)
+            pathTranslated = documentRoot + "/" + pathInfo;
+        else
+            pathTranslated = documentRoot + pathInfo;
+        buffer = "PATH_TRANSLATED=" + pathTranslated;
+        std::cout << "[DEBUG] [CGI ENV] PATH_TRANSLATED: " << pathTranslated << std::endl;
+    } else {
+        buffer = "PATH_TRANSLATED="; // empty when no PATH_INFO
+    }
     envp[i++] = strdup(buffer.c_str());
 
     // CONTENT_LENGTH

@@ -6,7 +6,7 @@ send a GET request and then disconnect (gracefully or abruptly) after a randomiz
 Designed to run indefinitely to test how the server handles many client disconnections.
 
 Usage:
-  python3 infinite_disconnect.py --host 127.0.0.1 --port 8080 --path /largefile --clients 100 --hold-min 0.5 --hold-max 3 --abort 0.3
+  python3 runtime/www/cgi-bin/infinite_disconnect.py --host 127.0.0.1 --port 8080 --path /largefile --clients 100 --hold-min 0.5 --hold-max 3 --abort 0.3
 
 Options:
   --clients    : number of concurrent worker threads (default 100)

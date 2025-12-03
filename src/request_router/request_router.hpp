@@ -36,7 +36,8 @@ struct RoutingResult {
 	std::string mappedPath;
 	RequestType type;
 	std::string cgiExtension;
-	
+	std::string scriptPath;     // for CGI: filesystem path to script
+	std::string pathInfo;       // for CGI: /extra/path after script
 	RoutingResult() : success(false), errorCode(0), serverConfig(NULL), location(NULL) {}
 };
 
@@ -57,7 +58,7 @@ class RequestRouter {
 		std::string mapPath(const HttpRequest& request, const LocationConfig*& matchedLocation);
 		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);
 		RequestType classify(const HttpRequest& req, const LocationConfig* location);
-		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
+		//std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 };
 
 #endif

@@ -7,7 +7,7 @@ It opens one or more connections and slowly sends a large request body (or heade
 pausing between small chunks to simulate a very slow client.
 
 Usage examples:
-  python3 slow_sender.py --host 127.0.0.1 --port 8080 --path /upload \
+  python3 runtime/www/cgi-bin/slow_sender.py --host 127.0.0.1 --port 8080 --path /upload \
       --size 10485760 --chunk 10 --delay 0.1 --conns 5
 
 Options:

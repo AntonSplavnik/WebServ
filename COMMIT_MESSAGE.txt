@@ -1,0 +1,37 @@
+fix: correct PATH_INFO and PATH_TRANSLATED handling for CGI requests
+
+Fixed incorrect path calculation for CGI requests with PATH_INFO (e.g., 
+/cgi-bin/script.py/extra/path). The issue was in how the script path 
+and PATH_INFO were being split from the request path.
+
+Changes in request_router.cpp:
+- Fixed extension finding logic to locate extensions at the end of 
+  filenames (followed by '/' or end of string), not just anywhere in 
+  the path
+- Improved path splitting to correctly separate script filename from 
+  PATH_INFO portion
+- Added comprehensive debug output for CGI routing to trace path 
+  calculations
+- Now correctly calculates:
+  * scriptPart: "test_POST_GET.py" 
+  * pathInfo: "/kek/lol"
+  * scriptPath: absolute filesystem path to script
+
+Changes in cgi_helpers.cpp:
+- Fixed extractCgiExtension() to handle PATH_INFO cases
+- Previously only matched paths ending with extension, now correctly 
+  finds extensions at end of filenames even when followed by additional 
+  path segments
+
+Changes in cgi.cpp:
+- Use pathInfo from RoutingResult instead of recalculating it
+- Ensures consistency between request router and CGI environment setup
+- Improved PATH_TRANSLATED calculation to use correct pathInfo value
+- Added debug output for PATH_INFO, SCRIPT_NAME, and PATH_TRANSLATED
+- PATH_TRANSLATED now correctly maps PATH_INFO to filesystem path using 
+  document root
+
+This fix ensures that CGI scripts receive correct PATH_INFO and 
+PATH_TRANSLATED environment variables, allowing them to properly 
+handle requests with additional path segments after the script name.
+

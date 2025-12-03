@@ -3,7 +3,7 @@
 slow_reader.py
 Creates many clients that request a large resource and then read the response extremely slowly.
 Usage:
-  python3 slow_reader.py --host 127.0.0.1 --port 8080 --path /largefile --clients 1 --delay 0.5 --chunk 1
+  python3 runtime/www/cgi-bin/slow_reader.py --host 127.0.0.1 --port 8080 --path /largefile --clients 1 --delay 0.5 --chunk 1
 
 Options:
   --clients  : number of sockets to open in this process (default 50)
@@ -41,6 +41,26 @@ def worker(host, port, path, delay, chunk, id):
                 break
 
         print("[w{}] headers received (len headers bytes: {})".format(id, len(headers)))
+        # Parse status line and handle non-2xx responses (e.g. 404 for invalid path)
+        first_line = headers.split(b'\r\n', 1)[0]
+        try:
+            parts = first_line.decode('iso-8859-1').split(' ', 2)
+            status_code = int(parts[1]) if len(parts) > 1 else None
+        except Exception:
+            status_code = None
+        if status_code is None:
+            print("[w{}] couldn't parse status line: {}".format(id, first_line))
+            s.close()
+            return
+        if status_code >= 400:
+            print(f"[w{id}] server returned error {status_code}. Closing connection.")
+            s.close()
+            return
+        if 300 <= status_code < 400:
+            print(f"[w{id}] server returned redirect {status_code}. Not following.")
+            s.close()
+            return
+
         # Now slow read body
         total = len(buf)
         if buf:

@@ -62,6 +62,7 @@ class Cgi {
 		size_t getBytesWrittenToCgi() const {return _bytesWrittenToCgi; }
 
 		bool isFinished() const {return _finished;}
+		static std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 
 	private:
 		pid_t				_pid;
@@ -81,7 +82,6 @@ class Cgi {
 		std::string findInterpreter(const std::string& name);
 		char** prepEnvVariables(const Connection& onnection, const std::string& ext);
 		bool chdirToScriptDir(const std::string& mappedPath);
-		std::string extractCgiExtension(const std::string& path, const LocationConfig* location);
 };
 
 #endif

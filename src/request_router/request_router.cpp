@@ -13,6 +13,7 @@
 #include "request_router.hpp"
 #include "connection.hpp"
 #include <climits>
+#include "cgi.hpp"
 
 static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
 	result.success = success;
@@ -46,18 +47,109 @@ RoutingResult RequestRouter::route(Connection& connection) {
 		return prepErrorResult(result, false, 413);
 	}
 
-	// Map path
-	std::string mappedPath = mapPath(req, location);
+    // Validate CGI or not
+	std::string ext = Cgi::extractCgiExtension(req.getPath(), location);
 
-	// Validate security
-	if (!validatePathSecurity(mappedPath, location->root)) {
-		return prepErrorResult(result, false, 403);
+	if (!ext.empty()) {
+		// ======== CGI REQUEST ==========
+		result.type = (req.getMethod() == "POST" ? CGI_POST : CGI_GET);
+		result.cgiExtension = ext;
+
+		// calculate relativePath like mapPath()
+		std::string locPath = location->path;
+		std::string requestPath = req.getPath();
+		std::string relativePath;
+
+		if (requestPath.compare(0, locPath.length(), locPath) == 0)
+			relativePath = requestPath.substr(locPath.length());
+		else
+			relativePath = requestPath;
+
+		if (!relativePath.empty() && relativePath[0] == '/')
+			relativePath = relativePath.substr(1);
+
+		std::cout << "[DEBUG] [CGI] LocationRoot: " << location->root << std::endl;
+		std::cout << "[DEBUG] [CGI] LocationPath: " << locPath << std::endl;
+		std::cout << "[DEBUG] [CGI] RequestPath: " << requestPath << std::endl;
+		std::cout << "[DEBUG] [CGI] RelativePath: " << relativePath << std::endl;
+		std::cout << "[DEBUG] [CGI] Extension: " << ext << std::endl;
+
+		// ----- SPLIT SCRIPT vs PATH_INFO -----
+		// Find extension in relativePath - must be at end of a filename (before '/' or end of string)
+		size_t extPos = std::string::npos;
+		size_t searchStart = 0;
+		
+		while (true) {
+			size_t found = relativePath.find(ext, searchStart);
+			if (found == std::string::npos)
+				break;
+			
+			// Check if extension is at end of filename (followed by '/' or end of string)
+			size_t afterExt = found + ext.length();
+			if (afterExt >= relativePath.length() || relativePath[afterExt] == '/') {
+				extPos = found;
+				break;
+			}
+			searchStart = found + 1;
+		}
+
+		if (extPos == std::string::npos) {
+			std::cout << "[DEBUG] [CGI] EXT NOT FOUND in relativePath\n";
+			result.errorCode = 404;
+			return result;
+		}
+
+		size_t scriptEnd = extPos + ext.length();
+
+		// Script part: "test_POST_GET.py"
+		std::string scriptPart = relativePath.substr(0, scriptEnd);
+
+		// Path info: "/kek/lol" (everything after the script filename)
+		std::string pathInfo = "";
+		if (scriptEnd < relativePath.length()) {
+			pathInfo = relativePath.substr(scriptEnd);
+			if (!pathInfo.empty() && pathInfo[0] != '/')
+				pathInfo = "/" + pathInfo;
+		}
+
+		// BUILD ABSOLUTE SCRIPT PATH
+		std::string scriptPath = location->root;
+
+		if (scriptPath.back() != '/')
+			scriptPath += "/";
+
+		scriptPath += scriptPart;
+
+		std::cout << "[DEBUG] [CGI] ScriptPart: " << scriptPart << std::endl;
+		std::cout << "[DEBUG] [CGI] ScriptPath: " << scriptPath << std::endl;
+		std::cout << "[DEBUG] [CGI] PathInfo: " << pathInfo << std::endl;
+		std::cout << "[DEBUG] [CGI] MappedPath: " << scriptPath << std::endl;
+
+		result.scriptPath = scriptPath;
+		result.mappedPath = scriptPath;    // filesystem path for execve
+		result.pathInfo = pathInfo;
+
+		result.success = true;
+		return result;
 	}
-	result.mappedPath = mappedPath;
 
-	// Classify request type
-	RequestType type = classify(req, location);
-	result.type = type;
+	// ======== STATIC REQUEST ==========
+	result.type = classify(req, location);
+	result.mappedPath = mapPath(req, location);
+
+	// Also compute pathInfo for static requests (portion after location prefix)
+	{
+		std::string locPath = location->path;
+		std::string requestPath = req.getPath();
+		std::string rel;
+		if (requestPath.compare(0, locPath.length(), locPath) == 0)
+			rel = requestPath.substr(locPath.length());
+		else
+			rel = "";
+		if (!rel.empty() && rel[0] != '/') rel = std::string("/") + rel;
+		if (rel.empty()) rel = "/";
+		result.pathInfo = rel;
+	}
 
 	result.success = true;
 	return result;
@@ -161,8 +253,16 @@ std::string RequestRouter::mapPath(const HttpRequest& request, const LocationCon
 	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
 	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
 	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+    // PathInfo for debugging should show the relative part after the location prefix
+    std::string debugPathInfo = relativePath;
+    if (!debugPathInfo.empty() && debugPathInfo[0] != '/')
+        debugPathInfo = std::string("/") + debugPathInfo;
+    if (debugPathInfo.empty())
+        debugPathInfo = "/";
+    std::cout << "[DEBUG] PathInfo : " << debugPathInfo << std::endl;
 	return locationRoot + relativePath;
 }
+
 bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot) {
 
 	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
