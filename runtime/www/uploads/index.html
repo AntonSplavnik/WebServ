@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Files</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #6dd5ed, #2193b0);
+            color: #fff;
+            text-align: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 40px 60px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-width: 800px;
+            width: 90%;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        .file-list li {
+            background: rgba(255, 255, 255, 0.2);
+            margin-bottom: 10px;
+            border-radius: 5px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .file-list li:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .file-list a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 30px;
+        }
+
+        .button:hover {
+            background-color: #ee5253;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Uploaded Files</h1>
+        <ul class="file-list">
+            <li><a href="/uploads/asplavni.jpeg">asplavni.jpeg</a></li>
+            <li><a href="/uploads/test_100kb.bin">test_100kb.bin</a></li>
+            <li><a href="/uploads/test_1kb.bin">test_1kb.bin</a></li>
+            <li><a href="/uploads/test_31kb.bin">test_31kb.bin</a></li>
+            <li><a href="/uploads/test_32kb.bin">test_32kb.bin</a></li>
+            <li><a href="/uploads/test_33kb.bin">test_33kb.bin</a></li>
+        </ul>
+        <a href="/" class="button">Back to Home</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to WebServ!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #6dd5ed, #2193b0);
+            color: #fff;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 40px 60px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeIn 1s ease-out;
+            max-width: 800px;
+            width: 90%;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        p {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #e0e0e0;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #ff6b6b;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button.secondary {
+            background-color: #48dbfb;
+        }
+
+
+
+        .button.secondary:hover {
+            background-color: #00c2ff;
+        }
+
+        .button:hover {
+            background-color: #ee5253;
+            transform: translateY(-3px);
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Background animation */
+        .bubble {
+            position: absolute;
+            bottom: -100px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: floatUp 15s infinite ease-in;
+        }
+
+        .bubble:nth-child(1) { width: 60px; height: 60px; left: 10%; animation-duration: 12s; }
+        .bubble:nth-child(2) { width: 80px; height: 80px; left: 25%; animation-duration: 15s; animation-delay: 1s; }
+        .bubble:nth-child(3) { width: 50px; height: 50px; left: 40%; animation-duration: 10s; animation-delay: 2s; }
+        .bubble:nth-child(4) { width: 70px; height: 70px; left: 60%; animation-duration: 13s; animation-delay: 0.5s; }
+        .bubble:nth-child(5) { width: 90px; height: 90px; left: 80%; animation-duration: 16s; animation-delay: 2.5s; }
+        .bubble:nth-child(6) { width: 65px; height: 65px; left: 30%; animation-duration: 11s; animation-delay: 3s; }
+        .bubble:nth-child(7) { width: 75px; height: 75px; left: 70%; animation-duration: 14s; animation-delay: 1.5s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            50% { transform: translateY(-700px) rotate(180deg); opacity: 0.4; }
+            100% { transform: translateY(-1000px) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+
+    <div class="container">
+        <h1>Welcome to WebServ!</h1>
+        <p>
+            Your highly performant and reliable HTTP server, crafted with care.
+            Explore the features, dive into the documentation, or simply enjoy
+            the seamless browsing experience.
+        </p>
+        <div class="button-group">
+            <a href="/docs" class="button">Learn More</a>
+            <a href="/uploads/" class="button secondary">Browse Uploads</a>
+            <a href="/Tester.html" class="button secondary">Tester Page</a>
+        </div>
+        <div class="footer">
+            &copy; 2025 WebServ Project. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

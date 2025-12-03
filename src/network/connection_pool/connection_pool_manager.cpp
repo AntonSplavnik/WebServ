@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/01 21:49:05 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/02 23:07:28 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,14 @@
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
+	// std::cout << "[DEBUG] handleConnectionEvent FD " << fd << " revents=" << revents << std::endl;
+
 	Connection& connection = getConnectionRef(fd);
 	ConnectionState state = connection.getState();
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
+		std::cout << "[DEBUG] POLLERR detected, disconnecting FD " << fd << std::endl;
 		disconnectConnection(fd);
 		return;
 	}
@@ -212,7 +215,7 @@ void ConnectionPoolManager::addConnection(Connection& incomingConnection) {
 	_connectionPool.insert(std::make_pair(fd, incomingConnection));
 }
 void ConnectionPoolManager::disconnectConnection(short fd) {
-	close(fd);
+	close (fd);
 	_connectionPool.erase(fd);
 }
 bool ConnectionPoolManager::isConnection(int fd){

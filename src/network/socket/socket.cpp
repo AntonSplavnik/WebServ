@@ -36,7 +36,11 @@ void Socket::createDefault() {
 
 void Socket::setReuseAddr(bool enable) {
 
-	setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+	int opt = enable ? 1 : 0;
+	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+		std::cerr << "[ERROR] Failed to set SO_REUSEADDR: " << strerror(errno) << std::endl;
+		return;
+	}
 	std::cout << "[DEBUG] Set SO_REUSEADDR option on FD " << _fd << std::endl;
 }
 

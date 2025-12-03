@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/29 15:21:39 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/02 22:49:50 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ Critical HTTP parsing test scenarios
 
 void HttpRequest::parseRequestHeaders(const std::string requestData) {
 
-	std::cout << "\n#######  HTTP PARSE REQUEST HEADERS #######" << std::endl;
+	std::cout << "\n#######  HTTP PARSER #######" << std::endl;
 
 	extractLineHeaderBodyLen(requestData);
 	if (!_isValid) return;
@@ -54,7 +54,7 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 		return;
 	}
 	_requestLine = rawData.substr(0, firstCRLF);
-	std::cout << "[DEBUG] _requestLine: " << _requestLine << std::endl;
+	std::cout << "_requestLine: " << _requestLine << std::endl;
 
 	// Extract Header & Body
 	size_t headerBodySeparator = rawData.find("\r\n\r\n");
@@ -70,7 +70,6 @@ void HttpRequest::parseRequestLine() {
 	if (_requestLine.empty()) {
 		std::cout << " Error: Request line is empty" << std::endl;
 		_isValid = false;
-		return;
 	}
 	std::istringstream iss(_requestLine);
 
@@ -83,19 +82,19 @@ void HttpRequest::parseRequestLine() {
 			<< "_version: " << _version << std::endl;
 
 	if (_method.empty() || _path.empty() || _version.empty()) {
-		std::cout << " Error: Invalid request line format" << std::endl;
+		std::cout << "[Error]: Invalid request line format" << std::endl;
 		_isValid = false;
-		return;
+
 	}
 	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-		std::cout << " Error: Unknown HTTP method: " << _method << std::endl;
+		std::cout << "[Error]: Unknown HTTP method: " << _method << std::endl;
 		_isValid = false;
-		return;
+
 	}
 	if (_version != "HTTP/1.1" && _version != "HTTP/1.0") {
-		std::cout << "Error : Unsupported HTTP version: " << _version << std::endl;
+		std::cout << "[Error]: Unsupported HTTP version: " << _version << std::endl;
 		_isValid = false;
-		return;
+
 	}
 
 	size_t queryPos = _path.find('?');
@@ -180,6 +179,10 @@ void HttpRequest::parseHeaders() {
 			return;
 		}
 	}
+	std::map<std::string, std::string>::const_iterator hostIt = _headers.begin();
+	for(; hostIt != _headers.end(); ++hostIt) {
+		std::cout << hostIt->first << " : " << hostIt->second << std::endl;
+	}
 }
 void HttpRequest::parseBody() {
 
@@ -195,7 +198,7 @@ void HttpRequest::parseBody() {
 	// Validate Content-Length if present
 	if (getContentLength() != _body.length()) {
 		_isValid = false;
-		std::cout << "Content-Length mismatch"
+		std::cout << "[DEBUG] Content-Length mismatch"
 				  << getContentLength()
 				  << ", got " << _body.length()
 				  << std::endl;

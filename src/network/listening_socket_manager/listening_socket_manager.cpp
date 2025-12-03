@@ -39,7 +39,7 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 			std::string address = configs[i].listeners[j].first;
 			// unsigned short port = configs[i].listeners[j].second;
 			listeningSocket.binding(address, port);
-			if (fd < 0) {
+			if (listeningSocket.getFd() < 0) {
 				throw std::runtime_error("[DEBUG] Failed to bind socket (port may be in use)");
 			}
 
@@ -100,8 +100,11 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 	);
 	connectionPoolManager.addConnection(incomingConnection);
 
-	std::cout << "[DEBUG] New connection accepted! Client FD: " << clientFd
-				<< " Timeout: 15 " << " Max Max Requests: 100" << std::endl;
+	std::cout << "\n[DEBUG] New connection accepted!" << "\n"
+			  << "FD: " << clientFd << "\n"
+			  << "IP: " << incomingConnection.getIp() << "\n"
+			  << "Timeout: 15 " << "\n"
+			  << "Max Max Requests: 100\n" << std::endl;
 
 }
 

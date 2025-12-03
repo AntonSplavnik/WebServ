@@ -1172,18 +1172,31 @@
             }
         }
 
+
+
         async function testMissingContentType() {
             const text = document.getElementById('noContentType').value;
-            log('Testing missing Content-Type header', 'info');
-            try {
-                const response = await fetch('/uploads', {
-                    method: 'POST',
-                    body: text
-                });
-                log(`Response: ${response.status}`, response.ok ? 'success' : 'error');
-            } catch (error) {
-                log(`Error: ${error.message}`, 'error');
-            }
+            log('Testing missing Content-Type header with XMLHttpRequest', 'info');
+
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/uploads');
+
+                // Convert text to ArrayBuffer
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+
+                xhr.onload = function() {
+                    log(`Response: ${xhr.status} ${xhr.statusText}`, xhr.status >= 200 && xhr.status < 300 ? 'success' : 'error');
+                    log(`Body: ${xhr.responseText.substring(0, 200)}`, 'info');
+                    resolve();
+                };
+                xhr.onerror = function() {
+                    log(`XHR Error: ${xhr.statusText}`, 'error');
+                    resolve();
+                };
+                xhr.send(data);
+            });
         }
 
         async function testInvalidContentType() {

@@ -222,7 +222,7 @@ void HttpResponse::buildHttpResponse() {
 }
 
 void HttpResponse::setCustomErrorPage(const std::string& errorPagePath) {
-    _customErrorPagePath = errorPagePath;
+	_customErrorPagePath = errorPagePath;
 }
 
 void HttpResponse::setProtocolVersion(const std::string& protVer) {_protocolVersion = protVer;}

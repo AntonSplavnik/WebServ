@@ -16,7 +16,14 @@ class ListeningSocketManager {
 
 	public:
 		ListeningSocketManager(): _fd() {}
-		~ListeningSocketManager() {}
+		~ListeningSocketManager() {
+			for (size_t i = 0; i < _listeningSockets.size(); i++) {
+				int fd = _listeningSockets[i].getFd();
+				if (fd >= 0) {
+					close(fd);
+				}
+			}
+		}
 
 		void initListeningSockets(std::vector<ConfigData>& configs);
 		void handleListenEvent(int fd, short revents, ConnectionPoolManager& connectionPoolManager);

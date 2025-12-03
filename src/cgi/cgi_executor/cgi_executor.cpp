@@ -10,6 +10,7 @@ void CgiExecutor::handleCGI(Connection& connection) {
 	if (!cgi.start(connection)){
 		connection.setStatusCode(500);
 		connection.prepareResponse();
+		return;
 	}
 
 	//Register CGI process

@@ -139,6 +139,7 @@ Connection& Connection::operator=(const Connection& other) {
 	return *this;
 }
 Connection::~Connection() {
+
 	if (_fileStream) {
 		if (_fileStream->is_open())
 			_fileStream->close();
@@ -180,12 +181,11 @@ bool Connection::readHeaders() {
 		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 		std::cout << "[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "
 				  << headerEnd << " Buffer size: " << _requestBuffer.size() << std::endl;
-  		std::cout << "[DEBUG] Buffer content: [" << _requestBuffer << "]" << std::endl;
 
 		if(headerEnd == std::string::npos) {
 			return false;  // Keep receiving headers
 		}
-
+		// std::cout << "[DEBUG] Buffer content: [" << _requestBuffer << "]" << std::endl;
 		_connectionState = ROUTING_REQUEST;
 		return true;
 	}
@@ -454,7 +454,13 @@ bool Connection::prepareResponse() {
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
-	response.setProtocolVersion(_request.getProtocolVersion());
+
+	// Set protocol version with fallback for invalid requests
+	std::string version = _request.getProtocolVersion();
+	if (version.empty() || (version != "HTTP/1.1" && version != "HTTP/1.0")) {
+		version = "HTTP/1.1";  // Default for malformed requests
+	}
+	response.setProtocolVersion(version);
 
 	// Set body for GET request and index
 	if (!_bodyContent.empty()) {
@@ -488,11 +494,10 @@ bool Connection::prepareResponse() {
 		response.setConnectionType("close");
 		_shouldClose = true;
 	}
-	// else response.setConnectionType(_request.getConnectionType()); ??
-
 
 	response.generateResponse(_statusCode);
 	_responseData = response.getResponse();
+	// std::cout << "\nRESPONSE\n" << _responseData << "\n" << std::endl;
 	_bytesSent = 0;
 	_connectionState = SENDING_RESPONSE;
 	return true;
@@ -504,7 +509,13 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
-	response.setProtocolVersion(_request.getProtocolVersion());
+
+	// Set protocol version with fallback for invalid requests
+	std::string version = _request.getProtocolVersion();
+	if (version.empty() || (version != "HTTP/1.1" && version != "HTTP/1.0")) {
+		version = "HTTP/1.1";  // Default for malformed requests
+	}
+	response.setProtocolVersion(version);
 
 	// Look up custom error page if status is an error
 	if (_statusCode >= 400 && _routingResult.serverConfig){
