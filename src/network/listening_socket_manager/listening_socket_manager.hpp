@@ -9,9 +9,6 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-
-#define MAX_CLIENTS 256 //  ulimit -n
-
 class ListeningSocketManager {
 
 	public:
