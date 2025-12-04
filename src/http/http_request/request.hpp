@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:16:30 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/30 15:56:15 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 13:05:35 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ class HttpRequest {
 			_query(),
 			_version(),
 			_headers(),
-			_isValid(true) {
+			_statusCode(0) {
 		}
 		~HttpRequest() {}
 
@@ -73,7 +73,8 @@ class HttpRequest {
 		void setProtocolVersion(std::string version) { _version = version; }
 
 		// Status
-		bool getStatus() const { return _isValid; }
+		bool isValid() const { return _statusCode == 0; }
+		int getStatusCode() const { return _statusCode; }
 
 	private:
 		// Raw data
@@ -91,12 +92,13 @@ class HttpRequest {
 		std::map<std::string, std::string>	_headers;
 
 		// State
-		bool	_isValid;
+		int	_statusCode;  // 0 = valid, or HTTP error code
 
 		// Internal parsing helpers
 		void extractLineHeaderBodyLen(const std::string rawData);
 		void parseRequestLine();
 		void parseHeaders();
+		void setFallbackValues();
 		std::string getHeaderValue(const std::string& key, const std::string& defaultValue = "") const;
 };
 

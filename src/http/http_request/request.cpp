@@ -23,18 +23,26 @@ Critical HTTP parsing test scenarios
 	- Non-implemented HTTP method requests
 */
 
+void HttpRequest::setFallbackValues() {
+	_method = "GET";
+	_path = "/";
+	_version = "HTTP/1.1";
+	_query = "";
+	_headers.clear();
+}
+
 void HttpRequest::parseRequestHeaders(const std::string requestData) {
 
 	std::cout << "\n#######  HTTP PARSER #######" << std::endl;
 
 	extractLineHeaderBodyLen(requestData);
-	if (!_isValid) return;
+	if (_statusCode != 0) return;
 
 	parseRequestLine();
-	if (!_isValid) return;
+	if (_statusCode != 0) return;
 
 	parseHeaders();
-	if (!_isValid) return;
+	if (_statusCode != 0) return;
 
 	std::cout << "#################################\n" << std::endl;
 }
@@ -50,7 +58,9 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 	// Extract request line
 	size_t firstCRLF = rawData.find("\r\n");
 	if (firstCRLF == std::string::npos) {
-		_isValid = false;
+		std::cout << "[ERROR] Missing \\r\\n after request line" << std::endl;
+		setFallbackValues();
+		_statusCode = 400;
 		return;
 	}
 	_requestLine = rawData.substr(0, firstCRLF);
@@ -58,6 +68,12 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 
 	// Extract Header & Body
 	size_t headerBodySeparator = rawData.find("\r\n\r\n");
+	if (headerBodySeparator == std::string::npos) {
+		std::cout << "[ERROR] Missing \\r\\n\\r\\n separator between headers and body" << std::endl;
+		setFallbackValues();
+		_statusCode = 400;
+		return;
+	}
 	size_t headersStart = firstCRLF + 2; // After "GET /path HTTP/1.1\r\n"
 	size_t headersLength = headerBodySeparator - headersStart;
 	_rawHeaders = rawData.substr(headersStart, headersLength);
@@ -68,8 +84,10 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 void HttpRequest::parseRequestLine() {
 
 	if (_requestLine.empty()) {
-		std::cout << " Error: Request line is empty" << std::endl;
-		_isValid = false;
+		std::cout << "[ERROR] Request line is empty" << std::endl;
+		setFallbackValues();
+		_statusCode = 400;
+		return;
 	}
 	std::istringstream iss(_requestLine);
 
@@ -81,22 +99,31 @@ void HttpRequest::parseRequestLine() {
 			<< "_path: " << _path << std::endl
 			<< "_version: " << _version << std::endl;
 
-	if (_method.empty() || _path.empty() || _version.empty()) {
-		std::cout << "[Error]: Invalid request line format" << std::endl;
-		_isValid = false;
-
+	// Check stringstream state and parsed values
+	if (!iss || _method.empty() || _path.empty() || _version.empty()) {
+		std::cout << "[ERROR] Invalid request line format" << std::endl;
+		setFallbackValues();
+		_statusCode = 400;
+		return;
 	}
-	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-		std::cout << "[Error]: Unknown HTTP method: " << _method << std::endl;
-		_isValid = false;
 
-	}
+	// Check for unsupported HTTP version first (505)
 	if (_version != "HTTP/1.1" && _version != "HTTP/1.0") {
-		std::cout << "[Error]: Unsupported HTTP version: " << _version << std::endl;
-		_isValid = false;
-
+		std::cout << "[ERROR] Unsupported HTTP version: " << _version << std::endl;
+		setFallbackValues();
+		_statusCode = 505;
+		return;
 	}
 
+	// Check for unknown HTTP method (501)
+	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+		std::cout << "[ERROR] Unknown HTTP method: " << _method << std::endl;
+		setFallbackValues();
+		_statusCode = 501;
+		return;
+	}
+
+	// Extract query string
 	size_t queryPos = _path.find('?');
 	if (queryPos != std::string::npos) {
 		_query = _path.substr(queryPos + 1);  // "q=test"
@@ -109,7 +136,8 @@ void HttpRequest::parseHeaders() {
 
 	if (_rawHeaders.empty()) {
 		std::cout << "No headers to parse" << std::endl;
-		_isValid = false;
+		setFallbackValues();
+		_statusCode = 400;
 		return;
 	}
 
@@ -129,7 +157,8 @@ void HttpRequest::parseHeaders() {
 		// Check header count limit
 		if (++headerCount > MAX_HEADERS) {
 			std::cout << "[ERROR] Too many headers (max " << MAX_HEADERS << ")" << std::endl;
-			_isValid = false;
+			setFallbackValues();
+			_statusCode = 431;
 			return;
 		}
 
@@ -137,7 +166,9 @@ void HttpRequest::parseHeaders() {
 		size_t pos = headerLine.find(':');
 		if (pos == std::string::npos) {
 			std::cout << "[ERROR] Invalid header line (no colon)" << std::endl;
-			continue;
+			setFallbackValues();
+			_statusCode = 400;
+			return;
 		}
 
 		// Extract key and value
@@ -147,13 +178,17 @@ void HttpRequest::parseHeaders() {
 		// Validate header name
 		if (key.empty()) {
 			std::cout << "[ERROR] Empty header name" << std::endl;
-			continue;
+			setFallbackValues();
+			_statusCode = 400;
+			return;
 		}
 
 		// Check for spaces in header name (RFC violation)
 		if (key.find(' ') != std::string::npos || key.find('\t') != std::string::npos) {
 			std::cout << "[ERROR] Invalid header name (contains whitespace): " << key << std::endl;
-			continue;
+			setFallbackValues();
+			_statusCode = 400;
+			return;
 		}
 
 		// Tolower key
@@ -175,7 +210,8 @@ void HttpRequest::parseHeaders() {
 		std::map<std::string, std::string>::const_iterator hostIt = _headers.find("host");
 		if (hostIt == _headers.end() || hostIt->second.empty()) {
 			std::cout << "[ERROR] Missing Host header" << std::endl;
-			_isValid = false;
+			setFallbackValues();
+			_statusCode = 400;
 			return;
 		}
 	}
@@ -191,17 +227,19 @@ void HttpRequest::parseBody() {
 		if (getContentLength() == 0) {
 			return;
 		}
-		_isValid = false;
+		std::cout << "[ERROR] Expected body but received none" << std::endl;
+		_statusCode = 400;
 		return;
 	}
 
 	// Validate Content-Length if present
 	if (getContentLength() != _body.length()) {
-		_isValid = false;
-		std::cout << "[DEBUG] Content-Length mismatch"
+		std::cout << "[ERROR] Content-Length mismatch: expected "
 				  << getContentLength()
 				  << ", got " << _body.length()
 				  << std::endl;
+		_statusCode = 400;
+		return;
 	}
 }
 

@@ -93,8 +93,8 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			// Parse headers after received
 			HttpRequest request;
 			request.parseRequestHeaders(connection.getRequestBuffer());
-			if(!request.getStatus()) {
-				connection.setStatusCode(400);
+			if (!request.isValid()) {
+				connection.setStatusCode(request.getStatusCode());
 				connection.prepareResponse();
 				return;
 			}
@@ -153,8 +153,8 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 			// Parse body after received
 			connection.moveBodyToRequest();
 			const HttpRequest& request = connection.getRequest();
-			if(!request.getStatus()) {
-				connection.setStatusCode(400);
+			if (!request.isValid()) {
+				connection.setStatusCode(request.getStatusCode());
 				connection.prepareResponse();
 				return;
 			}

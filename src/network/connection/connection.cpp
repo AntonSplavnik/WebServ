@@ -180,7 +180,7 @@ bool Connection::readHeaders() {
 		// Check total header size limit
 		if (_requestBuffer.size() > MAX_HEADER_SIZE) {
 			std::cout << "[ERROR] Headers too large (>" << MAX_HEADER_SIZE << " bytes)" << std::endl;
-			setStatusCode(413);
+			setStatusCode(400);
 			prepareResponse();
 			return true;
 		}
@@ -463,13 +463,7 @@ bool Connection::prepareResponse() {
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
-
-	// Set protocol version with fallback for invalid requests
-	std::string version = _request.getProtocolVersion();
-	if (version.empty() || (version != "HTTP/1.1" && version != "HTTP/1.0")) {
-		version = "HTTP/1.1";  // Default for malformed requests
-	}
-	response.setProtocolVersion(version);
+	response.setProtocolVersion(_request.getProtocolVersion());
 
 	// Set body for GET request and index
 	if (!_bodyContent.empty()) {
@@ -518,13 +512,7 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	// Set response metadata
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
-
-	// Set protocol version with fallback for invalid requests
-	std::string version = _request.getProtocolVersion();
-	if (version.empty() || (version != "HTTP/1.1" && version != "HTTP/1.0")) {
-		version = "HTTP/1.1";  // Default for malformed requests
-	}
-	response.setProtocolVersion(version);
+	response.setProtocolVersion(_request.getProtocolVersion());
 
 	// Look up custom error page if status is an error
 	if (_statusCode >= 400 && _routingResult.serverConfig){

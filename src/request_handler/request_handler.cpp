@@ -103,7 +103,6 @@ void RequestHandler::handlePOST(Connection& connection) {
 
 	std::string contentType = request.getContentType();
 	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
-	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
 
 	// Empty POST - no content to process
 	if (request.getBody().empty()) {

@@ -165,9 +165,18 @@ void EventLoop::checkConnectionsTimeouts() {
 
 		if(isConnectionTimedOut(connections, currentFd)){
 			std::cout << "Client: " << currentFd << " timed out." << std::endl;
-			int fdToDisconnect = currentFd;
-			++it;
-			_connectionPoolManager.disconnectConnection(fdToDisconnect);
+
+			// If headers were parsed, send 408 response before closing
+			if (it->second.getState() != READING_HEADERS) {
+				it->second.setStatusCode(408);
+				it->second.prepareResponse();
+				++it;
+			} else {
+				// Headers incomplete, just close connection
+				int fdToDisconnect = currentFd;
+				++it;
+				_connectionPoolManager.disconnectConnection(fdToDisconnect);
+			}
 		}
 		else
 			++it;
