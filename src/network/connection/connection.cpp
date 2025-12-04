@@ -177,6 +177,14 @@ bool Connection::readHeaders() {
 
 		_requestBuffer.append(buffer, bytes);
 
+		// Check total header size limit
+		if (_requestBuffer.size() > MAX_HEADER_SIZE) {
+			std::cout << "[ERROR] Headers too large (>" << MAX_HEADER_SIZE << " bytes)" << std::endl;
+			setStatusCode(413);
+			prepareResponse();
+			return true;
+		}
+
 		// Check if headers complete
 		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 		std::cout << "[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "

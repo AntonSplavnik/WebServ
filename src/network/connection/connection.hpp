@@ -16,6 +16,8 @@
 #define BUFFER_SIZE_32 32768   // 32 KB
 // // #define BUFFER_SIZE_65 65536   // 64 KB
 
+#define MAX_HEADER_SIZE 8192   // 8 KB - total headers limit
+
 enum ConnectionState {
 	READING_HEADERS,
 	ROUTING_REQUEST,
