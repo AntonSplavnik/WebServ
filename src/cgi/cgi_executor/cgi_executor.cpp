@@ -46,13 +46,10 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 		handleCGIerror(*connection, cgiIt->second, fd);
 	} else if (revents & POLLHUP) {
 		std::cerr << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
-		if (revents & POLLIN) {
-			handleCGIread(*connection, cgiIt->second);
-			return;
-		}
-		connection->setStatusCode(500);
-		connection->prepareResponse();
-		terminateCGI(cgiIt->second);
+		// On Linux, POLLHUP may occur without POLLIN even when data is available
+		// Always try to read remaining data before treating as error
+		handleCGIread(*connection, cgiIt->second);
+		return;
 	} else if (revents & POLLOUT) {
 		std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
 		handleCGIwrite(*connection, cgiIt->second);

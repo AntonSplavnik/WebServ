@@ -53,24 +53,21 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 	*/
 	else if (revents & POLLHUP) {
 
-		if (revents & POLLIN) {	// connection closed, but there's data in the buffer
-			if (connection.getState() == READING_HEADERS) {	// client send last request and closed send, but still waiting for response.
-				connection.setShouldClose(true);
-				if (!connection.readHeaders()) {	// recv() returned 0
-					disconnectConnection(fd);
-					return;
-				}
-			} else if (connection.getState() == READING_BODY) {
-				connection.setShouldClose(true);
-				if (!connection.readBody()) {	// recv() returned 0
-					disconnectConnection(fd);
-					return;
-				}
-			} else {
+		// On Linux, POLLHUP may occur without POLLIN even when data is available
+		// Always attempt to read if we're in a reading state
+		if (connection.getState() == READING_HEADERS) {
+			connection.setShouldClose(true);
+			if (!connection.readHeaders()) {	// recv() returned 0
 				disconnectConnection(fd);
 				return;
 			}
-		} else {	// POLLOUT
+		} else if (connection.getState() == READING_BODY) {
+			connection.setShouldClose(true);
+			if (!connection.readBody()) {	// recv() returned 0
+				disconnectConnection(fd);
+				return;
+			}
+		} else {
 			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
 			disconnectConnection(fd);
 			return;
