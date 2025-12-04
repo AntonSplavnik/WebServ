@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   event_loop.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/06 13:19:56 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/02 00:17:27 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 18:14:21 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <set>
 
 #include "event_loop.hpp"
+#include "../debug.hpp"
 
 
 extern volatile sig_atomic_t g_shutdown;
@@ -57,7 +58,7 @@ void EventLoop::rebuildPollFds() {
 				continue;
 		}
 		_pollFds.push_back(connection);
-		// std::cout << "[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		// DEBUG_LOG("[DEBUG] Added client socket FD " << connection.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;)
 	}
 
 	std::map<int, Cgi>& cgis = _cgiExecutor.getCGI();
@@ -72,7 +73,7 @@ void EventLoop::rebuildPollFds() {
 			cgiFd.events = POLLIN;
 		cgiFd.revents = 0;
 		_pollFds.push_back(cgiFd);
-		// std::cout << "[DEBUG] Added CGI socket FD " << cgiFd.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		// DEBUG_LOG("[DEBUG] Added CGI socket FD " << cgiFd.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;)
 	}
 }
 
@@ -109,12 +110,12 @@ void EventLoop::run() {
 
 		//errno != EINTR check for interrupted poll
 		if (ret < 0 && errno != EINTR) {
-			std::cerr << "[DEBUG] Poll failed.\n";
+			DEBUG_LOG("[DEBUG] Poll failed.\n");
 			break;
 		}
 
 		if (ret > 0) {
-			std::cout << "[DEBUG] poll() returned " << ret << " (number of FDs with events)" << std::endl;
+			DEBUG_LOG("[DEBUG] poll() returned " << ret << " (number of FDs with events)" << std::endl);
 			for(size_t i = 0; i < _pollFds.size(); i++) {
 
 				int fd = _pollFds[i].fd;
@@ -122,7 +123,7 @@ void EventLoop::run() {
 
 				if (_pollFds[i].revents == 0) continue;
 
-				std::cout << "[DEBUG] Handling FD " << fd << " at index " << i << " with revents=" << revents << std::endl;
+				DEBUG_LOG("[DEBUG] Handling FD " << fd << " at index " << i << " with revents=" << revents << std::endl);
 
 				if (_listenManager.isListening(fd))
 					_listenManager.handleListenEvent(fd, revents, _connectionPoolManager);
@@ -252,7 +253,7 @@ void EventLoop::reapZombieProcesses() {
 		int result = waitpid(_killedPids[i], NULL, WNOHANG);
 		int pid = _killedPids[i];
 		if (result > 0 ){
-			std::cout << "[DEBUG] Reaped zombie process " << pid << std::endl;
+			DEBUG_LOG("[DEBUG] Reaped zombie process " << pid << std::endl);
 			_killedPids.erase(_killedPids.begin() + i);
 		} else if (result == 0) {
 			i++;

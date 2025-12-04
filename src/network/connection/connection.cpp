@@ -1,6 +1,7 @@
 #include "connection.hpp"
 #include "post_handler.hpp"
 #include "response.hpp"
+#include "../debug.hpp"
 
 Connection::Connection()
 	: _fd(-1),
@@ -160,13 +161,13 @@ bool Connection::readHeaders() {
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	DEBUG_LOG("[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl);
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected before headers received." << std::endl;
+			DEBUG_LOG("[DEBUG] Client FD " << _fd << " disconnected before headers received." << std::endl);
 		} else { // bytes < 0
-			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			DEBUG_LOG("[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl);
 		}
 		_shouldClose = true;
 		return false;
@@ -187,13 +188,13 @@ bool Connection::readHeaders() {
 
 		// Check if headers complete
 		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
-		std::cout << "[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "
-				  << headerEnd << " Buffer size: " << _requestBuffer.size() << std::endl;
+		DEBUG_LOG("[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "
+				  << headerEnd << " Buffer size: " << _requestBuffer.size() << std::endl);
 
 		if(headerEnd == std::string::npos) {
 			return false;  // Keep receiving headers
 		}
-		// std::cout << "[DEBUG] Buffer content: [" << _requestBuffer << "]" << std::endl;
+		// DEBUG_LOG("[DEBUG] Buffer content: [" << _requestBuffer << "]" << std::endl);
 		_connectionState = ROUTING_REQUEST;
 		return true;
 	}
@@ -213,16 +214,16 @@ bool Connection::readBody() {
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	DEBUG_LOG("[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl);
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected during body read - incomplete body" << std::endl;
+			DEBUG_LOG("[DEBUG] Client FD " << _fd << " disconnected during body read - incomplete body" << std::endl);
 			setStatusCode(400);
 			prepareResponse();
 			return false;
 		} else { // bytes < 0
-			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			DEBUG_LOG("[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl);
 			_shouldClose = true;
 			return false;
 		}
@@ -252,8 +253,8 @@ bool Connection::readBody() {
 		// Read fixed-size body (both HTTP/1.0 and HTTP/1.1)
 		_requestBuffer.append(buffer, bytes);
 		bodyReceived = _requestBuffer.length() - bodyStart;
-		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: "
-				  << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
+		DEBUG_LOG("[DEBUG] Content-Length: " << contentLength << ", Body received: "
+				  << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl);
 
 		// Check if full body received
 		if(bodyReceived >= contentLength) {
@@ -341,8 +342,8 @@ bool Connection::readFromDisc() {
 		_bodyContent.append(buffer, bytesRead);
 		_bytesRead += bytesRead;
 		updateClientActivity();
-		std::cout << "[DEBUG] Read " << bytesRead << " bytes from disk ("
-				  << _bytesRead << " total)" << std::endl;
+		DEBUG_LOG("[DEBUG] Read " << bytesRead << " bytes from disk ("
+				  << _bytesRead << " total)" << std::endl);
 	}
 
 	// Check for errors (not EOF, which is normal completion)
@@ -362,7 +363,7 @@ bool Connection::readFromDisc() {
 		delete _inputFileStream;
 		_inputFileStream = NULL;
 
-		std::cout << "[DEBUG] File read complete: " << _bytesRead << " bytes total" << std::endl;
+		DEBUG_LOG("[DEBUG] File read complete: " << _bytesRead << " bytes total" << std::endl);
 		setStatusCode(200);
 		prepareResponse();
 		return true; // Transition to SENDING_RESPONSE
@@ -414,7 +415,7 @@ bool Connection::processWrite(const std::string& data, const std::string& filePa
 
 	_bytesWritten += bytesToWrite;
 	updateClientActivity();
-	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
+	DEBUG_LOG("[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl);
 	return true;
 }
 std::string Connection::processChunkedData(const char* data, int dataLen) {
@@ -547,7 +548,7 @@ void Connection::setupErrorPage(HttpResponse& response) {
 
 bool Connection::sendResponse() {
 
-	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
+	DEBUG_LOG("[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl);
 
 	// Send remaining response data
 	const char* data = _responseData.c_str() + _bytesSent;
@@ -555,7 +556,7 @@ bool Connection::sendResponse() {
 	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
 	int bytes_sent = send(_fd, data, bytesToWrite, 0);
-	std::cout << "[DEBUG] send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
+	DEBUG_LOG("[DEBUG] send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl);
 
 	if (bytes_sent > 0) {
 
@@ -563,28 +564,28 @@ bool Connection::sendResponse() {
 
 		updateClientActivity();
 
-		std::cout << "[DEBUG] Total bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
+		DEBUG_LOG("[DEBUG] Total bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl);
 
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {
 
 			if(_shouldClose) {
-				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
+				DEBUG_LOG("[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl);
 				return true;
 			}
 
-			std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Resetting for next request (keep-alive)." << std::endl;
+			DEBUG_LOG("[DEBUG] Complete response sent to FD " << _fd << ". Resetting for next request (keep-alive)." << std::endl);
 			resetForNextRequest(); // Reset client state for next request
 
 			return false;
 
 		} else {
-			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
+			DEBUG_LOG("[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl);
 			return false;
 		}
 	} else {
 		// Send failed, close connection
-		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
+		DEBUG_LOG("[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl);
 		return false;
 	}
 }

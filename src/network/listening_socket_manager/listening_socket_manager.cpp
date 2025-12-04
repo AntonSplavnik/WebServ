@@ -1,4 +1,5 @@
 #include "listening_socket_manager.hpp"
+#include "../../debug.hpp"
 #include <algorithm>
 #include <set>
 
@@ -30,9 +31,9 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 			}
 
 			_fd.push_back(fd);
-			std::cout << "[DEBUG] Susesfully added fd: "
+			DEBUG_LOG("[DEBUG] Susesfully added fd: "
 					  << fd << " to vector<int> at vector position: "
-					  << _fd.size() << std::endl;
+					  << _fd.size() << std::endl);
 
 			listeningSocket.setReuseAddr(true);
 
@@ -52,9 +53,9 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 
 			_listeningSockets.push_back(listeningSocket);
 
-			std::cout << "[DEBUG] Susesfully added fd: "
+			DEBUG_LOG("[DEBUG] Susesfully added fd: "
 					  << fd << " to vector<Socket> at vector position: "
-					  << _listeningSockets.size() << std::endl;
+					  << _listeningSockets.size() << std::endl);
 			std::cout << "\n";
 		}
 	}
@@ -62,7 +63,7 @@ void ListeningSocketManager::initListeningSockets(std::vector<ConfigData>& confi
 void ListeningSocketManager::handleListenEvent(int fd, short revents, ConnectionPoolManager& connectionPoolManager) {
 
 	(void)revents;
-	std::cout << "[DEBUG] Event detected on listening socket FD " << fd << std::endl;
+	DEBUG_LOG("[DEBUG] Event detected on listening socket FD " << fd << std::endl;)
 
 	Socket* listeningSocket = NULL;
 	for (size_t i = 0; i < _listeningSockets.size(); i++)
@@ -78,7 +79,7 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 	}
 
 	if (connectionPoolManager.getConnectionPool().size() >= static_cast<size_t>(MAX_CLIENTS)){
-		std::cout << "[DEBUG] Max clients reached, rejecting connection" << std::endl;
+		DEBUG_LOG("[DEBUG] Max clients reached, rejecting connection" << std::endl;)
 		return;
 	}
 
@@ -86,7 +87,7 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 	int clientFd = listeningSocket->accepting(clientAddr);
 
 	if (clientFd < 0){
-		std::cout << "[DEBUG] Error on FD accept" << std::endl;
+		DEBUG_LOG("[DEBUG] Error on FD accept" << std::endl;)
 		return;
 	}
 
@@ -100,11 +101,11 @@ void ListeningSocketManager::handleListenEvent(int fd, short revents, Connection
 	);
 	connectionPoolManager.addConnection(incomingConnection);
 
-	std::cout << "\n[DEBUG] New connection accepted!" << "\n"
+	DEBUG_LOG("\n[DEBUG] New connection accepted!" << "\n"
 			  << "FD: " << clientFd << "\n"
 			  << "IP: " << incomingConnection.getIp() << "\n"
 			  << "Timeout: 15 " << "\n"
-			  << "Max Max Requests: 100\n" << std::endl;
+			  << "Max Max Requests: 100\n" << std::endl);
 
 }
 

@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:19 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/02 22:49:50 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 18:17:50 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request.hpp"
+#include "../../debug.hpp"
 
 /*
 Critical HTTP parsing test scenarios
@@ -33,7 +34,7 @@ void HttpRequest::setFallbackValues() {
 
 void HttpRequest::parseRequestHeaders(const std::string requestData) {
 
-	std::cout << "\n#######  HTTP PARSER #######" << std::endl;
+	DEBUG_LOG("\n#######  HTTP PARSER #######" << std::endl);
 
 	extractLineHeaderBodyLen(requestData);
 	if (_statusCode != 0) return;
@@ -44,7 +45,7 @@ void HttpRequest::parseRequestHeaders(const std::string requestData) {
 	parseHeaders();
 	if (_statusCode != 0) return;
 
-	std::cout << "#################################\n" << std::endl;
+	DEBUG_LOG("#################################\n" << std::endl);
 }
 void HttpRequest::addBody(const std::string& requestBuffer){
 
@@ -58,12 +59,12 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 	// Extract request line
 	size_t firstCRLF = rawData.find("\r\n");
 	if (firstCRLF == std::string::npos) {
-		std::cout << "[ERROR] Missing \\r\\n after request line" << std::endl;
+		DEBUG_LOG("[ERROR] Missing \\r\\n after request line" << std::endl);
 		_statusCode = 400;
 		return;
 	}
 	_requestLine = rawData.substr(0, firstCRLF);
-	std::cout << "_requestLine: " << _requestLine << std::endl;
+	DEBUG_LOG("_requestLine: " << _requestLine << std::endl);
 
 	// Extract Header & Body
 	size_t headerBodySeparator = rawData.find("\r\n\r\n");
@@ -93,9 +94,9 @@ void HttpRequest::parseRequestLine() {
 	iss >> _path;
 	iss >> _version;
 
-	std::cout << "_method: " << _method << std::endl
+	DEBUG_LOG(<< "_method: " << _method << std::endl
 			<< "_path: " << _path << std::endl
-			<< "_version: " << _version << std::endl;
+			<< "_version: " << _version << std::endl);
 
 	// Check for unknown/empty HTTP method first (501)
 	if (_method.empty() || (_method != "GET" && _method != "POST" && _method != "DELETE")) {

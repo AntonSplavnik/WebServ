@@ -3,15 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   request_router.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 17:43:54 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/03 21:51:47 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 17:53:53 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request_router.hpp"
 #include "connection.hpp"
+#include "../debug.hpp"
 #include <climits>
 
 static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
@@ -62,10 +63,10 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	result.scriptName = cleanedPath;
 	result.pathTranslated = buildPathTranslated(location->root, result.pathInfo);
 
-	std::cout << "[DEBUG] CGI Extension: " << result.cgiExtension << std::endl;
-	std::cout << "[DEBUG] Script Name: " << result.scriptName << std::endl;
-	std::cout << "[DEBUG] PATH_INFO: " << result.pathInfo << std::endl;
-	std::cout << "[DEBUG] PATH_TRANSLATED: " << result.pathTranslated << std::endl;
+	DEBUG_LOG("[DEBUG] CGI Extension: " << result.cgiExtension << std::endl;)
+	DEBUG_LOG("[DEBUG] Script Name: " << result.scriptName << std::endl;)
+	DEBUG_LOG("[DEBUG] PATH_INFO: " << result.pathInfo << std::endl;)
+	DEBUG_LOG("[DEBUG] PATH_TRANSLATED: " << result.pathTranslated << std::endl;)
 
 	// Classify request type (use cgiExtension to detect CGI with PATH_INFO)
 	result.type = classify(req, location, result.cgiExtension);
@@ -132,7 +133,7 @@ bool RequestRouter::validateMethod(const HttpRequest& request, const LocationCon
 	}
 
 	if (!methodAllowed) {
-		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		DEBUG_LOG("[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;)
 		return false;
 	}
 
@@ -142,8 +143,8 @@ bool RequestRouter::validateBodySize(int contentLength, const LocationConfig*& l
 
 
 	if (contentLength > location->client_max_body_size) {
-		std::cout << "[DEBUG] Body size " << contentLength
-				  << " exceeds limit " << location->client_max_body_size << std::endl;
+		DEBUG_LOG("[DEBUG] Body size " << contentLength
+				  << " exceeds limit " << location->client_max_body_size << std::endl);
 		return false;
 	}
 
@@ -166,11 +167,11 @@ std::string RequestRouter::mapPath(const std::string& requestPath, const Locatio
 		&& !relativePath.empty() && relativePath[0] == '/')
 		relativePath = relativePath.substr(1);
 
-	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
-	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
-	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
-	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
-	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+	DEBUG_LOG("[DEBUG] LocationRoot: " << locationRoot << std::endl);
+	DEBUG_LOG("[DEBUG] LocationPath: " << locationPath << std::endl);
+	DEBUG_LOG("[DEBUG] RequestPath : " << requestPath << std::endl);
+	DEBUG_LOG("[DEBUG] RelativePath : " << relativePath << std::endl);
+	DEBUG_LOG("[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;)
 	return locationRoot + relativePath;
 }
 bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot) {

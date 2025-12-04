@@ -3,6 +3,7 @@
 #include "config_exceptions.hpp"
 #include "logger.hpp"
 #include "directives_parsers.tpp"
+#include "../../debug.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -59,14 +60,14 @@ std::vector<ConfigData> Config::getServers() const { return _servers; }
 
 const LocationConfig* ConfigData::findMatchingLocation(const std::string& requestPath) const {
 
-    std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
+    DEBUG_LOG("[DEBUG] RequestPath: " << requestPath << std::endl);
 
     const LocationConfig* bestMatch = NULL;
     size_t longestMatch = 0;
 
     for (size_t i = 0; i < locations.size(); i++) {
 
-        std::cout << "[DEBUG] Checking location: " << locations[i].path << std::endl;
+        DEBUG_LOG("[DEBUG] Checking location: " << locations[i].path << std::endl);
         size_t pathLen = locations[i].path.length();
 
         // Check if request path starts with this location path
@@ -78,7 +79,7 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
                 if (pathLen > longestMatch) {
                     bestMatch = &locations[i];
                     longestMatch = pathLen;
-                    std::cout << "[DEBUG] Root location matches (length: " << pathLen << ")" << std::endl;
+                    DEBUG_LOG("[DEBUG] Root location matches (length: " << pathLen << ")" << std::endl);
                 }
             }
             // For non-root locations, ensure proper path boundary
@@ -87,16 +88,16 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
                 if (pathLen > longestMatch) {
                     bestMatch = &locations[i];
                     longestMatch = pathLen;
-                    std::cout << "[DEBUG] Location matches (length: " << pathLen << ")" << std::endl;
+                    DEBUG_LOG("[DEBUG] Location matches (length: " << pathLen << ")" << std::endl;)
                 }
             }
         }
     }
 
     if (bestMatch) {
-        std::cout << "[DEBUG] Best match: " << bestMatch->path << " (root: " << bestMatch->root << ")" << std::endl;
+        DEBUG_LOG("[DEBUG] Best match: " << bestMatch->path << " (root: " << bestMatch->root << ")" << std::endl;)
     } else {
-        std::cout << "[DEBUG] No matching location found" << std::endl;
+        DEBUG_LOG("[DEBUG] No matching location found" << std::endl;)
     }
 
     return bestMatch;

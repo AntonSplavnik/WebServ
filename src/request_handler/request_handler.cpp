@@ -1,5 +1,6 @@
 #include "request_handler.hpp"
 #include "connection.hpp"
+#include "../debug.hpp"
 
 void RequestHandler::handleGET(Connection& connection) {
 	std::string path = connection.getRoutingResult().mappedPath;
@@ -81,14 +82,14 @@ void RequestHandler::handleDELETE(Connection& connection) {
 		file.close();
 		if(std::remove(path.c_str()) == 0) {
 			connection.setStatusCode(204);
-			std::cout << "[DEBUG] Succes: 204 file deleted" << std::endl;
+			DEBUG_LOG("[DEBUG] Succes: 204 file deleted" << std::endl;)
 		} else {
 			connection.setStatusCode(403);
-			std::cout << "[DEBUG] Error: 403 permission denied" << std::endl;
+			DEBUG_LOG("[DEBUG] Error: 403 permission denied" << std::endl;)
 		}
 	} else {
 		connection.setStatusCode(404);
-		std::cout << "[DEBUG] Error: 404 path is not found" << std::endl;
+		DEBUG_LOG("[DEBUG] Error: 404 path is not found" << std::endl;)
 	}
 	connection.prepareResponse();
 }
@@ -96,13 +97,13 @@ void RequestHandler::handleDELETE(Connection& connection) {
 void RequestHandler::handlePOST(Connection& connection) {
 
 	const std::string& path = connection.getRoutingResult().mappedPath;
-	std::cout << "[DEBUG] UploadPath: " << path << std::endl;
+	DEBUG_LOG("[DEBUG] UploadPath: " << path << std::endl;)
 	PostHandler post(path);
 
 	const HttpRequest& request = connection.getRequest();
 
 	std::string contentType = request.getContentType();
-	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
+	DEBUG_LOG("[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;)
 
 	// Empty POST - no content to process
 	if (request.getBody().empty()) {
@@ -123,7 +124,7 @@ void RequestHandler::handlePOST(Connection& connection) {
 		post.handleFile(connection, contentType);
 		connection.setState(WRITING_DISK);
 	} else {
-		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
+		DEBUG_LOG("[DEBUG] Unsupported Content-Type: " << contentType << std::endl;)
 		connection.setStatusCode(415);
 		connection.prepareResponse();;
 	}

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   statistics_collector.hpp                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/24 00:00:00 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 17:54:11 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <deque>
 #include <ctime>
 #include <sys/types.h>
+#include <vector>
 
 struct RequestRecord {
 	time_t timestamp;

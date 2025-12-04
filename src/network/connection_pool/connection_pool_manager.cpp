@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   connection_pool_manager.cpp                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/02 23:07:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 17:47:22 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "request_router.hpp"
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
+#include "../../debug.hpp"
 
 /*
  Linux:
@@ -27,14 +28,14 @@
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
 
-	// std::cout << "[DEBUG] handleConnectionEvent FD " << fd << " revents=" << revents << std::endl;
+	// DEBUG_LOG("[DEBUG] handleConnectionEvent FD " << fd << " revents=" << revents << std::endl;)
 
 	Connection& connection = getConnectionRef(fd);
 	ConnectionState state = connection.getState();
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
-		std::cout << "[DEBUG] POLLERR detected, disconnecting FD " << fd << std::endl;
+		DEBUG_LOG("[DEBUG] POLLERR detected, disconnecting FD " << fd << std::endl;)
 		disconnectConnection(fd);
 		return;
 	}
@@ -71,7 +72,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				return;
 			}
 		} else {	// POLLOUT
-			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			DEBUG_LOG("[DEBUG] Client FD " << fd << " hung up" << std::endl;)
 			disconnectConnection(fd);
 			return;
 		}
@@ -177,7 +178,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					break;
 				}
 				default: {
-					std::cout << "[DEBUG] Unknown reuest type" << std::endl;
+					DEBUG_LOG("[DEBUG] Unknown reuest type" << std::endl;)
 					break;
 				}
 				return;

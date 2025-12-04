@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   post_handler.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/09 00:00:00 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/28 21:35:35 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 17:53:11 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,13 +16,14 @@
 #include <cstdlib>
 
 #include "post_handler.hpp"
+#include "../debug.hpp"
 #include "request.hpp"
 #include "connection.hpp"
 
 
 PostHandler::PostHandler(const std::string uploadPath)
     :_uploadPath(uploadPath){
-    std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
+    DEBUG_LOG("[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;)
 }
 
 bool PostHandler::handleFile(Connection& connection, const std::string& contentType) {
@@ -31,7 +32,7 @@ bool PostHandler::handleFile(Connection& connection, const std::string& contentT
     std::string fileName = generateFilename(extension);
     std::string filePath = _uploadPath + fileName;
     connection.setFilePath(_uploadPath, fileName);
-    std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
+    DEBUG_LOG("[DEBUG] Saving file to: '" << filePath << "'" << std::endl;)
 
     return true;
 }
@@ -160,8 +161,8 @@ int PostHandler::handleMultipart(Connection& connection) {
 std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& body, const std::string& boundary) {
 	std::vector<MultipartPart> parts;
 
-	std::cout << "[DEBUG] parseMultipartData: body size=" << body.size()
-	          << ", boundary='" << boundary << "'" << std::endl;
+	DEBUG_LOG("[DEBUG] parseMultipartData: body size=" << body.size()
+	          << ", boundary='" << boundary << "'" << std::endl);
 	// Le boundary final a "--" à la fin
 	std::string endBoundary = boundary + "--";
 

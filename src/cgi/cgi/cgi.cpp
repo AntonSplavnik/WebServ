@@ -1,20 +1,11 @@
 /* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   cgi.cpp                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/03 21:36:52 by antonsplavn      ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
 #include "cgi.hpp"
 #include "connection.hpp"
 #include "event_loop.hpp"
 #include "response.hpp"
 #include "logger.hpp"
+#include "../../debug.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -307,7 +298,7 @@ char** Cgi::prepEnvVariables(const Connection& connection) {
 
 CgiState Cgi::handleReadFromCGI() {
 
-    std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;
+    DEBUG_LOG("[DEBUG] Handling CGI read for pid = " << _pid << std::endl;)
     if (_finished || _outFd < 0)
         return CGI_READY;
 
@@ -319,7 +310,7 @@ CgiState Cgi::handleReadFromCGI() {
     }
     else if (bytesRead == 0) { // --- EOF: child finished writing ---
         std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
-        std::cout << "[DEBUG] CGI responseData: " << _responseData << std::endl;
+        DEBUG_LOG("[DEBUG] CGI responseData: " << _responseData << std::endl;)
 
         _finished = true;
         closeOutFd();

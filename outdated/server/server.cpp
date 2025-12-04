@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
+/*   By: drongier <drongier@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/16 17:18:39 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/11/07 21:27:10 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/04 18:00:47 by drongier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
+#include "../../src/debug.hpp"
 
 Server::Server(const ConfigData& config, EventLoop& controller)
 	:_configData(config),
@@ -53,9 +54,9 @@ void Server::initListeningSockets() {
 
 		_listeningSockets.push_back(listeningSocket);
 
-		std::cout << "[DEBUG] Susesfully added listening socket fd: "
+		DEBUG_LOG("[DEBUG] Susesfully added listening socket fd: "
 				  << listeningSocket.getFd() << " at vector position: "
-				  << i << std::endl;
+				  << i << std::endl);
 	}
 }
 
@@ -73,21 +74,21 @@ void Server::handleEvent(int fd, short revents) {
 	std::map<int, Cgi*>::iterator cgiIt = _cgi.find(fd);
 	if (cgiIt != _cgi.end()){
 		if (_clients.find(cgiIt->second->getClientFd()) != _clients.end()) {
-			std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
+			DEBUG_LOG("[DEBUG] Event detected on CGI FD " << fd << std::endl;)
 			if (revents & POLLERR) {
-				std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
+				DEBUG_LOG("[DEBUG] CGI POLLERR event on FD " << fd << std::endl;)
 				handleCGIerror(fd);
 			} else if (revents & POLLHUP) {
-				std::cout << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+				DEBUG_LOG("[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;)
 				if (revents & POLLIN) {
 					handleCGIread(fd);  // final read + cleanup
 				}
 				terminateCGI(cgiIt->second);
 			} else if (revents & POLLIN) {
-				std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
+				DEBUG_LOG("[DEBUG] CGI POLLIN event on FD " << fd << std::endl;)
 				handleCGIread(fd);
 			} else if (revents & POLLOUT) {
-				std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
+				DEBUG_LOG("[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;)
 				handleCGIwrite(fd);
 			}
 			return;
@@ -99,14 +100,14 @@ void Server::handleEvent(int fd, short revents) {
 	// Client FD
 	if (_clients.find(fd) != _clients.end()) {
 		if (revents & POLLERR) {
-			std::cerr << "[DEBUG] Listening socket FD " << fd
-			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl;
+			DEBUG_LOG("[DEBUG] Listening socket FD " << fd
+			<< " is invalid (POLLNVAL). Server socket not properly initialized." << std::endl);
 			disconnectClient(fd);
 		} else if (revents & POLLHUP) {
 			if (revents & POLLIN) { // half closed in case client is done sending and waiting for respose: shutdown(fd, SHUT_WR); recv(fd, ...);
 				handleClientRead(fd);
 			}
-			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			DEBUG_LOG("[DEBUG] Client FD " << fd << " hung up" << std::endl;)
 			disconnectClient(fd);
 		} else if (revents & POLLIN) {
 			handleClientRead(fd);
@@ -119,7 +120,7 @@ void Server::handleEvent(int fd, short revents) {
 
 void Server::handleListenEvent(int indexOfLinstenSocket) {
 
-	std::cout << "[DEBUG] Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;
+	DEBUG_LOG("[DEBUG] Event detected on listening socket FD " << _listeningSockets[indexOfLinstenSocket].getFd() << std::endl;)
 
 	sockaddr_in client_addr;
 	short client_fd = _listeningSockets[indexOfLinstenSocket].accepting(client_addr);
@@ -134,14 +135,14 @@ void Server::handleListenEvent(int indexOfLinstenSocket) {
 		_clients[client_fd].ip = inet_ntoa(client_addr.sin_addr);
 		_clients[client_fd].port = ntohs(client_addr.sin_port);
 
-		std::cout << "[DEBUG] New connection accepted! Client FD: " << client_fd
+		DEBUG_LOG("[DEBUG] New connection accepted! Client FD: " << client_fd
 				  << "Timeout: " << _clients[client_fd].keepAliveTimeout
 				  << "Max Max Requests: " << _clients[client_fd].maxRequests
-				  << std::endl;
+				  << std::endl);
 
 		// Make client socket non-blocking
 		setNonBlocking(_clients[client_fd].fd);
-		std::cout << "[DEBUG] Making socket FD " << client_fd << " non-blocking" << std::endl;
+		DEBUG_LOG("[DEBUG] Making socket FD " << client_fd << " non-blocking" << std::endl);
 	}
 	else if (client_fd >= 0){
 		close(client_fd);
@@ -162,11 +163,11 @@ void Server::handleCGIerror(int fd) {
 		if (_clients.find(clientFd) != _clients.end()) {
 			HttpResponse response (cgi->getRequest());
 			if(cgi->isFinished()){
-				std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
+				DEBUG_LOG("[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;)
 				response.generateResponse(200, true, cgi->getResponseData());
 				_clients[clientFd].responseData = response.getResponse();
 			} else {
-				std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
+				DEBUG_LOG("[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;)
 				response.generateResponse(500);
 				_clients[clientFd].responseData = response.getResponse();
 			}
@@ -225,13 +226,13 @@ void Server::handleCGIread(int fd) {
 		HttpResponse response(cgi->getRequest());
 		response.generateResponse(200, true, cgi->getResponseData());
 		_clients[clientFd].responseData = response.getResponse();
-		std::cout << "[DEBUG] Switched client FD " << clientFd
+		DEBUG_LOG("[DEBUG] Switched client FD " << clientFd
 					<< " to POLLOUT mode after CGI complete" << std::endl;
 	}
 	else if(status == CGI_ERROR){
 		HttpResponse resonse(cgi->getRequest());
 		resonse.generateResponse(500);
-		std::cout << "[DEBUG] Switched client FD " << clientFd
+		DEBUG_LOG("[DEBUG] Switched client FD " << clientFd
 					<< " to POLLOUT mode after CGI complete" << std::endl;
 	}
 	_clients[clientFd].bytesSent = 0;
@@ -264,7 +265,7 @@ void Server::handleClientRead(int fd) {
 	std::cout << "\n#######  HANDLE CLIENT READ DATA #######" << std::endl;
 
 	if (_clients[fd].requestCount >= _clients[fd].maxRequests){
-		std::cout << "[DEBUG] Max request count reached: " << fd << std::endl;
+		DEBUG_LOG("[DEBUG] Max request count reached: " << fd << std::endl;)
 
 		/*
 			1. Graceful Closure: You should finish sending the current
@@ -281,15 +282,15 @@ void Server::handleClientRead(int fd) {
 		char buffer[BUFFER_SIZE_32];
 		std::memset(buffer, 0, BUFFER_SIZE_32);
 		int bytes = recv(fd, buffer, BUFFER_SIZE_32 - 1, 0);
-		std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << fd << std::endl;
+		DEBUG_LOG("[DEBUG] recv() returned " << bytes << " bytes from FD " << fd << std::endl;)
 
 		if (bytes <= 0) {
 			if (bytes == 0) {
-				std::cout << "[DEBUG] Client FD " << fd << " disconnected" << std::endl;
+				DEBUG_LOG("[DEBUG] Client FD " << fd << " disconnected" << std::endl;)
 				disconnectClient(fd);
 			} else { // bytes < 0
 
-				std::cout << "[DEBUG] Error on FD " << fd << ": " << strerror(errno) << std::endl;
+				DEBUG_LOG("[DEBUG] Error on FD " << fd << ": " << strerror(errno) << std::endl;)
 				disconnectClient(fd);
 			}
 		}
@@ -313,7 +314,7 @@ void Server::handleClientRead(int fd) {
 				size_t bodyStart = headerEnd + 4;
 				size_t bodyReceived = _clients[fd].requestData.length() - bodyStart;
 
-				std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;
+				DEBUG_LOG("[DEBUG] Content-Length: " << contentLength << ", Body received: " << bodyReceived << ", Total data: " << _clients[fd].requestData.length() << std::endl;)
 
 				if(bodyReceived < contentLength)
 					return;  // Keep receiving body
@@ -331,7 +332,7 @@ void Server::handleClientRead(int fd) {
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
 				_clients[fd].shouldClose = true;
-				std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+				DEBUG_LOG("[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;)
 				return;
 			}else{
 				updateClientActivity(fd);
@@ -342,21 +343,21 @@ void Server::handleClientRead(int fd) {
 				std::cout << "\n#######  PATH MATCHING/VALIDATIONr #######" << std::endl;
 				const LocationConfig* matchedLocation = _configData.findMatchingLocation(httpRequest.getPath());
 				if(!matchedLocation){
-					std::cout << "[DEBUG] No matched location in config file" << std::endl;
+					DEBUG_LOG("[DEBUG] No matched location in config file" << std::endl;)
 					response.generateResponse(404);
 					_clients[fd].responseData = response.getResponse();
 					_clients[fd].bytesSent = 0;
 					_clients[fd].state = SENDING_RESPONSE;
-					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					DEBUG_LOG("[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;)
 					return;
 				}
 				if(!validateMethod(httpRequest, matchedLocation)) {
-					std::cout << "[DEBUG] Path validation failed (method not allowed or missing root)" << std::endl;
+					DEBUG_LOG("[DEBUG] Path validation failed (method not allowed or missing root)" << std::endl;)
 					response.generateResponse(403);
 					_clients[fd].responseData = response.getResponse();
 					_clients[fd].bytesSent = 0;
 					_clients[fd].state = SENDING_RESPONSE;
-					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					DEBUG_LOG("[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;)
 					return;
 				}
 
@@ -366,7 +367,7 @@ void Server::handleClientRead(int fd) {
 					_clients[fd].responseData = response.getResponse();
 					_clients[fd].bytesSent = 0;
 					_clients[fd].state = SENDING_RESPONSE;
-					std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;
+					DEBUG_LOG("[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send error response)" << std::endl;)
 					return;
 				}
 				std::cout << "#################################\n" << std::endl;
@@ -374,7 +375,7 @@ void Server::handleClientRead(int fd) {
 				//// <=================================== REQUEST IS MAPPED AND VALIDATED
 				//if cgi -> cgi
 				if (!isCGIrequest()) {
-					std::cout << "[DEBUG] Failed to start CGI" << std::endl;
+					DEBUG_LOG("[DEBUG] Failed to start CGI" << std::endl;)
 					HttpResponse resp(httpRequest);
 					resp.generateResponse(500);
 					_clients[fd].responseData = resp.getResponse();
@@ -400,7 +401,7 @@ void Server::handleClientRead(int fd) {
 
 				_clients[fd].bytesSent = 0;
 				_clients[fd].state = SENDING_RESPONSE;
-				std::cout << "[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;
+				DEBUG_LOG("[DEBUG] Switched FD " << fd << " to POLLOUT mode (ready to send response)" << std::endl;)
 
 				//// <=================================== STATIC METHOD RESPONSE PREP FINISHED
 			}
@@ -469,7 +470,7 @@ void Server::handleCGI() {
 	_cgi[outFd] = cgi;
 	_clients[fd].state = WAITING_CGI;
 
-	std::cout << "[DEBUG] Spawned CGI pid = " << cgi->getPid()
+	DEBUG_LOG("[DEBUG] Spawned CGI pid = " << cgi->getPid()
 			<< " inFd = " << inFd
 			<< " outFd = " << outFd
 			<< " for client FD = " << fd << std::endl;
@@ -496,12 +497,12 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::str
 
 	HttpResponse response(request);
 
-	std::cout << "[DEBUG] UploadPath: " << mappedPath << std::endl;
+	DEBUG_LOG("[DEBUG] UploadPath: " << mappedPath << std::endl;)
 	PostHandler post(mappedPath);
 
 	std::string contentType = request.getContentType();
-	std::cout << "[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;
-	std::cout << "[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;
+	DEBUG_LOG("[DEBUG] POST Content-Type: '" << contentType << "'" << std::endl;)
+	DEBUG_LOG("[DEBUG] Request valid: " << (request.getStatus() ? "true" : "false") << std::endl;)
 
 	if (contentType.find("multipart/form-data") != std::string::npos) {
 		post.handleMultipart(request, client);
@@ -510,7 +511,7 @@ void Server::handlePOST(const HttpRequest& request, ClientInfo& client, std::str
 		post.handleFile(request, client, contentType);
 	}
 	else {
-		std::cout << "[DEBUG] Unsupported Content-Type: " << contentType << std::endl;
+		DEBUG_LOG("[DEBUG] Unsupported Content-Type: " << contentType << std::endl;)
 		response.generateResponse(415);
 		client.responseData = response.getResponse();
 	}
@@ -524,12 +525,12 @@ void Server::handleDELETE(const HttpRequest& request, ClientInfo& client, std::s
 		if(std::remove(mappedPath.c_str()) == 0){
 			response.generateResponse(204);
 			client.responseData = response.getResponse();
-			std::cout << "[DEBUG] Succes: 204 file deleted" << std::endl;
+			DEBUG_LOG("[DEBUG] Succes: 204 file deleted" << std::endl;)
 		}
 		else{
 			response.generateResponse(403);
 			client.responseData = response.getResponse();
-			std::cout << "[DEBUG] Error: 403 permission denied" << std::endl;
+			DEBUG_LOG("[DEBUG] Error: 403 permission denied" << std::endl;)
 		}
 	}
 	else{
@@ -551,7 +552,7 @@ bool Server::validateMethod(const HttpRequest& request, const LocationConfig*& l
 	}
 
 	if (!methodAllowed) {
-		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		DEBUG_LOG("[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;)
 		return false;
 	}
 
@@ -575,11 +576,11 @@ std::string Server::mapPath(const HttpRequest& request, const LocationConfig*& m
 		&& !relativePath.empty() && relativePath[0] == '/')
 		relativePath = relativePath.substr(1);
 
-	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
-	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
-	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
-	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
-	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+	DEBUG_LOG("[DEBUG] LocationRoot: " << locationRoot << std::endl;)
+	DEBUG_LOG("[DEBUG] LocationPath: " << locationPath << std::endl;)
+	DEBUG_LOG("[DEBUG] RequestPath : " << requestPath << std::endl;)
+	DEBUG_LOG("[DEBUG] RelativePath : " << relativePath << std::endl;)
+	DEBUG_LOG("[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;)
 	return locationRoot + relativePath;
 }
 bool Server::isPathSafe(const std::string& mappedPath, const std::string& allowedRoot) {
