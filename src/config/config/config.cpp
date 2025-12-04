@@ -1,7 +1,6 @@
 #include "config.hpp"
 #include "helpers.hpp"
 #include "config_exceptions.hpp"
-#include "logger.hpp"
 #include "directives_parsers.tpp"
 #include "../../debug.hpp"
 
@@ -52,8 +51,6 @@ ConfigData::ConfigData()
       client_max_body_size(0),
       cgi_path(),
       cgi_ext(),
-      access_log(""),
-      error_log(""),
       locations() {}
 
 std::vector<ConfigData> Config::getServers() const { return _servers; }
@@ -150,10 +147,6 @@ void Config::validateConfig(ConfigData& config) {
     }
     if (config.backlog <= 0)
         throw ConfigParseException("Missing or invalid required config: backlog");
-    if (config.access_log.empty())
-        throw ConfigParseException("Missing required config: access_log");
-    if (config.error_log.empty())
-        throw ConfigParseException("Missing required config: error_log");
     if (config.client_max_body_size <= 0)
         throw ConfigParseException("Missing or invalid required config: client_max_body_size");
     if (config.listeners.empty())
@@ -374,10 +367,6 @@ void Config::parseServerConfigField(ConfigData& config, const std::string& key, 
         parseKeepaliveTimeoutDirective(config, tokens[0]);
     else if (key == "keepalive_max_requests")
         parseKeepaliveRequestsDirective(config, tokens[0]);
-    else if (key == "error_log")
-        assignLogFile(config.error_log, tokens[0]);
-    else if (key == "access_log")
-        assignLogFile(config.access_log, tokens[0]);
 }
 
 

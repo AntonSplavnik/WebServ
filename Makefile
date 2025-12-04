@@ -22,7 +22,7 @@ INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connectio
 			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
 			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
-			  -Isrc/request_router -Isrc/statistics -Isrc/logging
+			  -Isrc/request_router -Isrc/statistics
 
 # Directories
 SRC_DIR		= src
@@ -40,7 +40,6 @@ HTTP_RES_DIR	= $(SRC_DIR)/http/http_response
 
 # Core
 EVENT_LOOP_DIR	= $(SRC_DIR)/event_loop
-LOGGING_DIR	= $(SRC_DIR)/logging
 
 # Config
 CONFIG_DIR	= $(SRC_DIR)/config/config
@@ -78,7 +77,6 @@ SRC_FILES	= main.cpp \
 			  $(REQ_HANDLER_DIR)/post_handler.cpp \
 			  $(REQ_ROUTER_DIR)/request_router.cpp \
 			  $(STATISTICS_DIR)/statistics_collector.cpp \
-			  $(LOGGING_DIR)/logger.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -100,7 +98,6 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(REQ_HANDLER_DIR)/post_handler.hpp \
 			  $(REQ_ROUTER_DIR)/request_router.hpp \
 			  $(STATISTICS_DIR)/statistics_collector.hpp \
-			  $(LOGGING_DIR)/logger.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

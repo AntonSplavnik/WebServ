@@ -33,7 +33,7 @@ static const size_t LOCATION_DIRECTIVES_COUNT = sizeof(LOCATION_DIRECTIVES) / si
 //Valid server directives (used in config.cpp)
 static const char *SERVER_DIRECTIVES[] = {
 	"location", "listen", "server_name", "backlog",
-	"access_log", "error_log", "autoindex", "index", "root",
+	"autoindex", "index", "root",
 	"allow_methods", "error_page", "cgi_ext", "cgi_path",
 	"client_max_body_size", "keepalive_timeout", "keepalive_max_requests"
 };
@@ -112,9 +112,6 @@ struct ConfigData
 	std::vector<std::string> cgi_path; // cgi_interpreters
 	std::vector<std::string> cgi_ext; // cgi_extensions;
 
-	// Logging
-	std::string access_log; // access_log_path
-	std::string error_log; // error_log_path
 
 	// Location blocks
 	std::vector<LocationConfig> locations;
