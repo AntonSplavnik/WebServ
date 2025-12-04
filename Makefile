@@ -6,7 +6,7 @@
 #    By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/09/16 00:00:00 by vnik              #+#    #+#              #
-#    Updated: 2025/10/14 14:25:16 by antonsplavn      ###   ########.fr        #
+#    Updated: 2025/12/04 23:09:56 by antonsplavn      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,7 +22,7 @@ INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connectio
 			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
 			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
-			  -Isrc/request_router -Isrc/statistics -Isrc/logging
+			  -Isrc/request_router
 
 # Directories
 SRC_DIR		= src
@@ -56,9 +56,6 @@ CGI_EXEC_DIR	= $(SRC_DIR)/cgi/cgi_executor
 REQ_HANDLER_DIR	= $(SRC_DIR)/request_handler
 REQ_ROUTER_DIR	= $(SRC_DIR)/request_router
 
-# Statistics
-STATISTICS_DIR	= $(SRC_DIR)/statistics
-
 # Source files
 SRC_FILES	= main.cpp \
 			  $(SOCKET_DIR)/socket.cpp \
@@ -76,9 +73,7 @@ SRC_FILES	= main.cpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.cpp \
 			  $(REQ_HANDLER_DIR)/request_handler.cpp \
 			  $(REQ_HANDLER_DIR)/post_handler.cpp \
-			  $(REQ_ROUTER_DIR)/request_router.cpp \
-			  $(STATISTICS_DIR)/statistics_collector.cpp \
-			  $(LOGGING_DIR)/logger.cpp
+			  $(REQ_ROUTER_DIR)/request_router.cpp
 
 # Object files
 OBJ_FILES	= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -98,9 +93,7 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.hpp \
 			  $(REQ_HANDLER_DIR)/request_handler.hpp \
 			  $(REQ_HANDLER_DIR)/post_handler.hpp \
-			  $(REQ_ROUTER_DIR)/request_router.hpp \
-			  $(STATISTICS_DIR)/statistics_collector.hpp \
-			  $(LOGGING_DIR)/logger.hpp
+			  $(REQ_ROUTER_DIR)/request_router.hpp
 
 # Colors for pretty output
 RED			= \033[0;31m

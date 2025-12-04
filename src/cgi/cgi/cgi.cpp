@@ -14,7 +14,6 @@
 #include "connection.hpp"
 #include "event_loop.hpp"
 #include "response.hpp"
-#include "logger.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
