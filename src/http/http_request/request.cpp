@@ -59,7 +59,6 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 	size_t firstCRLF = rawData.find("\r\n");
 	if (firstCRLF == std::string::npos) {
 		std::cout << "[ERROR] Missing \\r\\n after request line" << std::endl;
-		setFallbackValues();
 		_statusCode = 400;
 		return;
 	}
@@ -70,7 +69,6 @@ void HttpRequest::extractLineHeaderBodyLen(std::string rawData) {
 	size_t headerBodySeparator = rawData.find("\r\n\r\n");
 	if (headerBodySeparator == std::string::npos) {
 		std::cout << "[ERROR] Missing \\r\\n\\r\\n separator between headers and body" << std::endl;
-		setFallbackValues();
 		_statusCode = 400;
 		return;
 	}
@@ -99,27 +97,27 @@ void HttpRequest::parseRequestLine() {
 			<< "_path: " << _path << std::endl
 			<< "_version: " << _version << std::endl;
 
-	// Check stringstream state and parsed values
-	if (!iss || _method.empty() || _path.empty() || _version.empty()) {
-		std::cout << "[ERROR] Invalid request line format" << std::endl;
+	// Check for unknown/empty HTTP method first (501)
+	if (_method.empty() || (_method != "GET" && _method != "POST" && _method != "DELETE")) {
+		std::cout << "[ERROR] Unknown or invalid HTTP method: " << _method << std::endl;
 		setFallbackValues();
-		_statusCode = 400;
+		_statusCode = 501;
 		return;
 	}
 
-	// Check for unsupported HTTP version first (505)
-	if (_version != "HTTP/1.1" && _version != "HTTP/1.0") {
+	// Check for unsupported HTTP version (505)
+	if (_version.empty() || (_version != "HTTP/1.1" && _version != "HTTP/1.0")) {
 		std::cout << "[ERROR] Unsupported HTTP version: " << _version << std::endl;
 		setFallbackValues();
 		_statusCode = 505;
 		return;
 	}
 
-	// Check for unknown HTTP method (501)
-	if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-		std::cout << "[ERROR] Unknown HTTP method: " << _method << std::endl;
+	// Check path and stringstream state (400)
+	if (!iss || _path.empty()) {
+		std::cout << "[ERROR] Invalid request line format" << std::endl;
 		setFallbackValues();
-		_statusCode = 501;
+		_statusCode = 400;
 		return;
 	}
 
@@ -128,6 +126,58 @@ void HttpRequest::parseRequestLine() {
 	if (queryPos != std::string::npos) {
 		_query = _path.substr(queryPos + 1);  // "q=test"
 		_path = _path.substr(0, queryPos);   // "/cgi-bin/script.py"
+
+		// Validate query string format
+		if (!_query.empty()) {
+			// Check for invalid starting characters
+			if (_query[0] == '&' || _query[0] == '=' || _query[0] == '?') {
+				std::cout << "[ERROR] Invalid query string start" << std::endl;
+				setFallbackValues();
+				_statusCode = 400;
+				return;
+			}
+
+			// Check for invalid patterns
+			if (_query.find("==") != std::string::npos ||
+				_query.find("&&") != std::string::npos ||
+				_query.find("??") != std::string::npos) {
+				std::cout << "[ERROR] Invalid query string (double separator)" << std::endl;
+				setFallbackValues();
+				_statusCode = 400;
+				return;
+			}
+
+			// Check for trailing invalid characters
+			size_t len = _query.length();
+			if (_query[len - 1] == '=' || _query[len - 1] == '&') {
+				std::cout << "[ERROR] Invalid query string (trailing separator)" << std::endl;
+				setFallbackValues();
+				_statusCode = 400;
+				return;
+			}
+
+			// Validate each parameter (key=value format)
+			size_t pos = 0;
+			while (pos < _query.length()) {
+				size_t ampPos = _query.find('&', pos);
+				if (ampPos == std::string::npos) {
+					ampPos = _query.length();
+				}
+
+				std::string param = _query.substr(pos, ampPos - pos);
+				size_t eqPos = param.find('=');
+
+				// Each parameter must have exactly one '=' with key and value
+				if (eqPos == std::string::npos || eqPos == 0 || eqPos == param.length() - 1) {
+					std::cout << "[ERROR] Invalid query parameter format" << std::endl;
+					setFallbackValues();
+					_statusCode = 400;
+					return;
+				}
+
+				pos = ampPos + 1;
+			}
+		}
 	} else {
 		_query = "";
 	}
@@ -136,9 +186,20 @@ void HttpRequest::parseHeaders() {
 
 	if (_rawHeaders.empty()) {
 		std::cout << "No headers to parse" << std::endl;
-		setFallbackValues();
 		_statusCode = 400;
 		return;
+	}
+
+	// Validate proper CRLF line endings - check for bare \n
+	for (size_t i = 0; i < _rawHeaders.length(); ++i) {
+		if (_rawHeaders[i] == '\n') {
+			// Check if \n is preceded by \r
+			if (i == 0 || _rawHeaders[i - 1] != '\r') {
+				std::cout << "[ERROR] Invalid line ending (bare \\n without \\r)" << std::endl;
+				_statusCode = 400;
+				return;
+			}
+		}
 	}
 
 	std::istringstream iss(_rawHeaders);
@@ -148,16 +209,16 @@ void HttpRequest::parseHeaders() {
 
 	while (std::getline(iss, headerLine))
 	{
-		// Remove \r if present
+		// Remove \r if present (handles both \r\n and \n line endings)
 		if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r')
 			headerLine.erase(headerLine.length() - 1);
+
 		// Skip empty line
 		if (headerLine.empty()) continue;
 
 		// Check header count limit
 		if (++headerCount > MAX_HEADERS) {
 			std::cout << "[ERROR] Too many headers (max " << MAX_HEADERS << ")" << std::endl;
-			setFallbackValues();
 			_statusCode = 431;
 			return;
 		}
@@ -166,7 +227,13 @@ void HttpRequest::parseHeaders() {
 		size_t pos = headerLine.find(':');
 		if (pos == std::string::npos) {
 			std::cout << "[ERROR] Invalid header line (no colon)" << std::endl;
-			setFallbackValues();
+			_statusCode = 400;
+			return;
+		}
+
+		// Check for double colon (Host::)
+		if (pos + 1 < headerLine.length() && headerLine[pos + 1] == ':') {
+			std::cout << "[ERROR] Invalid header format (double colon)" << std::endl;
 			_statusCode = 400;
 			return;
 		}
@@ -178,7 +245,6 @@ void HttpRequest::parseHeaders() {
 		// Validate header name
 		if (key.empty()) {
 			std::cout << "[ERROR] Empty header name" << std::endl;
-			setFallbackValues();
 			_statusCode = 400;
 			return;
 		}
@@ -186,7 +252,13 @@ void HttpRequest::parseHeaders() {
 		// Check for spaces in header name (RFC violation)
 		if (key.find(' ') != std::string::npos || key.find('\t') != std::string::npos) {
 			std::cout << "[ERROR] Invalid header name (contains whitespace): " << key << std::endl;
-			setFallbackValues();
+			_statusCode = 400;
+			return;
+		}
+
+		// RFC 7230: requires at least one space/tab after colon
+		if (value.empty() || (value[0] != ' ' && value[0] != '\t')) {
+			std::cout << "[ERROR] Missing space after colon in header" << std::endl;
 			_statusCode = 400;
 			return;
 		}
@@ -210,11 +282,40 @@ void HttpRequest::parseHeaders() {
 		std::map<std::string, std::string>::const_iterator hostIt = _headers.find("host");
 		if (hostIt == _headers.end() || hostIt->second.empty()) {
 			std::cout << "[ERROR] Missing Host header" << std::endl;
-			setFallbackValues();
 			_statusCode = 400;
 			return;
 		}
 	}
+
+	// Validate POST request headers
+	if (_method == "POST") {
+		// Check for Content-Length header (411 if missing)
+		std::map<std::string, std::string>::const_iterator clIt = _headers.find("content-length");
+		if (clIt == _headers.end() || clIt->second.empty()) {
+			std::cout << "[ERROR] POST request missing Content-Length header" << std::endl;
+			_statusCode = 411;
+			return;
+		}
+
+		// Validate Content-Length is a valid number
+		const std::string& clValue = clIt->second;
+		for (size_t i = 0; i < clValue.length(); ++i) {
+			if (!std::isdigit(clValue[i])) {
+				std::cout << "[ERROR] Invalid Content-Length value" << std::endl;
+				_statusCode = 400;
+				return;
+			}
+		}
+
+		// Check for Content-Type header (400 if missing)
+		std::map<std::string, std::string>::const_iterator ctIt = _headers.find("content-type");
+		if (ctIt == _headers.end() || ctIt->second.empty()) {
+			std::cout << "[ERROR] POST request missing Content-Type header" << std::endl;
+			_statusCode = 400;
+			return;
+		}
+	}
+
 	std::map<std::string, std::string>::const_iterator hostIt = _headers.begin();
 	for(; hostIt != _headers.end(); ++hostIt) {
 		std::cout << hostIt->first << " : " << hostIt->second << std::endl;

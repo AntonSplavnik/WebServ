@@ -30,7 +30,7 @@ class HttpRequest {
 			_method(),
 			_path(),
 			_query(),
-			_version(),
+			_version("HTTP/1.1"),
 			_headers(),
 			_statusCode(0) {
 		}
