@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-
 import os
 import sys
+import json
 from urllib.parse import parse_qs
 
 def parse_cookies(cookie_string):
@@ -25,6 +25,7 @@ def main():
     query_string = os.environ.get('QUERY_STRING', '')
     params = parse_qs(query_string)
     action = params.get('action', [''])[0]
+    output_format = params.get('format', ['html'])[0]
 
     # Prepare response headers
     response_headers = []
@@ -33,27 +34,58 @@ def main():
     if action == 'set':
         response_headers.append('Set-Cookie: test_cookie=HelloWorld; Path=/')
         response_headers.append('Set-Cookie: session_id=12345; Path=/; HttpOnly')
-        message = 'Cookies set! Refresh to see them.'
+        message = 'Cookies set! Check the list below.'
     elif action == 'update':
         response_headers.append('Set-Cookie: test_cookie=UpdatedValue; Path=/')
-        message = 'Cookie updated! Refresh to see change.'
+        message = 'Cookie updated! Check the list below.'
     elif action == 'delete':
         response_headers.append('Set-Cookie: test_cookie=; Path=/; Max-Age=0')
         response_headers.append('Set-Cookie: session_id=; Path=/; Max-Age=0')
         response_headers.append('Set-Cookie: cookie1=; Path=/; Max-Age=0')
         response_headers.append('Set-Cookie: cookie2=; Path=/; Max-Age=0')
         response_headers.append('Set-Cookie: cookie3=; Path=/; Max-Age=0')
-        message = 'Cookies deleted! Refresh to confirm.'
+        message = 'All cookies deleted!'
     elif action == 'multiple':
         response_headers.append('Set-Cookie: cookie1=value1; Path=/')
         response_headers.append('Set-Cookie: cookie2=value2; Path=/')
         response_headers.append('Set-Cookie: cookie3=value3; Path=/')
         message = 'Multiple cookies set!'
     else:
-        message = 'No action taken. Click buttons below to test.'
+        message = 'Ready to test. Click a button to start.'
 
-    # Build HTML response
-    html = f"""<!DOCTYPE html>
+    if output_format == 'json':
+        # After any action, the cookies in os.environ are not updated yet.
+        # The new cookies are in the response_headers.
+        # For a realistic JSON response, we should reflect the state *after* the change.
+        # But for this script's purpose, we'll just send back the headers and let the client handle it.
+        # The client-side `document.cookie` will be correct after the browser processes the headers.
+        
+        # We need to re-parse cookies on the client-side, so let's just send the message.
+        # For a more robust API, we would calculate the final cookie state here.
+        # However, to keep it simple, we'll just re-read them for the JSON response.
+        
+        # The most reliable way for the client is to just re-read document.cookie after the request.
+        
+        json_response = {
+            "message": message,
+            "sent_headers": response_headers,
+            "current_cookies_on_request": cookies,
+            "environment": {
+                "HTTP_COOKIE": cookie_string if cookie_string else '(empty)',
+                "QUERY_STRING": query_string if query_string else '(empty)',
+                "REQUEST_METHOD": os.environ.get('REQUEST_METHOD', 'N/A')
+            }
+        }
+        
+        print("Content-Type: application/json")
+        for header in response_headers:
+            print(header)
+        print()
+        print(json.dumps(json_response, indent=4))
+
+    else: # Original HTML output
+        # Build HTML response
+        html = f"""<!DOCTYPE html>
 <html>
 <head>
     <title>Cookie Test - WebServ</title>
@@ -143,13 +175,13 @@ def main():
             <div class="cookie-list">
 """
 
-    if cookies:
-        for key, value in cookies.items():
-            html += f'                <div class="cookie-item"><strong>{key}</strong> = {value}</div>\n'
-    else:
-        html += '                <div class="cookie-item"><em>No cookies set</em></div>\n'
+        if cookies:
+            for key, value in cookies.items():
+                html += f'                <div class="cookie-item"><strong>{key}</strong> = {value}</div>\n'
+        else:
+            html += '                <div class="cookie-item"><em>No cookies set</em></div>\n'
 
-    html += f"""            </div>
+        html += f"""            </div>
         </div>
 
         <div class="section">
@@ -184,25 +216,25 @@ def main():
             <div class="env-info">
 """
 
-    if response_headers:
-        for header in response_headers:
-            html += f'                {header}<br>\n'
-    else:
-        html += '                <em>No Set-Cookie headers sent this request</em><br>\n'
+        if response_headers:
+            for header in response_headers:
+                html += f'                {header}<br>\n'
+        else:
+            html += '                <em>No Set-Cookie headers sent this request</em><br>\n'
 
-    html += """            </div>
+        html += """            </div>
         </div>
     </div>
 </body>
 </html>
 """
 
-    # Output CGI response
-    print("Content-Type: text/html")
-    for header in response_headers:
-        print(header)
-    print()  # End of headers
-    print(html)
+        # Output CGI response
+        print("Content-Type: text/html")
+        for header in response_headers:
+            print(header)
+        print()  # End of headers
+        print(html)
 
 if __name__ == '__main__':
     main()

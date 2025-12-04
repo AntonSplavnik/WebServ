@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Tester</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --container-bg: #f9f9f9;
+            --border-color: #ddd;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --button-hover-bg: #0056b3;
+            --danger-bg: #dc3545;
+            --danger-hover-bg: #c82333;
+            --info-bg: #e9ecef;
+            --info-text: #333;
+            --success-bg: #d4edda;
+            --success-text: #155724;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --border-color: #444;
+            --info-bg: #333;
+            --info-text: #e0e0e0;
+            --success-bg: #2c3e50;
+            --success-text: #d4edda;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        h1, h2 {
+            border-bottom: 2px solid var(--button-bg);
+            padding-bottom: 10px;
+        }
+        
+        .theme-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        #theme-toggle {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--container-bg);
+            color: var(--text-color);
+        }
+
+        .controls, .status, .response {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            color: var(--button-text);
+            background-color: var(--button-bg);
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-bg);
+        }
+        
+        button.danger {
+            background-color: var(--danger-bg);
+        }
+        
+        button.danger:hover {
+            background-color: var(--danger-hover-bg);
+        }
+
+        #cookie-list {
+            list-style: none;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--info-bg);
+            min-height: 50px;
+        }
+
+        #cookie-list li {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-family: monospace;
+        }
+
+        #cookie-list li:last-child {
+            border-bottom: none;
+        }
+
+        #response-message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            font-weight: bold;
+        }
+
+        #cgi-response-details {
+            background-color: var(--info-bg);
+            color: var(--info-text);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="theme-switcher">
+            <button id="theme-toggle">Toggle Dark Mode</button>
+        </div>
+        <h1>Cookie Tester</h1>
+
+        <div class="controls">
+            <h2>Controls</h2>
+            <button onclick="performAction('set')">Set Cookies</button>
+            <button onclick="performAction('update')">Update Cookie</button>
+            <button onclick="performAction('multiple')">Set Multiple</button>
+            <button onclick="performAction('delete')" class="danger">Delete Cookies</button>
+            <button onclick="performAction('none')">Check Status</button>
+        </div>
+        
+        <div id="response-message" style="display: none;"></div>
+
+        <div class="status">
+            <h2>Current Cookies (from <code>document.cookie</code>)</h2>
+            <ul id="cookie-list"></ul>
+        </div>
+
+        <div class="response">
+            <h2>CGI Response (JSON)</h2>
+            <pre id="cgi-response-details">Click a button to see the response.</pre>
+        </div>
+    </div>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const responseMessage = document.getElementById('response-message');
+        const cgiResponseDetails = document.getElementById('cgi-response-details');
+
+        // --- Cookie Helper Functions ---
+        function setCookie(name, value, days = 7) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/; Max-Age=" + (days * 24 * 60 * 60);
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+        
+        function deleteCookie(name) {
+            document.cookie = name + '=; Max-Age=0; path=/';
+        }
+
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.body.classList.toggle('dark-mode', isDark);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = getCookie('theme') === 'dark' ? 'light' : 'dark';
+            setCookie('theme', currentTheme);
+            applyTheme(currentTheme);
+            // Refresh cookie list to show the new theme cookie
+            setTimeout(getCookies, 100); 
+        });
+        
+        function getCookies() {
+            const cookies = document.cookie.split(';').filter(Boolean);
+            const cookieList = document.getElementById('cookie-list');
+            cookieList.innerHTML = '';
+
+            if (cookies.length > 0 && cookies[0].trim() !== '') {
+                cookies.forEach(cookie => {
+                    const [name, value] = cookie.split('=').map(c => c.trim());
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${name}</strong> = ${value || '""'}`;
+                    cookieList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No cookies are currently set.';
+                cookieList.appendChild(li);
+            }
+        }
+
+        async function performAction(action) {
+            if (action === 'delete') {
+                deleteCookie('theme'); // Delete the theme cookie
+                applyTheme('light'); // Revert to light mode immediately
+            }
+
+            try {
+                // Ensure the fetch call doesn't cache results
+                const response = await fetch(`/cgi-bin/cookie_test.py?action=${action}&format=json&t=${new Date().getTime()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Update the message bar
+                responseMessage.textContent = data.message;
+                responseMessage.style.display = 'block';
+
+                // Update the detailed response view
+                cgiResponseDetails.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                responseMessage.textContent = `Error: ${error.message}`;
+                responseMessage.style.display = 'block';
+                cgiResponseDetails.textContent = 'Failed to fetch or parse response from CGI script.';
+                console.error('Fetch error:', error);
+            }
+            
+            // The browser needs a moment to process the Set-Cookie headers from the response
+            setTimeout(getCookies, 100);
+        }
+
+        // Initial load
+        window.addEventListener('load', () => {
+            // Apply theme from cookie first
+            const savedTheme = getCookie('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                // If no theme cookie, check user's system preference
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            }
+            
+            // Get initial cookies and load the default state from the CGI
+            getCookies();
+            performAction('none');
+        });
+
+    </script>
+
+</body>
+</html>
