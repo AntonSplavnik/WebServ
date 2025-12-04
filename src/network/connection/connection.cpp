@@ -220,6 +220,8 @@ bool Connection::readBody() {
 		}
 	}
 
+	updateClientActivity();
+
 	if (_request.getTransferEncoding() == "chunked") {
 
 		if (_request.getProtocolVersion() == "HTTP/1.0"){
@@ -304,7 +306,6 @@ bool Connection::writeOnDisc() {
 	}
 	return false;
 }
-
 bool Connection::readFromDisc() {
 
 	// Open file on first call

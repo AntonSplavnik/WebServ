@@ -12,6 +12,7 @@
 
 #include <csignal>
 #include <cerrno>
+#include <set>
 
 #include "event_loop.hpp"
 
@@ -155,6 +156,13 @@ void EventLoop::checkConnectionsTimeouts() {
 	for (; it != connections.end();){
 
 		int currentFd = it->first;
+
+		// Skip timeout check for connections waiting on CGI (CGI has its own timeout)
+		if (it->second.getState() == WAITING_CGI) {
+			++it;
+			continue;
+		}
+
 		if(isConnectionTimedOut(connections, currentFd)){
 			std::cout << "Client: " << currentFd << " timed out." << std::endl;
 			int fdToDisconnect = currentFd;
@@ -176,16 +184,29 @@ void EventLoop::checkCgiTimeouts() {
 
 	std::map<int, Cgi>& cgiMap = _cgiExecutor.getCGI();
 	std::map<int, Cgi>::iterator cgiIt = cgiMap.begin();
+	std::set<pid_t> checkedPids;
 
 	while (cgiIt != cgiMap.end()) {
 
+		pid_t pid = cgiIt->second.getPid();
+
+		// Skip if already checked (same CGI has 2 FDs in map)
+		if (checkedPids.find(pid) != checkedPids.end()) {
+			++cgiIt;
+			continue;
+		}
+
+		checkedPids.insert(pid);
+
 		if (isCgiTimedOut(cgiMap, cgiIt->first)) {
 
-			std::cout << "[CGI TIMEOUT] Process pid=" << cgiIt->second.getPid()
+			std::cout << "[CGI TIMEOUT] Process pid=" << pid
 					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
 
 			_cgiExecutor.handleCGItimeout(cgiIt->second, _connectionPoolManager);
+			// Map is modified, restart
 			cgiIt = cgiMap.begin();
+			checkedPids.clear();
 			continue;
 		}
 		++cgiIt;
