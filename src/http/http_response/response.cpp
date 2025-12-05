@@ -1,4 +1,3 @@
-
 #include "response.hpp"
 
 HttpResponse::HttpResponse()
@@ -139,7 +138,6 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 	_contentLength = _body.length();
 
 	parseCgiContentType(cgiHeaders);
-	parseCgiSetCookie(cgiHeaders);
 	parseCgiLocation(cgiHeaders);
 	parseCgiStatus(cgiHeaders);
 
@@ -233,6 +231,11 @@ void HttpResponse::setPath(const std::string& path) {_filePath = path;}
 void HttpResponse::setConnectionType(const std::string& connectionType) {_connectionType = connectionType;}
 void HttpResponse::setMethod(RequestType type) {_requestType = type;}
 void HttpResponse::setRedirectUrl(const std::string& url) {_redirectUrl = url;}
+void HttpResponse::addCookie(const std::string& cookieString) {
+    if (!cookieString.empty()) {
+        _setCookies.push_back(cookieString);
+    }
+}
 
 unsigned long HttpResponse::getContentLength() const {return _body.length();}
 const std::string& HttpResponse::getBody() const {return _body;}

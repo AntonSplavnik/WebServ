@@ -28,6 +28,7 @@
 
 class EventLoop;
 class Connection;
+class SessionManager;
 
 enum CgiState{
 	CGI_CONTINUE,
@@ -41,7 +42,7 @@ class Cgi {
 		Cgi(const Cgi& other);
 		~Cgi();
 
-		bool start(const Connection& onnection);
+		bool start(const Connection& onnection, SessionManager& sessionManager);
 
 		CgiState handleReadFromCGI();
 		CgiState handleWriteToCGI();
@@ -76,6 +77,8 @@ class Cgi {
 
 		const HttpRequest&	_request;
 		EventLoop&			_eventLoop;
+
+		std::map<std::string, std::string> _sessionData;  // Cached session data (set before fork)
 
 		void executeCGI(const Connection& onnection);
 		std::string findInterpreter(const std::string& name);

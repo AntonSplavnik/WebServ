@@ -1,6 +1,7 @@
 #include "connection.hpp"
 #include "post_handler.hpp"
 #include "response.hpp"
+#include "session_manager.hpp"
 
 Connection::Connection()
 	: _fd(-1),
@@ -505,7 +506,7 @@ bool Connection::prepareResponse() {
 	_connectionState = SENDING_RESPONSE;
 	return true;
 }
-bool Connection::prepareResponse(const std::string& cgiOutput){
+bool Connection::prepareResponse(const std::string& cgiOutput, SessionManager& sessionManager){
 
 	HttpResponse response;
 
@@ -513,6 +514,12 @@ bool Connection::prepareResponse(const std::string& cgiOutput){
 	response.setMethod(_routingResult.type);
 	response.setConnectionType(_request.getConnectionType());
 	response.setProtocolVersion(_request.getProtocolVersion());
+
+	// Add session cookie if one exists
+	if (!_sessionId.empty()) {
+		std::string cookie = sessionManager.getSessionCookieString(_sessionId);
+		response.addCookie(cookie);
+	}
 
 	// Look up custom error page if status is an error
 	if (_statusCode >= 400 && _routingResult.serverConfig){

@@ -1,13 +1,18 @@
+#include <cctype>
+#include <sstream>
 #include "cgi_executor.hpp"
 #include "connection.hpp"
 #include "connection_pool_manager.hpp"
 #include "response.hpp"
+#include "session_manager.hpp"
 #include <poll.h>
 
-void CgiExecutor::handleCGI(Connection& connection) {
+void CgiExecutor::handleCGI(Connection& connection, SessionManager& sessionManager) {
+
+	setupSession(connection, sessionManager);
 
 	Cgi cgi(_eventLoop, connection.getRequest() , connection.getFd());
-	if (!cgi.start(connection)){
+	if (!cgi.start(connection, sessionManager)){
 		connection.setStatusCode(500);
 		connection.prepareResponse();
 		return;
@@ -27,7 +32,7 @@ void CgiExecutor::handleCGI(Connection& connection) {
 			<< " for client FD = " << connection.getFd() << std::endl;
 }
 
-void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& connectionPoolManager) {
+void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& connectionPoolManager, SessionManager& sessionManager) {
 
 	std::map<int, Cgi>::iterator cgiIt = _cgi.find(fd);
 	int clientFd = cgiIt->second.getClientFd();
@@ -43,24 +48,22 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 	std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
 	if (revents & POLLERR) {
 		std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
-		handleCGIerror(*connection, cgiIt->second, fd);
-	} else if (revents & POLLHUP) {
+		handleCGIerror(*connection, cgiIt->second, sessionManager, fd);
+	} else if (revents & POLLHUP) { // On Linux, POLLHUP may occur without POLLIN even when data is available. Always try to read remaining data before treating as error
 		std::cerr << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
-		// On Linux, POLLHUP may occur without POLLIN even when data is available
-		// Always try to read remaining data before treating as error
-		handleCGIread(*connection, cgiIt->second);
+		handleCGIread(*connection, cgiIt->second, sessionManager);
 		return;
 	} else if (revents & POLLOUT) {
 		std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
 		handleCGIwrite(*connection, cgiIt->second);
 	} else if (revents & POLLIN) {
 		std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
-		handleCGIread(*connection, cgiIt->second);
+		handleCGIread(*connection, cgiIt->second, sessionManager);
 	}
 
 }
 
-void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, int cgiFd) {
+void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, SessionManager& sessionManager, int cgiFd) {
 
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
@@ -71,8 +74,9 @@ void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, int cgiFd) {
 
 		if(cgi.isFinished()){
 			std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
+			updateSessionFromCGI(cgi.getResponseData(), sessionManager, connection.getSessionId());
 			connection.setStatusCode(200);
-			connection.prepareResponse(cgi.getResponseData());
+			connection.prepareResponse(cgi.getResponseData(), sessionManager);
 		} else {
 			std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
 			connection.setStatusCode(500);
@@ -122,7 +126,7 @@ void CgiExecutor::handleCGIwrite(Connection& connection, Cgi& cgi) { /* write to
 		cgi.closeInFd();
 	}
 }
-void CgiExecutor::handleCGIread(Connection& connection, Cgi& cgi) { /* read from CGI */
+void CgiExecutor::handleCGIread(Connection& connection, Cgi& cgi, SessionManager& sessionManager) { /* read from CGI */
 
 	int inFd = cgi.getInFd();
 	int outFd = cgi.getOutFd();
@@ -133,8 +137,11 @@ void CgiExecutor::handleCGIread(Connection& connection, Cgi& cgi) { /* read from
 	int connectionFd = cgi.getClientFd();
 
 	if(status == CGI_READY) {
+		// Update session based on CGI output
+		updateSessionFromCGI(cgi.getResponseData(), sessionManager, connection.getSessionId());
+
 		connection.setStatusCode(200);
-		connection.prepareResponse(cgi.getResponseData());
+		connection.prepareResponse(cgi.getResponseData(), sessionManager);
 		std::cout << "[DEBUG] Switched client FD " << connectionFd
 				  << " to POLLOUT mode after CGI complete" << std::endl;
 	}
@@ -179,3 +186,90 @@ void CgiExecutor::handleCGItimeout(Cgi& cgi, ConnectionPoolManager& _connectionP
 bool CgiExecutor::isCGI(int fd) {
 	return _cgi.find(fd) != _cgi.end();
 }
+
+void CgiExecutor::setupSession(Connection& connection, SessionManager& sessionManager) {
+	std::string cookieValue = connection.getRequest().getCookie("SESSID");
+	std::string sessionId = sessionManager.getOrCreateSession(cookieValue);
+	connection.setSessionId(sessionId);
+}
+
+// Case-insensitive string comparison function (like strncasecmp)
+static int strncasecmp_custom(const std::string& s1, const std::string& s2, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        if (i == s1.length() || i == s2.length()) {
+            return s1.length() - s2.length();
+        }
+        char c1 = std::tolower(static_cast<unsigned char>(s1[i]));
+        char c2 = std::tolower(static_cast<unsigned char>(s2[i]));
+        if (c1 != c2) {
+            return c1 - c2;
+        }
+    }
+    return 0;
+}
+// Case-insensitive comparison for chars
+// static bool icasecmp_char(char c1, char c2) {
+//     return std::tolower(static_cast<unsigned char>(c1)) == std::tolower(static_cast<unsigned char>(c2));
+// }
+void CgiExecutor::updateSessionFromCGI(const std::string& cgiOutput, SessionManager& sessionManager, const std::string& sessionId) {
+    if (cgiOutput.empty() || sessionId.empty()) {
+        return;
+    }
+
+    std::string headers;
+    size_t headerEnd = cgiOutput.find("\r\n\r\n");
+    if (headerEnd == std::string::npos) {
+        headerEnd = cgiOutput.find("\n\n");
+        if (headerEnd != std::string::npos) {
+            headers = cgiOutput.substr(0, headerEnd);
+        } else {
+            headers = "";
+        }
+    } else {
+        headers = cgiOutput.substr(0, headerEnd);
+    }
+
+    std::istringstream headerStream(headers);
+    std::string line;
+    while (std::getline(headerStream, line)) {
+        if (!line.empty() && line[line.length() - 1] == '\r') {
+            line = line.substr(0, line.length() - 1);
+        }
+
+        std::string headerKey = "X-Session-Set:";
+        if (line.size() > headerKey.size() && strncasecmp_custom(line, headerKey, headerKey.size()) == 0) {
+            std::string sessionVar = line.substr(headerKey.size());
+
+            size_t start = sessionVar.find_first_not_of(" \t");
+            if (start != std::string::npos) {
+                sessionVar = sessionVar.substr(start);
+            }
+
+            size_t equalsPos = sessionVar.find('=');
+            if (equalsPos != std::string::npos) {
+                std::string key = sessionVar.substr(0, equalsPos);
+                std::string value = sessionVar.substr(equalsPos + 1);
+
+                size_t key_end = key.find_last_not_of(" \t");
+                if (key_end != std::string::npos) {
+                    key = key.substr(0, key_end + 1);
+                } else {
+                    key.clear();
+                }
+
+                size_t key_start = key.find_first_not_of(" \t");
+                if (key_start != std::string::npos) {
+                    key = key.substr(key_start);
+                } else {
+                    key.clear();
+                }
+
+                if (!key.empty()) {
+                    sessionManager.set(sessionId, key, value);
+                    std::cout << "[DEBUG] Session updated from CGI: " << key << "=" << value << std::endl;
+                }
+            }
+        }
+    }
+}
+

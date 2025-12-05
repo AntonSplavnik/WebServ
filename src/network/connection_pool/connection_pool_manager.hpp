@@ -19,6 +19,7 @@
 
 class EventLoop; // Forward declaration
 class CgiExecutor; // Forward declaration
+class SessionManager; // Forward declaration
 
 class ConnectionPoolManager {
 
@@ -27,7 +28,7 @@ class ConnectionPoolManager {
 			: _configs(configs) {}
 		~ConnectionPoolManager(){}
 
-		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor);
+		void handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor, SessionManager& sessionManager);
 		Connection* getConnection(int fd);
 		Connection& getConnectionRef(int fd);
 		void addConnection(Connection& incomingConnection);

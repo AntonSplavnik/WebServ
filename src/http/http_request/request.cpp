@@ -395,3 +395,43 @@ std::string HttpRequest::getUri() const {
 	return  _path + "?" + _query;
 
 }
+std::string HttpRequest::getCookie(const std::string& name) const {
+	std::string cookieHeader = getHeaderValue("cookie");
+	if (cookieHeader.empty()) {
+		return "";
+	}
+
+	// Parse Cookie: name1=value1; name2=value2; name3=value3
+	std::string searchKey = name + "=";
+	size_t pos = 0;
+
+	while (pos < cookieHeader.length()) {
+		pos = cookieHeader.find(searchKey, pos);
+
+		if (pos == std::string::npos) {
+			return "";
+		}
+
+		// Check if this is an exact match (not a substring)
+		// Valid if: at start OR preceded by '; '
+		if (pos == 0 || cookieHeader[pos - 1] == ' ' ||
+			(pos >= 2 && cookieHeader[pos - 2] == ';' && cookieHeader[pos - 1] == ' ')) {
+
+			// Extract value (from '=' to ';' or end of string)
+			size_t valueStart = pos + searchKey.length();
+			size_t valueEnd = cookieHeader.find(';', valueStart);
+
+			if (valueEnd == std::string::npos) {
+				// Last cookie or only cookie
+				return cookieHeader.substr(valueStart);
+			}
+
+			return cookieHeader.substr(valueStart, valueEnd - valueStart);
+		}
+
+		// Not an exact match, keep searching
+		pos += searchKey.length();
+	}
+
+	return "";
+}

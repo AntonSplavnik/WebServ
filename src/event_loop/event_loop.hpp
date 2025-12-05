@@ -21,12 +21,14 @@
 #include "connection.hpp"
 #include "config.hpp"
 #include "cgi.hpp"
+#include "session_manager.hpp"
 
 class EventLoop {
 
 	public:
 		EventLoop(Config& config)
 			:_configs(config.getServers()),
+			 _sessionManager(3600),
 			 _connectionPoolManager(_configs),
 			 _listenManager(),
 			 _cgiExecutor(*this),
@@ -48,6 +50,7 @@ class EventLoop {
 
 		bool isCgiTimedOut(std::map<int, Cgi>& cgiMap, int fd);
 		void checkCgiTimeouts();
+		void checkSessionTimeouts();
 
 		void processDiskWrites();
 		void processDiskReads();
@@ -55,6 +58,7 @@ class EventLoop {
 		void reapZombieProcesses();
 
 		std::vector<ConfigData>		_configs;
+		SessionManager				_sessionManager;
 		ConnectionPoolManager		_connectionPoolManager;
 		ListeningSocketManager		_listenManager;
 		CgiExecutor					_cgiExecutor;

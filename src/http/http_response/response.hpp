@@ -41,6 +41,7 @@ class HttpResponse {
 		void setConnectionType(const std::string& connectionType);
 		void setMethod(RequestType type);
 		void setRedirectUrl(const std::string& url);
+		void addCookie(const std::string& cookieString);
 		const std::string& getBody() const;
 		const std::string& getPath() const;
 		const std::string& getProtocolVersion() const;

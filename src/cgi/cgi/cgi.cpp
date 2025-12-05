@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/27 13:07:59 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/03 21:36:52 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/05 01:46:16 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <signal.h>
 #include <sys/resource.h>
+#include <cctype>
 
 #define MAX_CGI_OUTPUT (10 * 1024 * 1024)
 
@@ -59,7 +60,14 @@ Cgi::~Cgi() {
     cleanup();
 }
 
-bool Cgi::start(const Connection& connection) {
+bool Cgi::start(const Connection& connection, SessionManager& sessionManager) {
+
+    // Cache session data BEFORE fork (so child gets a copy)
+    std::string sessionId = connection.getSessionId();
+    if (!sessionId.empty()) {
+        _sessionData = sessionManager.getData(sessionId);
+        std::cout << "[CGI] Cached session data: " << _sessionData.size() << " keys" << std::endl;
+    }
 
     int inpipe[2];
     int outpipe[2];
@@ -190,7 +198,8 @@ char** Cgi::prepEnvVariables(const Connection& connection) {
 
     int staticVars = 19;
     int headersCount = cgiHeaders.size(); // Dynamic HTTP_* headers
-    int totalSize = staticVars + headersCount + 1;  // +1 for NULL terminator
+    int sessionVarsCount = _sessionData.size(); // SESSION_* variables
+    int totalSize = staticVars + headersCount + sessionVarsCount + 1;  // +1 for NULL terminator
 
     char** envp = new char*[totalSize];
     int i = 0;
@@ -298,6 +307,19 @@ char** Cgi::prepEnvVariables(const Connection& connection) {
 
     // SERVER_SOFTWARE
     envp[i++] = strdup("SERVER_SOFTWARE=WebServ/1.0");
+
+
+    /////// SESSION DATA //////////
+
+    // Add session variables as SESSION_<key>=<value>
+    for (std::map<std::string, std::string>::const_iterator it = _sessionData.begin();
+         it != _sessionData.end(); ++it) {
+        std::string key = it->first;
+        // Transform key to uppercase
+        std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+        buffer = "SESSION_" + key + "=" + it->second;
+        envp[i++] = strdup(buffer.c_str());
+    }
 
     envp[i++] = NULL;
 

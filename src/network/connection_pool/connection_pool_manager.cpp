@@ -6,7 +6,7 @@
 /*   By: antonsplavnik <antonsplavnik@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/21 00:48:17 by antonsplavn       #+#    #+#             */
-/*   Updated: 2025/12/02 23:07:28 by antonsplavn      ###   ########.fr       */
+/*   Updated: 2025/12/05 01:55:57 by antonsplavn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,18 +14,10 @@
 #include "request_router.hpp"
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
+#include "session_manager.hpp"
 
-/*
- Linux:
-  - Graceful FIN: POLLHUP | POLLIN together
-  - May have buffered data before FIN
-
- BSD/macOS:
-  - Graceful FIN: Often just POLLIN, no POLLHUP
-  - recv() == 0 signals FIN
-*/
-
-void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor) {
+void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor, SessionManager& sessionManager) {
+	(void)sessionManager; // TODO: Use sessionManager
 
 	// std::cout << "[DEBUG] handleConnectionEvent FD " << fd << " revents=" << revents << std::endl;
 
@@ -129,7 +121,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					connection.setState(READING_BODY);
 					break;
 				case CGI_GET:
-					cgiExecutor.handleCGI(connection);
+					cgiExecutor.handleCGI(connection, sessionManager);
 					break;
 				case REDIRECT:
 					reqHandler.handleRedirect(connection);
@@ -166,7 +158,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 
 			switch(type) {
 				case (CGI_POST): {
-					cgiExecutor.handleCGI(connection);
+					cgiExecutor.handleCGI(connection, sessionManager);
 					break;
 				}
 				case (POST): {

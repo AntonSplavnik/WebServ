@@ -127,9 +127,9 @@ void EventLoop::run() {
 				if (_listenManager.isListening(fd))
 					_listenManager.handleListenEvent(fd, revents, _connectionPoolManager);
 				else if (_cgiExecutor.isCGI(fd))
-					_cgiExecutor.handleCGIevent(fd, revents, _connectionPoolManager);
+					_cgiExecutor.handleCGIevent(fd, revents, _connectionPoolManager, _sessionManager);
 				else if (_connectionPoolManager.isConnection(fd))
-					_connectionPoolManager.handleConnectionEvent(fd, revents, _cgiExecutor);
+					_connectionPoolManager.handleConnectionEvent(fd, revents, _cgiExecutor, _sessionManager);
 			}
 		}
 		checkConnectionsTimeouts();
@@ -137,6 +137,8 @@ void EventLoop::run() {
 		processDiskWrites();
 		processDiskReads();
 		reapZombieProcesses();
+
+		_sessionManager.cleanupIfNeeded();
 	}
 }
 

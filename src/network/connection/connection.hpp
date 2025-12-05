@@ -10,6 +10,8 @@
 #include "request_router.hpp"
 #include "post_handler.hpp"
 
+class SessionManager; // Forward declaration
+
 // #define BUFFER_SIZE_4 4096    // 4 KB
 // // #define BUFFER_SIZE_8 8192    // 8 KB
 // // #define BUFFER_SIZE_16 16384   // 16 KB
@@ -44,7 +46,7 @@ class Connection {
 		bool writeOnDisc();
 		bool readFromDisc();
 		bool prepareResponse();
-		bool prepareResponse(const std::string& cgiOutput); // For CGI
+		bool prepareResponse(const std::string& cgiOutput, SessionManager& sessionManager); // For CGI
 		bool sendResponse();
 
 		// Connection Accessors
@@ -79,6 +81,10 @@ class Connection {
 			_readFilePath = path;
 			_bytesRead = 0;
 		}
+
+		// Session Accessors
+		const std::string& getSessionId() const { return _sessionId; }
+		void setSessionId(const std::string& sessionId) { _sessionId = sessionId; }
 
 		// File Upload - Single File
 		std::string getUploadPath() const { return _uploadPath; }
@@ -147,6 +153,9 @@ class Connection {
 		int				_statusCode;		// code to determine if the request was sucessful or not
 		std::string		_redirectUrl;		// URL for redirect responses (Location header)
 		std::string		_indexPath;			// Index path for MIME type detection in response.
+
+		// Session Data
+		std::string		_sessionId;			// Session ID from Cookie header (or newly created)
 
 		// Connection Lifecycle
 		time_t			_lastActivity;
