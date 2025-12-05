@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "socket.hpp"
+#include "logger.hpp"
 #include <arpa/inet.h>
 
 Socket::Socket():_fd(-1){ }
@@ -21,7 +22,7 @@ void Socket::createCustom(int domain, int type, int protocol) {
 
 	_fd = socket(domain, type, protocol);
 	if(_fd < 0)
-		std::cout << "[DEBUG] socket creation error" << std::endl;
+		logError("Socket creation error");
 
 	// _is_created = true;
 }
@@ -29,7 +30,7 @@ void Socket::createDefault() {
 
 	_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(_fd < 0)
-		std::cout << "[DEBUG] socket creation error" << std::endl;
+		logError("Socket creation error");
 
 	// _is_created = true;
 }
@@ -38,10 +39,10 @@ void Socket::setReuseAddr(bool enable) {
 
 	int opt = enable ? 1 : 0;
 	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-		std::cerr << "[ERROR] Failed to set SO_REUSEADDR: " << strerror(errno) << std::endl;
+		logError("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
 		return;
 	}
-	std::cout << "[DEBUG] Set SO_REUSEADDR option on FD " << _fd << std::endl;
+	logDebug("Set SO_REUSEADDR option on FD " + toString(_fd));
 }
 
 void Socket::binding(std::string address, unsigned short port) {
@@ -61,26 +62,25 @@ void Socket::binding(std::string address, unsigned short port) {
 	}
 
 	if (bind(_fd, (sockaddr*)&listener, sizeof(listener)) < 0) {
-		std::cerr << "[DEBUG] Bind failed: " << strerror(errno) << "\n";
+		logError("Bind failed: " + std::string(strerror(errno)));
 		close(_fd);
 		_fd = -1;
 		return;
 	}
 
 	_port = port;
-	std::cout << "[DEBUG] Bound socket FD " << _fd << " to "
-			<< address << ":" << port << std::endl;
+	logDebug("Bound socket FD " + toString(_fd) + " to " + address + ":" + toString(port));
 }
 
 void Socket::listening(int backlog) {
 
 	 if (listen(_fd, backlog) < 0) {
-		std::cerr << "[DEBUG] Listen failed: " << strerror(errno) << "\n";
+		logError("Listen failed: " + std::string(strerror(errno)));
 		close(_fd);
 		_fd = -1;
 		return;
 	}
-	std::cout << "[DEBUG] Socket FD " << _fd << " is now listening (backlog: 10)" << std::endl;
+	logDebug("Socket FD " + toString(_fd) + " is now listening (backlog: " + toString(backlog) + ")");
 }
 
 int Socket::accepting(sockaddr_in& client_addr) {
@@ -88,13 +88,13 @@ int Socket::accepting(sockaddr_in& client_addr) {
 	socklen_t client_len = sizeof(client_addr);
 	int client_fd = accept(_fd, (sockaddr*)&client_addr, &client_len);
 	if (client_fd < 0)
-		std::cout << "[DEBUG] Client accept Error" << std::endl;
+		logDebug("Client accept Error");
 	return client_fd;
 }
 
 void Socket::setNonBlocking(int fd) {
 
-	std::cout << "[DEBUG] Making socket FD " << fd << " non-blocking" << std::endl;
+	logDebug("Making socket FD " + toString(fd) + " non-blocking");
 	int flags = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }

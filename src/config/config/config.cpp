@@ -2,6 +2,7 @@
 #include "helpers.hpp"
 #include "config_exceptions.hpp"
 #include "directives_parsers.tpp"
+#include "logger.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -56,14 +57,14 @@ std::vector<ConfigData> Config::getServers() const { return _servers; }
 
 const LocationConfig* ConfigData::findMatchingLocation(const std::string& requestPath) const {
 
-    std::cout << "[DEBUG] RequestPath: " << requestPath << std::endl;
+    logDebug("RequestPath: " + requestPath);
 
     const LocationConfig* bestMatch = NULL;
     size_t longestMatch = 0;
 
     for (size_t i = 0; i < locations.size(); i++) {
 
-        std::cout << "[DEBUG] Checking location: " << locations[i].path << std::endl;
+        logDebug("Checking location: " + locations[i].path);
         size_t pathLen = locations[i].path.length();
 
         // Check if request path starts with this location path
@@ -75,7 +76,7 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
                 if (pathLen > longestMatch) {
                     bestMatch = &locations[i];
                     longestMatch = pathLen;
-                    std::cout << "[DEBUG] Root location matches (length: " << pathLen << ")" << std::endl;
+                    logDebug("Root location matches (length: " + toString(pathLen) + ")");
                 }
             }
             // For non-root locations, ensure proper path boundary
@@ -84,16 +85,16 @@ const LocationConfig* ConfigData::findMatchingLocation(const std::string& reques
                 if (pathLen > longestMatch) {
                     bestMatch = &locations[i];
                     longestMatch = pathLen;
-                    std::cout << "[DEBUG] Location matches (length: " << pathLen << ")" << std::endl;
+                    logDebug("Location matches (length: " + toString(pathLen) + ")");
                 }
             }
         }
     }
 
     if (bestMatch) {
-        std::cout << "[DEBUG] Best match: " << bestMatch->path << " (root: " << bestMatch->root << ")" << std::endl;
+        logDebug("Best match: " + bestMatch->path + " (root: " + bestMatch->root + ")");
     } else {
-        std::cout << "[DEBUG] No matching location found" << std::endl;
+        logDebug("No matching location found");
     }
 
     return bestMatch;
@@ -156,7 +157,7 @@ void Config::validateConfig(ConfigData& config) {
         config.error_pages[500] = DEFAULT_ERROR_PAGE_500;
         config.error_pages[403] = DEFAULT_ERROR_PAGE_403;
         config.error_pages[413] = DEFAULT_ERROR_PAGE_413;
-        std::cout << "Info: No error_pages specified, applying default error pages" << std::endl;
+        logInfo("No error_pages specified, applying default error pages");
     }
     // Validate error page files exist (paths are relative to root)
     for (std::map<int, std::string>::const_iterator it = config.error_pages.begin();
@@ -173,7 +174,7 @@ void Config::validateConfig(ConfigData& config) {
     if (config.allow_methods.empty())
     {
         config.allow_methods.push_back("GET");
-        std::cout << "Info: No allow_methods specified, defaulting to GET" << std::endl;
+        logInfo("No allow_methods specified, defaulting to GET");
     }
 
     // Auto-create '/' location if none exists (nginx behavior)
@@ -200,7 +201,7 @@ void Config::validateConfig(ConfigData& config) {
         rootLoc.cgi_ext = config.cgi_ext;
         rootLoc.cgi_path = config.cgi_path;
         config.locations.push_back(rootLoc);
-        std::cout << "Info: No '/' location found, created default from server directives" << std::endl;
+        logInfo("No '/' location found, created default from server directives");
     }
 
     // --- Each location ---
@@ -216,7 +217,7 @@ void Config::validateConfig(ConfigData& config) {
             if (loc.allow_methods.empty())
             {
                 loc.allow_methods.push_back("GET");
-                std::cout << "Info: No allow_methods specified in location, defaulting to GET" << std::endl;
+                logInfo("No allow_methods specified in location, defaulting to GET");
             }
         }
 		// location validation

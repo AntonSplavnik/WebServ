@@ -1,4 +1,5 @@
 #include "response.hpp"
+#include "logger.hpp"
 
 HttpResponse::HttpResponse()
 	:_statusCode(0),
@@ -145,6 +146,7 @@ void HttpResponse::generateResponse(int statusCode, const std::string& cgiOutput
 	if (_cgiStatus > 0) {
 		_statusCode = _cgiStatus;
 		_reasonPhrase = mapStatusToReason();
+		logDebug("CGI overrode status code to " + toString(_cgiStatus));
 	}
 
 	buildHttpResponse();
@@ -172,6 +174,8 @@ void HttpResponse::generateResponse(int statusCode) {
 }
 void HttpResponse::generateErrorResponse() {
 
+	logDebug("Generating error response for status code " + toString(_statusCode));
+
 	if (!_customErrorPagePath.empty()) {
 		std::ifstream errorFile(_customErrorPagePath.c_str());
 		if (errorFile.is_open()) {
@@ -179,12 +183,16 @@ void HttpResponse::generateErrorResponse() {
 			buffer << errorFile.rdbuf();
 			_body = buffer.str();
 			errorFile.close();
+			logDebug("Loaded custom error page: " + _customErrorPagePath);
+		} else {
+			logWarning("Failed to open custom error page: " + _customErrorPagePath);
 		}
 	}
 	if (_body.empty()) {
 		std::stringstream oss;
 		oss << "<html><body><h1>Error " << _statusCode << "</h1></body></html>";
 		_body = oss.str();
+		logDebug("Using default error page for " + toString(_statusCode));
 	}
 	_contentType = "text/html";
 	_contentLength = _body.length();

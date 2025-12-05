@@ -15,6 +15,7 @@
 #include <set>
 
 #include "event_loop.hpp"
+#include "logger.hpp"
 
 
 extern volatile sig_atomic_t g_shutdown;
@@ -90,7 +91,7 @@ void EventLoop::initListeningSockets() {
 		listeningSocket.revents = 0;
 
 		_pollFds.push_back(listeningSocket);
-		std::cout << "Added listening socket FD " << listeningSocket.fd << " to poll vector at index: " << (_pollFds.size() - 1) << std::endl;
+		logInfo("Added listening socket FD " + toString(listeningSocket.fd) + " to poll vector at index: " + toString(_pollFds.size() - 1));
 	}
 	_listeningSocketCount = listeningSockets.size();
 }
@@ -109,12 +110,12 @@ void EventLoop::run() {
 
 		//errno != EINTR check for interrupted poll
 		if (ret < 0 && errno != EINTR) {
-			std::cerr << "[DEBUG] Poll failed.\n";
+			logError("Poll failed");
 			break;
 		}
 
 		if (ret > 0) {
-			std::cout << "[DEBUG] poll() returned " << ret << " (number of FDs with events)" << std::endl;
+			logDebug("poll() returned " + toString(ret) + " (number of FDs with events)");
 			for(size_t i = 0; i < _pollFds.size(); i++) {
 
 				int fd = _pollFds[i].fd;
@@ -122,7 +123,7 @@ void EventLoop::run() {
 
 				if (_pollFds[i].revents == 0) continue;
 
-				std::cout << "[DEBUG] Handling FD " << fd << " at index " << i << " with revents=" << revents << std::endl;
+				logDebug("Handling FD " + toString(fd) + " at index " + toString(i) + " with revents=" + toString(revents));
 
 				if (_listenManager.isListening(fd))
 					_listenManager.handleListenEvent(fd, revents, _connectionPoolManager);
@@ -166,7 +167,7 @@ void EventLoop::checkConnectionsTimeouts() {
 		}
 
 		if(isConnectionTimedOut(connections, currentFd)){
-			std::cout << "Client: " << currentFd << " timed out." << std::endl;
+			logWarning("Client: " + toString(currentFd) + " timed out");
 
 			// If headers were parsed, send 408 response before closing
 			if (it->second.getState() != READING_HEADERS) {
@@ -211,8 +212,7 @@ void EventLoop::checkCgiTimeouts() {
 
 		if (isCgiTimedOut(cgiMap, cgiIt->first)) {
 
-			std::cout << "[CGI TIMEOUT] Process pid=" << pid
-					  << " exceeded " << CGI_TIMEOUT << "s — killing it." << std::endl;
+			logWarning("CGI TIMEOUT: Process pid=" + toString(pid) + " exceeded " + toString(CGI_TIMEOUT) + "s - killing it");
 
 			_cgiExecutor.handleCGItimeout(cgiIt->second, _connectionPoolManager);
 			// Map is modified, restart
@@ -254,12 +254,12 @@ void EventLoop::reapZombieProcesses() {
 		int result = waitpid(_killedPids[i], NULL, WNOHANG);
 		int pid = _killedPids[i];
 		if (result > 0 ){
-			std::cout << "[DEBUG] Reaped zombie process " << pid << std::endl;
+			logDebug("Reaped zombie process " + toString(pid));
 			_killedPids.erase(_killedPids.begin() + i);
 		} else if (result == 0) {
 			i++;
 		} else {
-			std::cerr << "[WARNING] waitpid failed for pid " << pid << std::endl;
+			logWarning("waitpid failed for pid " + toString(pid));
 			_killedPids.erase(_killedPids.begin() + i);
 		}
 	}

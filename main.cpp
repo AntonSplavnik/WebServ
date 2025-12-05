@@ -13,6 +13,7 @@
 #include "src/event_loop/event_loop.hpp"
 #include "src/config/config/config.hpp"
 #include "src/config/config_exceptions/config_exceptions.hpp"
+#include "src/logging/logger.hpp"
 #include <iostream>
 #include <string>
 #include <csignal>
@@ -31,21 +32,44 @@ int main(int argc, char *argv[]){
 	signal(SIGTERM, signalHandler);
 
 	try{
-		if (argc != 2){
-		std::cout << "Wrong config path" << std::endl;
-		return 1;
+		// Parse command line arguments
+		std::string configPath;
+		LogLevel logLevel = LOG_INFO; // Default
+
+		if (argc == 2) {
+			// Just config file
+			configPath = argv[1];
+		} else if (argc == 4) {
+			// Config file + log level flag
+			configPath = argv[1];
+			std::string flag = argv[2];
+			std::string level = argv[3];
+
+			if (flag == "--log-level" || flag == "-l") {
+				logLevel = getLogLevelFromString(level);
+			} else {
+				std::cerr << "Usage: " << argv[0] << " <config_file> [--log-level <debug|info|warning|error|none>]" << std::endl;
+				return 1;
+			}
+		} else {
+			std::cerr << "Usage: " << argv[0] << " <config_file> [--log-level <debug|info|warning|error|none>]" << std::endl;
+			return 1;
 		}
 
-		std::cout << std::string(argv[1]) << std::endl;
+		// Set the log level
+		setLogLevel(logLevel);
+
+		logInfo("Starting WebServ with config: " + configPath);
 		Config config;
-		config.parseConfig(argv[1]);
-		std::cout << "Config file loaded successfully" << std::endl;
+		// parseConfig expects char*, need to cast away const (not modifying string in practice)
+		config.parseConfig(const_cast<char*>(configPath.c_str()));
+		logInfo("Config file loaded successfully");
 
 		EventLoop controller(config);
 		controller.run();
 	}
 	catch(const std::exception& e){
-		std::cerr << e.what() << '\n';
+		logError(e.what());
 		return 1;
 	}
 

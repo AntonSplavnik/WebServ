@@ -14,6 +14,7 @@
 #include "connection.hpp"
 #include "event_loop.hpp"
 #include "response.hpp"
+#include "logger.hpp"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -66,7 +67,7 @@ bool Cgi::start(const Connection& connection, SessionManager& sessionManager) {
     std::string sessionId = connection.getSessionId();
     if (!sessionId.empty()) {
         _sessionData = sessionManager.getData(sessionId);
-        std::cout << "[CGI] Cached session data: " << _sessionData.size() << " keys" << std::endl;
+        logDebug("Cached session data: " + toString(_sessionData.size()) + " keys");
     }
 
     int inpipe[2];
@@ -157,7 +158,7 @@ void Cgi::executeCGI(const Connection& connection) {
         interpreter = findInterpreter("php-cgi");
 
     if (interpreter.empty()) {
-        std::cerr << "[CGI] Interpreter not found for extension: " << ext << std::endl;
+        logError("Interpreter not found for extension: " + ext);
         _exit(127);
     }
 
@@ -328,7 +329,7 @@ char** Cgi::prepEnvVariables(const Connection& connection) {
 
 CgiState Cgi::handleReadFromCGI() {
 
-    std::cout << "[DEBUG] Handling CGI read for pid = " << _pid << std::endl;
+    logDebug("Handling CGI read for pid = " + toString(_pid));
     if (_finished || _outFd < 0)
         return CGI_READY;
 
@@ -339,8 +340,8 @@ CgiState Cgi::handleReadFromCGI() {
         return CGI_CONTINUE;
     }
     else if (bytesRead == 0) { // --- EOF: child finished writing ---
-        std::cout << "[CGI] EOF reached for outFd = " << _outFd << std::endl;
-        std::cout << "[DEBUG] CGI responseData: " << _responseData << std::endl;
+        logDebug("EOF reached for outFd = " + toString(_outFd));
+        logDebug("CGI responseData: " + _responseData);
 
         _finished = true;
         closeOutFd();
@@ -349,7 +350,7 @@ CgiState Cgi::handleReadFromCGI() {
     }
     else { // bytesRead > 0
         if (_responseData.size() + bytesRead > MAX_CGI_OUTPUT) { //buffer size limits check. how about 100Gb script?
-            std::cerr << "[CGI] Output exceeds limit" << std::endl;
+            logError("Output exceeds limit");
             closeOutFd();
             terminate();
             return CGI_ERROR;
@@ -375,8 +376,8 @@ CgiState Cgi::handleWriteToCGI() {
     }
     else if (bytesWritten > 0){
         _bytesWrittenToCgi += bytesWritten;
-        /* std::cout << "[CGI] Sending POST body to script: " << _scriptPath; */
-        std::cout << "[CGI] wrote " << bytesWritten << " bytes to CGI stdin\n";
+        /* logDebug("Sending POST body to script: " + _scriptPath); */
+        logDebug("wrote " + toString(bytesWritten) + " bytes to CGI stdin");
         return CGI_CONTINUE;
     }
     else { // bytesWritten == 0 (shouldn't happen, but handle for completeness)

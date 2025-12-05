@@ -12,6 +12,7 @@
 
 #include "request_router.hpp"
 #include "connection.hpp"
+#include "logger.hpp"
 #include <climits>
 
 static RoutingResult prepErrorResult(RoutingResult& result, bool success, int errorCode) {
@@ -62,10 +63,10 @@ RoutingResult RequestRouter::route(Connection& connection) {
 	result.scriptName = cleanedPath;
 	result.pathTranslated = buildPathTranslated(location->root, result.pathInfo);
 
-	std::cout << "[DEBUG] CGI Extension: " << result.cgiExtension << std::endl;
-	std::cout << "[DEBUG] Script Name: " << result.scriptName << std::endl;
-	std::cout << "[DEBUG] PATH_INFO: " << result.pathInfo << std::endl;
-	std::cout << "[DEBUG] PATH_TRANSLATED: " << result.pathTranslated << std::endl;
+	logDebug("CGI Extension: " + result.cgiExtension);
+	logDebug("Script Name: " + result.scriptName);
+	logDebug("PATH_INFO: " + result.pathInfo);
+	logDebug("PATH_TRANSLATED: " + result.pathTranslated);
 
 	// Classify request type (use cgiExtension to detect CGI with PATH_INFO)
 	result.type = classify(req, location, result.cgiExtension);
@@ -116,7 +117,7 @@ ConfigData& RequestRouter::findServerConfig(const HttpRequest& req, int servrPor
 
 	// No match - return first server as default (nginx behavior)
 	if (matchedConfigs.empty()) {
-		std::cerr << "[FATAL] No config for port " << servrPort << std::endl;
+		logError("No config for port " + toString(servrPort));
 		exit(1);  // Die loudly so bug is found
 	}
 	return *matchedConfigs[0];
@@ -132,7 +133,7 @@ bool RequestRouter::validateMethod(const HttpRequest& request, const LocationCon
 	}
 
 	if (!methodAllowed) {
-		std::cout << "[DEBUG] Method " << request.getMethod() << " not allowed for this location" << std::endl;
+		logDebug("Method " + request.getMethod() + " not allowed for this location");
 		return false;
 	}
 
@@ -142,8 +143,7 @@ bool RequestRouter::validateBodySize(int contentLength, const LocationConfig*& l
 
 
 	if (contentLength > location->client_max_body_size) {
-		std::cout << "[DEBUG] Body size " << contentLength
-				  << " exceeds limit " << location->client_max_body_size << std::endl;
+		logDebug("Body size " + toString(contentLength) + " exceeds limit " + toString(location->client_max_body_size));
 		return false;
 	}
 
@@ -158,7 +158,7 @@ std::string RequestRouter::mapPath(const std::string& requestPath, const Locatio
 	if(requestPath.compare(0, locationPath.length(), locationPath) == 0)
 		relativePath = requestPath.substr(locationPath.length());
 	else{
-		std::cerr << "[ERROR] mapPath called with non-matching paths!" << std::endl;
+		logError("mapPath called with non-matching paths!");
 		relativePath = requestPath;  // Fallback
 	}
 
@@ -166,22 +166,22 @@ std::string RequestRouter::mapPath(const std::string& requestPath, const Locatio
 		&& !relativePath.empty() && relativePath[0] == '/')
 		relativePath = relativePath.substr(1);
 
-	std::cout << "[DEBUG] LocationRoot: " << locationRoot << std::endl;
-	std::cout << "[DEBUG] LocationPath: " << locationPath << std::endl;
-	std::cout << "[DEBUG] RequestPath : " << requestPath << std::endl;
-	std::cout << "[DEBUG] RelativePath : " << relativePath << std::endl;
-	std::cout << "[DEBUG] MappedPath : " << locationRoot + relativePath << std::endl;
+	logDebug("LocationRoot: " + locationRoot);
+	logDebug("LocationPath: " + locationPath);
+	logDebug("RequestPath : " + requestPath);
+	logDebug("RelativePath : " + relativePath);
+	logDebug("MappedPath : " + locationRoot + relativePath);
 	return locationRoot + relativePath;
 }
 bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot) {
 
 	if(mappedPath.find("../") != std::string::npos || mappedPath.find("/..") != std::string::npos) {
-		std::cout << "[SECURITY] Path traversal attempt detected: " << mappedPath << std::endl;
+		logWarning("Path traversal attempt detected: " + mappedPath);
 		return false;
 	}
 
 	if(mappedPath.find('\0') != std::string::npos){
-		std::cout << "[SECURITY] Null byte injection detected" << std::endl;
+		logWarning("Null byte injection detected");
 		return false;
 	}
 
@@ -201,7 +201,7 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 		while (realpath(checkPath.c_str(), resolvedPath) == NULL) {
 			size_t lastSlash = checkPath.find_last_of('/');
 			if (lastSlash == std::string::npos) {
-				std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+				logWarning("Invalid path or parent directory: " + mappedPath);
 				return false;
 			}
 
@@ -211,7 +211,7 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 
 			// Avoid infinite loop if we reach empty path
 			if (checkPath.empty()) {
-				std::cout << "[SECURITY] Invalid path or parent directory: " << mappedPath << std::endl;
+				logWarning("Invalid path or parent directory: " + mappedPath);
 				return false;
 			}
 		}
@@ -224,7 +224,7 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 
 	// Resolve the allowed root
 	if (realpath(allowedRoot.c_str(), resolvedRoot) == NULL) {
-		std::cout << "[SECURITY] Invalid allowed root: " << allowedRoot << std::endl;
+		logWarning("Invalid allowed root: " + allowedRoot);
 		return false;
 	}
 
@@ -233,10 +233,10 @@ bool RequestRouter::validatePathSecurity(const std::string& mappedPath, const st
 	std::string canonicalRoot(resolvedRoot);
 
 	if (canonicalPath.compare(0, canonicalRoot.length(), canonicalRoot) != 0) {
-		std::cout << "[SECURITY] Path escape attempt!" << std::endl;
-		std::cout << "[SECURITY] Requested: " << mappedPath << std::endl;
-		std::cout << "[SECURITY] Resolved:  " << canonicalPath << std::endl;
-		std::cout << "[SECURITY] Root:      " << canonicalRoot << std::endl;
+		logWarning("Path escape attempt!");
+		logWarning("Requested: " + mappedPath);
+		logWarning("Resolved:  " + canonicalPath);
+		logWarning("Root:      " + canonicalRoot);
 		return false;
 	}
 	return true;

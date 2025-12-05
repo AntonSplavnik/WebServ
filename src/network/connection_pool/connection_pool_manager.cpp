@@ -15,6 +15,7 @@
 #include "request_handler.hpp"
 #include "cgi_executor.hpp"
 #include "session_manager.hpp"
+#include "logger.hpp"
 
 void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExecutor& cgiExecutor, SessionManager& sessionManager) {
 	(void)sessionManager; // TODO: Use sessionManager
@@ -26,7 +27,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 
 	// ========== POLLERR Events ==========
 	if (revents & POLLERR ) {
-		std::cout << "[DEBUG] POLLERR detected, disconnecting FD " << fd << std::endl;
+		logDebug("POLLERR detected, disconnecting FD " + toString(fd));
 		disconnectConnection(fd);
 		return;
 	}
@@ -60,7 +61,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 				return;
 			}
 		} else {
-			std::cout << "[DEBUG] Client FD " << fd << " hung up" << std::endl;
+			logDebug("Client FD " + toString(fd) + " hung up");
 			disconnectConnection(fd);
 			return;
 		}
@@ -166,7 +167,7 @@ void ConnectionPoolManager::handleConnectionEvent(int fd, short revents, CgiExec
 					break;
 				}
 				default: {
-					std::cout << "[DEBUG] Unknown reuest type" << std::endl;
+					logWarning("Unknown request type");
 					break;
 				}
 				return;

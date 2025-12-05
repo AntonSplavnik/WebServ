@@ -5,6 +5,7 @@
 #include "connection_pool_manager.hpp"
 #include "response.hpp"
 #include "session_manager.hpp"
+#include "logger.hpp"
 #include <poll.h>
 
 void CgiExecutor::handleCGI(Connection& connection, SessionManager& sessionManager) {
@@ -26,10 +27,7 @@ void CgiExecutor::handleCGI(Connection& connection, SessionManager& sessionManag
 	_cgi.insert(std::make_pair(outFd, cgi));
 	connection.setState(WAITING_CGI);
 
-	std::cout << "[DEBUG] Spawned CGI pid = " << pid
-			<< " inFd = " << inFd
-			<< " outFd = " << outFd
-			<< " for client FD = " << connection.getFd() << std::endl;
+	logDebug("Spawned CGI pid = " + toString(pid) + " inFd = " + toString(inFd) + " outFd = " + toString(outFd) + " for client FD = " + toString(connection.getFd()));
 }
 
 void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& connectionPoolManager, SessionManager& sessionManager) {
@@ -40,24 +38,24 @@ void CgiExecutor::handleCGIevent(int fd, short revents, ConnectionPoolManager& c
 	Connection* connection = connectionPoolManager.getConnection(clientFd);
 
 	if (!connection) {
-		std::cout << "[DEBUG] Client disconnected, terminating CGI FD " << fd << std::endl;
+		logDebug("Client disconnected, terminating CGI FD " + toString(fd));
 		terminateCGI(cgiIt->second);
 		return;
 	}
 
-	std::cout << "[DEBUG] Event detected on CGI FD " << fd << std::endl;
+	logDebug("Event detected on CGI FD " + toString(fd));
 	if (revents & POLLERR) {
-		std::cerr << "[DEBUG] CGI POLLERR event on FD " << fd << std::endl;
+		logDebug("CGI POLLERR event on FD " + toString(fd));
 		handleCGIerror(*connection, cgiIt->second, sessionManager, fd);
 	} else if (revents & POLLHUP) { // On Linux, POLLHUP may occur without POLLIN even when data is available. Always try to read remaining data before treating as error
-		std::cerr << "[DEBUG] CGI POLLHUP event on FD " << fd << std::endl;
+		logDebug("CGI POLLHUP event on FD " + toString(fd));
 		handleCGIread(*connection, cgiIt->second, sessionManager);
 		return;
 	} else if (revents & POLLOUT) {
-		std::cout << "[DEBUG] CGI POLLOUT event on FD " << fd << std::endl;
+		logDebug("CGI POLLOUT event on FD " + toString(fd));
 		handleCGIwrite(*connection, cgiIt->second);
 	} else if (revents & POLLIN) {
-		std::cout << "[DEBUG] CGI POLLIN event on FD " << fd << std::endl;
+		logDebug("CGI POLLIN event on FD " + toString(fd));
 		handleCGIread(*connection, cgiIt->second, sessionManager);
 	}
 
@@ -70,15 +68,15 @@ void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, SessionManage
 
 	if (cgiFd == outFd) {
 
-		std::cerr << "[WARNING] CGI OutFd error" << std::endl;
+		logWarning("CGI OutFd error");
 
 		if(cgi.isFinished()){
-			std::cout << "[DEBUG] POLLERR on completed CGI, data is valid" << std::endl;
+			logDebug("POLLERR on completed CGI, data is valid");
 			updateSessionFromCGI(cgi.getResponseData(), sessionManager, connection.getSessionId());
 			connection.setStatusCode(200);
 			connection.prepareResponse(cgi.getResponseData(), sessionManager);
 		} else {
-			std::cout << "[DEBUG] POLLERR on incompleted CGI, data is currupted" << std::endl;
+			logDebug("POLLERR on incompleted CGI, data is currupted");
 			connection.setStatusCode(500);
 			connection.prepareResponse();
 		}
@@ -93,7 +91,7 @@ void CgiExecutor::handleCGIerror(Connection& connection, Cgi& cgi, SessionManage
 
 	} else if (cgiFd == inFd) {
 
-		std::cerr << "[WARNING] CGI inFd error" << std::endl;
+		logWarning("CGI inFd error");
 
 		if(cgi.getRequest().getBody().size() != cgi.getBytesWrittenToCgi()) {
 
@@ -142,17 +140,15 @@ void CgiExecutor::handleCGIread(Connection& connection, Cgi& cgi, SessionManager
 
 		connection.setStatusCode(200);
 		connection.prepareResponse(cgi.getResponseData(), sessionManager);
-		std::cout << "[DEBUG] Switched client FD " << connectionFd
-				  << " to POLLOUT mode after CGI complete" << std::endl;
+		logDebug("Switched client FD " + toString(connectionFd) + " to POLLOUT mode after CGI complete");
 	}
 	else if(status == CGI_ERROR) {
 		connection.setStatusCode(500);
 		connection.prepareResponse();
-		std::cout << "[DEBUG] Switched client FD " << connectionFd
-				  << " to POLLOUT mode after CGI ERROR" << std::endl;
+		logDebug("Switched client FD " + toString(connectionFd) + " to POLLOUT mode after CGI ERROR");
 	}
 
-	std::cout << "[DEBUG] Erasing CGI FD " << outFd << " from _cgi" << std::endl;
+	logDebug("Erasing CGI FD " + toString(outFd) + " from _cgi");
 
 	if (inFd >= 0) _cgi.erase(inFd);
 	if (outFd >= 0) _cgi.erase(outFd);
@@ -176,9 +172,9 @@ void CgiExecutor::handleCGItimeout(Cgi& cgi, ConnectionPoolManager& _connectionP
 	if(connection){
 		connection->setStatusCode(504);
 		connection->prepareResponse();
-		std::cout << "[CGI TIMEOUT] Response 504 sent to Connection FD = " << connectionFd << std::endl;
+		logWarning("CGI TIMEOUT: Response 504 sent to Connection FD = " + toString(connectionFd));
 	}
-	std::cout << "[CGI TIMEOUT] CGI terminated Connection FD = " << connectionFd << std::endl;
+	logWarning("CGI TIMEOUT: CGI terminated Connection FD = " + toString(connectionFd));
 	terminateCGI(cgi);
 
 }
@@ -266,7 +262,7 @@ void CgiExecutor::updateSessionFromCGI(const std::string& cgiOutput, SessionMana
 
                 if (!key.empty()) {
                     sessionManager.set(sessionId, key, value);
-                    std::cout << "[DEBUG] Session updated from CGI: " << key << "=" << value << std::endl;
+                    logDebug("Session updated from CGI: " + key + "=" + value);
                 }
             }
         }

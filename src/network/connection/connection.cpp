@@ -2,6 +2,7 @@
 #include "post_handler.hpp"
 #include "response.hpp"
 #include "session_manager.hpp"
+#include "logger.hpp"
 
 Connection::Connection()
 	: _fd(-1),
@@ -161,13 +162,13 @@ bool Connection::readHeaders() {
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	logDebug("recv() returned " + toString(bytes) + " bytes from FD " + toString(_fd));
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected before headers received." << std::endl;
+			logDebug("Client FD " + toString(_fd) + " disconnected before headers received");
 		} else { // bytes < 0
-			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			logDebug("Error on FD " + toString(_fd) + ": " + std::string(strerror(errno)));
 		}
 		_shouldClose = true;
 		return false;
@@ -180,7 +181,7 @@ bool Connection::readHeaders() {
 
 		// Check total header size limit
 		if (_requestBuffer.size() > MAX_HEADER_SIZE) {
-			std::cout << "[ERROR] Headers too large (>" << MAX_HEADER_SIZE << " bytes)" << std::endl;
+			logError("Headers too large (>" + toString(MAX_HEADER_SIZE) + " bytes)");
 			setStatusCode(400);
 			prepareResponse();
 			return true;
@@ -188,8 +189,7 @@ bool Connection::readHeaders() {
 
 		// Check if headers complete
 		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
-		std::cout << "[DEBUG] Looking for \\r\\n\\r\\n in buffer. Found at: "
-				  << headerEnd << " Buffer size: " << _requestBuffer.size() << std::endl;
+		logDebug("Looking for \\r\\n\\r\\n in buffer. Found at: " + toString(headerEnd) + " Buffer size: " + toString(_requestBuffer.size()));
 
 		if(headerEnd == std::string::npos) {
 			return false;  // Keep receiving headers
@@ -214,16 +214,16 @@ bool Connection::readBody() {
 	char buffer[BUFFER_SIZE_32];
 	std::memset(buffer, 0, BUFFER_SIZE_32);
 	int bytes = recv(_fd, buffer, BUFFER_SIZE_32 - 1, 0);
-	std::cout << "[DEBUG] recv() returned " << bytes << " bytes from FD " << _fd << std::endl;
+	logDebug("recv() returned " + toString(bytes) + " bytes from FD " + toString(_fd));
 
 	if (bytes <= 0) {
 		if (bytes == 0) {
-			std::cout << "[DEBUG] Client FD " << _fd << " disconnected during body read - incomplete body" << std::endl;
+			logDebug("Client FD " + toString(_fd) + " disconnected during body read - incomplete body");
 			setStatusCode(400);
 			prepareResponse();
 			return false;
 		} else { // bytes < 0
-			std::cout << "[DEBUG] Error on FD " << _fd << ": " << strerror(errno) << std::endl;
+			logDebug("Error on FD " + toString(_fd) + ": " + std::string(strerror(errno)));
 			_shouldClose = true;
 			return false;
 		}
@@ -253,8 +253,7 @@ bool Connection::readBody() {
 		// Read fixed-size body (both HTTP/1.0 and HTTP/1.1)
 		_requestBuffer.append(buffer, bytes);
 		bodyReceived = _requestBuffer.length() - bodyStart;
-		std::cout << "[DEBUG] Content-Length: " << contentLength << ", Body received: "
-				  << bodyReceived << ", Total data: " << _requestBuffer.length() << std::endl;
+		logDebug("Content-Length: " + toString(contentLength) + ", Body received: " + toString(bodyReceived) + ", Total data: " + toString(_requestBuffer.length()));
 
 		// Check if full body received
 		if(bodyReceived >= contentLength) {
@@ -324,7 +323,7 @@ bool Connection::readFromDisc() {
 		_inputFileStream->open(_readFilePath.c_str(), std::ios::binary);
 
 		if (!_inputFileStream->is_open()) {
-			std::cout << "[ERROR] Failed to open file for reading: " << _readFilePath << std::endl;
+			logError("Failed to open file for reading: " + _readFilePath);
 			delete _inputFileStream;
 			_inputFileStream = NULL;
 			setStatusCode(errno == ENOENT ? 404 : 403);
@@ -342,13 +341,12 @@ bool Connection::readFromDisc() {
 		_bodyContent.append(buffer, bytesRead);
 		_bytesRead += bytesRead;
 		updateClientActivity();
-		std::cout << "[DEBUG] Read " << bytesRead << " bytes from disk ("
-				  << _bytesRead << " total)" << std::endl;
+		logDebug("Read " + toString(bytesRead) + " bytes from disk (" + toString(_bytesRead) + " total)");
 	}
 
 	// Check for errors (not EOF, which is normal completion)
 	if (_inputFileStream->fail() && !_inputFileStream->eof()) {
-		std::cout << "[ERROR] File read failed: " << _readFilePath << std::endl;
+		logError("File read failed: " + _readFilePath);
 		_inputFileStream->close();
 		delete _inputFileStream;
 		_inputFileStream = NULL;
@@ -363,7 +361,7 @@ bool Connection::readFromDisc() {
 		delete _inputFileStream;
 		_inputFileStream = NULL;
 
-		std::cout << "[DEBUG] File read complete: " << _bytesRead << " bytes total" << std::endl;
+		logDebug("File read complete: " + toString(_bytesRead) + " bytes total");
 		setStatusCode(200);
 		prepareResponse();
 		return true; // Transition to SENDING_RESPONSE
@@ -404,7 +402,7 @@ bool Connection::processWrite(const std::string& data, const std::string& filePa
 	_fileStream->write(writeData, bytesToWrite);
 
 	if (_fileStream->fail()) {
-		std::cout << "[ERROR] File write failed" << std::endl;
+		logError("File write failed");
 		_fileStream->close();
 		delete _fileStream;
 		_fileStream = NULL;
@@ -415,7 +413,7 @@ bool Connection::processWrite(const std::string& data, const std::string& filePa
 
 	_bytesWritten += bytesToWrite;
 	updateClientActivity();
-	std::cout << "[DEBUG] Wrote " << bytesToWrite << " bytes (" << _bytesWritten << "/" << data.length() << ")" << std::endl;
+	logDebug("Wrote " + toString(bytesToWrite) + " bytes (" + toString(_bytesWritten) + "/" + toString(data.length()) + ")");
 	return true;
 }
 std::string Connection::processChunkedData(const char* data, int dataLen) {
@@ -554,7 +552,7 @@ void Connection::setupErrorPage(HttpResponse& response) {
 
 bool Connection::sendResponse() {
 
-	std::cout << "[DEBUG] POLLOUT event on client FD " << _fd << " (sending response)" << std::endl;
+	logDebug("POLLOUT event on client FD " + toString(_fd) + " (sending response)");
 
 	// Send remaining response data
 	const char* data = _responseData.c_str() + _bytesSent;
@@ -562,7 +560,7 @@ bool Connection::sendResponse() {
 	size_t bytesToWrite = std::min(remainingLean, static_cast<size_t>(BUFFER_SIZE_32));
 
 	int bytes_sent = send(_fd, data, bytesToWrite, 0);
-	std::cout << "[DEBUG] send() returned " << bytes_sent << " bytes to FD " << _fd << std::endl;
+	logDebug("send() returned " + toString(bytes_sent) + " bytes to FD " + toString(_fd));
 
 	if (bytes_sent > 0) {
 
@@ -570,28 +568,28 @@ bool Connection::sendResponse() {
 
 		updateClientActivity();
 
-		std::cout << "[DEBUG] Total bytes setn: " << _bytesSent << "    ResponseData length: " << _responseData.length() << std::endl;
+		logDebug("Total bytes sent: " + toString(_bytesSent) + "    ResponseData length: " + toString(_responseData.length()));
 
 		// Check if entire response was sent
 		if (_bytesSent == _responseData.length()) {
 
 			if(_shouldClose) {
-				std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Closing connection." << std::endl;
+				logDebug("Complete response sent to FD " + toString(_fd) + ". Closing connection");
 				return true;
 			}
 
-			std::cout << "[DEBUG] Complete response sent to FD " << _fd << ". Resetting for next request (keep-alive)." << std::endl;
+			logDebug("Complete response sent to FD " + toString(_fd) + ". Resetting for next request (keep-alive)");
 			resetForNextRequest(); // Reset client state for next request
 
 			return false;
 
 		} else {
-			std::cout << "[DEBUG] Partial send: " << _bytesSent << "/" << _responseData.length() << " bytes sent" << std::endl;
+			logDebug("Partial send: " + toString(_bytesSent) + "/" + toString(_responseData.length()) + " bytes sent");
 			return false;
 		}
 	} else {
 		// Send failed, close connection
-		std::cout << "[DEBUG] Send failed for FD " << _fd << ". Closing connection." << std::endl;
+		logWarning("Send failed for FD " + toString(_fd) + ". Closing connection");
 		return false;
 	}
 }

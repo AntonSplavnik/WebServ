@@ -18,11 +18,12 @@
 #include "post_handler.hpp"
 #include "request.hpp"
 #include "connection.hpp"
+#include "logger.hpp"
 
 
 PostHandler::PostHandler(const std::string uploadPath)
     :_uploadPath(uploadPath){
-    std::cout << "[DEBUG] PostHandler created with uploadPath: '" << _uploadPath << "'" << std::endl;
+    logDebug("PostHandler created with uploadPath: '" + _uploadPath + "'");
 }
 
 bool PostHandler::handleFile(Connection& connection, const std::string& contentType) {
@@ -31,7 +32,7 @@ bool PostHandler::handleFile(Connection& connection, const std::string& contentT
     std::string fileName = generateFilename(extension);
     std::string filePath = _uploadPath + fileName;
     connection.setFilePath(_uploadPath, fileName);
-    std::cout << "[DEBUG] Saving file to: '" << filePath << "'" << std::endl;
+    logDebug("Saving file to: '" + filePath + "'");
 
     return true;
 }
@@ -160,8 +161,7 @@ int PostHandler::handleMultipart(Connection& connection) {
 std::vector<MultipartPart> PostHandler::parseMultipartData(const std::string& body, const std::string& boundary) {
 	std::vector<MultipartPart> parts;
 
-	std::cout << "[DEBUG] parseMultipartData: body size=" << body.size()
-	          << ", boundary='" << boundary << "'" << std::endl;
+	logDebug("parseMultipartData: body size=" + toString(body.size()) + ", boundary='" + boundary + "'");
 	// Le boundary final a "--" à la fin
 	std::string endBoundary = boundary + "--";
 
@@ -286,15 +286,13 @@ std::string PostHandler::sanitizeFilename(const std::string& filename) {
 
     // SECURITY: Detect path traversal attempt
     if (basename != filename) {
-        std::cout << "[SECURITY WARNING] Path traversal attempt detected: "
-                << filename << std::endl;
+        logWarning("Path traversal attempt detected: " + filename);
         return "";  // Signal attack attempt
     }
 
     // SECURITY: Detect directory traversal patterns
     if (basename.find("..") != std::string::npos) {
-        std::cout << "[SECURITY WARNING] Directory traversal pattern detected: "
-                << filename << std::endl;
+        logWarning("Directory traversal pattern detected: " + filename);
         return "";  // Signal attack attempt
     }
 
@@ -303,8 +301,7 @@ std::string PostHandler::sanitizeFilename(const std::string& filename) {
     for (size_t i = 0; i < basename.size(); i++) {
         unsigned char c = static_cast<unsigned char>(basename[i]);
         if (c == 0 || c < 32) {
-            std::cout << "[SECURITY WARNING] Control character detected in filename"
-                    << std::endl;
+            logWarning("Control character detected in filename");
             return "";  // Signal attack attempt
         }
         safe += basename[i];

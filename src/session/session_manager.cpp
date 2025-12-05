@@ -1,4 +1,5 @@
 #include "session_manager.hpp"
+#include "logger.hpp"
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
@@ -44,7 +45,7 @@ std::string SessionManager::createSession() {
 
 	_sessions[sessionId] = newSession;
 
-	std::cout << "[SESSION] Created session: " << sessionId << std::endl;
+	logDebug("Created session: " + sessionId);
 	return sessionId;
 }
 
@@ -52,13 +53,13 @@ std::string SessionManager::getOrCreateSession(const std::string& sessionId) {
 	if (sessionId.empty() || !exists(sessionId)) {
 		// No session or invalid session - create new one
 		std::string newSessionId = createSession();
-		std::cout << "[SESSION] No valid session found, created: " << newSessionId << std::endl;
+		logDebug("No valid session found, created: " + newSessionId);
 		return newSessionId;
 	}
 
 	// Valid session - touch it (sliding window timeout)
 	touch(sessionId);
-	std::cout << "[SESSION] Valid session touched: " << sessionId << std::endl;
+	logDebug("Valid session touched: " + sessionId);
 	return sessionId;
 }
 
@@ -70,7 +71,7 @@ void SessionManager::destroy(const std::string& sessionId) {
 	std::map<std::string, SessionData>::iterator it = _sessions.find(sessionId);
 	if (it != _sessions.end()) {
 		_sessions.erase(it);
-		std::cout << "[SESSION] Destroyed session: " << sessionId << std::endl;
+		logDebug("Destroyed session: " + sessionId);
 	}
 }
 
@@ -80,7 +81,7 @@ void SessionManager::cleanupExpired() {
 
 	while (it != _sessions.end()) {
 		if (now - it->second.lastAccess > _sessionTimeout) {
-			std::cout << "[SESSION] Expired session: " << it->first << std::endl;
+			logDebug("Expired session: " + it->first);
 			_sessions.erase(it++);
 		} else {
 			++it;
@@ -90,14 +91,14 @@ void SessionManager::cleanupExpired() {
 
 void SessionManager::set(const std::string& sessionId, const std::string& key, const std::string& value) {
 	if (!exists(sessionId)) {
-		std::cerr << "[SESSION] Warning: Setting data on non-existent session: " << sessionId << std::endl;
+		logWarning("Setting data on non-existent session: " + sessionId);
 		return;
 	}
 
 	_sessions[sessionId].data[key] = value;
 	_sessions[sessionId].lastAccess = time(NULL);
 
-	std::cout << "[SESSION] Set " << sessionId << "[" << key << "] = " << value << std::endl;
+	logDebug("Set " + sessionId + "[" + key + "] = " + value);
 }
 
 std::string SessionManager::get(const std::string& sessionId, const std::string& key) {
@@ -129,7 +130,7 @@ void SessionManager::remove(const std::string& sessionId, const std::string& key
 	std::map<std::string, std::string>::iterator it = _sessions[sessionId].data.find(key);
 	if (it != _sessions[sessionId].data.end()) {
 		_sessions[sessionId].data.erase(it);
-		std::cout << "[SESSION] Removed " << sessionId << "[" << key << "]" << std::endl;
+		logDebug("Removed " + sessionId + "[" + key + "]");
 	}
 }
 

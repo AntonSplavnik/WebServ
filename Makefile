@@ -22,7 +22,7 @@ INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connectio
 			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
 			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
-			  -Isrc/request_router -Isrc/session
+			  -Isrc/request_router -Isrc/session -Isrc/logging
 
 # Directories
 SRC_DIR		= src
@@ -68,6 +68,7 @@ SRC_FILES	= main.cpp \
 			  $(HTTP_REQ_DIR)/request.cpp \
 			  $(HTTP_RES_DIR)/response.cpp \
 			  $(EVENT_LOOP_DIR)/event_loop.cpp \
+			  $(LOGGING_DIR)/logger.cpp \
 			  $(CONFIG_DIR)/config.cpp \
 			  $(CONFIG_PARSER_DIR)/directives_parsers.cpp \
 			  $(CONFIG_HELPERS_DIR)/helpers.cpp \
@@ -90,6 +91,7 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(HTTP_REQ_DIR)/request.hpp \
 			  $(HTTP_RES_DIR)/response.hpp \
 			  $(EVENT_LOOP_DIR)/event_loop.hpp \
+			  $(LOGGING_DIR)/logger.hpp \
 			  $(CONFIG_DIR)/config.hpp \
 			  $(CONFIG_HELPERS_DIR)/helpers.hpp \
 			  $(CONFIG_EXCEPT_DIR)/config_exceptions.hpp \
