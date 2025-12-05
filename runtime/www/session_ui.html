@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServ Session Tester</title>
+    <link rel="stylesheet" href="/css/session_styles.css">
+</head>
+<body>
+
+    <div id="theme-animation-container">
+        <div class="sun"></div>
+        <div class="moon"></div>
+        <div class="stars"></div>
+    </div>
+
+    <div id="app-container">
+        <header>
+            <h1>WebServ Session Tester</h1>
+            <div class="theme-switcher">
+                <span>Dark Mode</span>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle-checkbox">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </header>
+
+        <main>
+            <section id="session-status" class="card">
+                <h2>Current Session</h2>
+                <p><strong>User:</strong> <span id="user-display">Loading...</span></p>
+                <div id="session-data-display">
+                    <p>Loading session data...</p>
+                </div>
+            </section>
+
+            <section id="login-section" class="card">
+                <h2>Login / Logout</h2>
+                <form id="login-form">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter username" required>
+                    <button type="submit">Login</button>
+                </form>
+                <button id="logout-button" style="display: none;">Logout</button>
+            </section>
+
+            <section id="custom-var-section" class="card">
+                <h2>Set a Custom Session Variable</h2>
+                <form id="custom-var-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="custom-key">Key</label>
+                            <input type="text" id="custom-key" name="key" placeholder="e.g., favorite_color" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custom-value">Value</label>
+                            <input type="text" id="custom-value" name="value" placeholder="e.g., blue" required>
+                        </div>
+                    </div>
+                    <button type="submit">Set Custom Variable</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script src="/js/session_app.js"></script>
+</body>
+</html>
