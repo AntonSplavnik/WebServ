@@ -55,7 +55,7 @@ class RequestRouter {
 		std::vector<ConfigData>&	_configs;
 
 		ConfigData& findServerConfig(const HttpRequest& request, int serverPort);	// Virtual hosting FindServerConfigByPort + MatchServerByHost
-		bool validateBodySize(int contentLength, const LocationConfig*& location);
+		bool validateBodySize(unsigned long contentLength, const LocationConfig*& location);
 		bool validateMethod(const HttpRequest& request, const LocationConfig*& location);
 		std::string mapPath(const std::string& requestPath, const LocationConfig*& matchedLocation);
 		bool validatePathSecurity(const std::string& mappedPath, const std::string& allowedRoot);

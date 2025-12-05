@@ -179,17 +179,17 @@ bool Connection::readHeaders() {
 
 		_requestBuffer.append(buffer, bytes);
 
-		// Check total header size limit
-		if (_requestBuffer.size() > MAX_HEADER_SIZE) {
+		// Check if headers complete and validate size
+		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
+		size_t headerSize = (headerEnd == std::string::npos) ? _requestBuffer.size() : headerEnd;
+		logDebug("Looking for \\r\\n\\r\\n in buffer. Found at: " + toString(headerEnd) + " Buffer size: " + toString(_requestBuffer.size()));
+
+		if (headerSize > MAX_HEADER_SIZE) {
 			logError("Headers too large (>" + toString(MAX_HEADER_SIZE) + " bytes)");
 			setStatusCode(400);
 			prepareResponse();
 			return true;
 		}
-
-		// Check if headers complete
-		size_t headerEnd = _requestBuffer.find("\r\n\r\n");
-		logDebug("Looking for \\r\\n\\r\\n in buffer. Found at: " + toString(headerEnd) + " Buffer size: " + toString(_requestBuffer.size()));
 
 		if(headerEnd == std::string::npos) {
 			return false;  // Keep receiving headers

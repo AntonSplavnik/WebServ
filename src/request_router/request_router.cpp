@@ -139,7 +139,7 @@ bool RequestRouter::validateMethod(const HttpRequest& request, const LocationCon
 
 	return true;
 }
-bool RequestRouter::validateBodySize(int contentLength, const LocationConfig*& location) {
+bool RequestRouter::validateBodySize(unsigned long contentLength, const LocationConfig*& location) {
 
 
 	if (contentLength > location->client_max_body_size) {

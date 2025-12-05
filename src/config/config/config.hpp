@@ -61,7 +61,7 @@ struct LocationConfig
 	// HTTP behavior
 	std::vector<std::string> allow_methods;
 	std::map<int, std::string> error_pages;
-	int client_max_body_size;
+	unsigned long client_max_body_size;
 
 	// CGI configuration
 	std::vector<std::string> cgi_path; // cgi_interpreters
@@ -106,7 +106,7 @@ struct ConfigData
 	// HTTP behavior
 	std::vector<std::string> allow_methods;
 	std::map<int, std::string> error_pages;
-	int client_max_body_size;
+	unsigned long client_max_body_size;
 
 	// CGI configuration
 	std::vector<std::string> cgi_path; // cgi_interpreters
