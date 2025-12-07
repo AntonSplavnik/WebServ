@@ -1,0 +1,102 @@
+#include "config_utils.hpp"
+#include <sys/stat.h>
+#include <unistd.h>
+#include <climits>
+#include <cstdlib>
+#include <cctype>
+
+// Helper to normalize paths (resolve ., .., symlinks)
+std::string normalizePath(const std::string& path) {
+	bool hadTrailingSlash = (!path.empty() && path[path.length() - 1] == '/');
+	char resolved[PATH_MAX];
+	if (realpath(path.c_str(), resolved)) {
+		std::string result(resolved);
+		// Preserve trailing slash for directories (but not for root "/")
+		if (hadTrailingSlash && result != "/") {
+			result += '/';
+		}
+		return result;
+	}
+	return path; // fallback if path does not exist
+}
+
+// Helper to validate if a path is a regular file and has the specified access mode
+bool isValidFile(const std::string& path, int mode) {
+	struct stat sb;
+	if (stat(path.c_str(), &sb) != 0) return false;
+	return S_ISREG(sb.st_mode) && (access(path.c_str(), mode) == 0);
+}
+
+// Helper to validate if a path is a directory and has the specified access mode
+bool isValidPath(const std::string& path, int mode) {
+	struct stat sb;
+	if (stat(path.c_str(), &sb) != 0) return false;
+	if (!S_ISDIR(sb.st_mode)) return false;
+	return (access(path.c_str(), mode) == 0);
+}
+
+// Helper to validate HTTP methods
+bool isValidHttpMethod(const std::string& method) {
+	for (size_t i = 0; i < HTTP_METHODS_COUNT; ++i) {
+		if (method == HTTP_METHODS[i])
+			return true;
+	}
+	return false;
+}
+
+// Helper to validate HTTP status codes
+bool isValidHttpStatusCode(int code) {
+	return code >= 100 && code <= 599;
+}
+
+// Helper to validate IPv4 addresses
+bool isValidIPv4(const std::string& ip) {
+	size_t start = 0, end = 0, count = 0;
+	while (end != std::string::npos) {
+		end = ip.find('.', start);
+		std::string part = ip.substr(start, (end == std::string::npos) ? std::string::npos : end - start);
+		if (part.empty() || part.size() > 3) return false;
+		for (size_t i = 0; i < part.size(); ++i)
+			if (!std::isdigit(part[i])) return false;
+		int num = std::atoi(part.c_str());
+		if (num < 0 || num > 255) return false;
+		start = end + 1;
+		++count;
+	}
+	return count == 4;
+}
+
+// Helper to validate host (simple check for IP or hostname)
+bool isValidHost(const std::string& host) {
+	if (isValidIPv4(host)) return true;
+	if (host.empty()) return false;
+	for (size_t i = 0; i < host.size(); ++i) {
+		char c = host[i];
+		if (!(std::isalnum(c) || c == '-' || c == '.')) return false;
+	}
+	// Reject all-numeric hostnames
+	bool hasAlpha = false;
+	for (size_t i = 0; i < host.size(); ++i) {
+		if (std::isalpha(host[i])) {
+			hasAlpha = true;
+			break;
+		}
+	}
+	if (!hasAlpha) return false;
+	return true;
+}
+
+// Helper to validate CGI extensions
+bool isValidCgiExt(const std::string& ext) {
+	for (size_t i = 0; i < VALID_CGI_EXTENSIONS_COUNT; ++i) {
+		if (ext == VALID_CGI_EXTENSIONS[i])
+			return true;
+	}
+	return false;
+}
+
+// Helper to validate autoindex values
+bool isValidAutoindexValue(const std::string& value) {
+	return (value == "on" || value == "off" || value == "true" ||
+	        value == "false" || value == "1" || value == "0");
+}

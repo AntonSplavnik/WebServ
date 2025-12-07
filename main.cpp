@@ -11,8 +11,8 @@
 /* ************************************************************************** */
 
 #include "src/event_loop/event_loop.hpp"
-#include "src/config/config/config.hpp"
-#include "src/config/config_exceptions/config_exceptions.hpp"
+#include "src/config/config.hpp"
+#include "src/config/exceptions/config_exceptions.hpp"
 #include "src/logging/logger.hpp"
 #include <iostream>
 #include <string>
@@ -61,8 +61,8 @@ int main(int argc, char *argv[]){
 
 		logInfo("Starting WebServ with config: " + configPath);
 		Config config;
-		// parseConfig expects char*, need to cast away const (not modifying string in practice)
-		config.parseConfig(const_cast<char*>(configPath.c_str()));
+		// New parser uses absolute paths directly
+		config.parseConfig(configPath.c_str());
 		logInfo("Config file loaded successfully");
 
 		EventLoop controller(config);

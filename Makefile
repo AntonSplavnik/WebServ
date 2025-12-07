@@ -19,8 +19,9 @@ CXXFLAGS	= -Wall -Wextra -Werror -std=c++98 -pedantic
 DEBUG_FLAGS	= -g -fsanitize=address -fsanitize=undefined
 INCLUDES	= -Isrc/network/socket -Isrc/network/connection -Isrc/network/connection_pool \
 			  -Isrc/network/listening_socket_manager -Isrc/http/http_request -Isrc/http/http_response \
-			  -Isrc/event_loop -Isrc/config/config -Isrc/config/config_parser \
-			  -Isrc/config/config_helpers -Isrc/config/config_exceptions \
+			  -Isrc/event_loop -Isrc/config -Isrc/config/lexer -Isrc/config/parser \
+			  -Isrc/config/validator -Isrc/config/builder -Isrc/config/utils \
+			  -Isrc/config/exceptions \
 			  -Isrc/cgi/cgi -Isrc/cgi/cgi_executor -Isrc/request_handler \
 			  -Isrc/request_router -Isrc/session -Isrc/logging
 
@@ -42,11 +43,14 @@ HTTP_RES_DIR	= $(SRC_DIR)/http/http_response
 EVENT_LOOP_DIR	= $(SRC_DIR)/event_loop
 LOGGING_DIR	= $(SRC_DIR)/logging
 
-# Config
-CONFIG_DIR	= $(SRC_DIR)/config/config
-CONFIG_PARSER_DIR = $(SRC_DIR)/config/config_parser
-CONFIG_HELPERS_DIR = $(SRC_DIR)/config/config_helpers
-CONFIG_EXCEPT_DIR = $(SRC_DIR)/config/config_exceptions
+# Config (nginx-style parser)
+CONFIG_DIR			= $(SRC_DIR)/config
+LEXER_DIR			= $(CONFIG_DIR)/lexer
+PARSER_DIR			= $(CONFIG_DIR)/parser
+VALIDATOR_DIR		= $(CONFIG_DIR)/validator
+BUILDER_DIR			= $(CONFIG_DIR)/builder
+CONFIG_UTILS_DIR	= $(CONFIG_DIR)/utils
+CONFIG_EXCEPT_DIR	= $(CONFIG_DIR)/exceptions
 
 # CGI
 CGI_DIR		= $(SRC_DIR)/cgi/cgi
@@ -69,9 +73,16 @@ SRC_FILES	= main.cpp \
 			  $(HTTP_RES_DIR)/response.cpp \
 			  $(EVENT_LOOP_DIR)/event_loop.cpp \
 			  $(LOGGING_DIR)/logger.cpp \
+			  $(LEXER_DIR)/token.cpp \
+			  $(LEXER_DIR)/lexer.cpp \
+			  $(PARSER_DIR)/directive.cpp \
+			  $(PARSER_DIR)/parser.cpp \
+			  $(VALIDATOR_DIR)/directive_rules.cpp \
+			  $(VALIDATOR_DIR)/validator.cpp \
+			  $(BUILDER_DIR)/config_builder.cpp \
+			  $(CONFIG_DIR)/config_structures.cpp \
 			  $(CONFIG_DIR)/config.cpp \
-			  $(CONFIG_PARSER_DIR)/directives_parsers.cpp \
-			  $(CONFIG_HELPERS_DIR)/helpers.cpp \
+			  $(CONFIG_UTILS_DIR)/config_utils.cpp \
 			  $(CGI_DIR)/cgi.cpp \
 			  $(CGI_DIR)/cgi_helpers.cpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.cpp \
@@ -93,7 +104,12 @@ HEADERS		= $(SOCKET_DIR)/socket.hpp \
 			  $(EVENT_LOOP_DIR)/event_loop.hpp \
 			  $(LOGGING_DIR)/logger.hpp \
 			  $(CONFIG_DIR)/config.hpp \
-			  $(CONFIG_HELPERS_DIR)/helpers.hpp \
+			  $(CONFIG_DIR)/config_structures.hpp \
+			  $(LEXER_DIR)/lexer.hpp $(LEXER_DIR)/token.hpp \
+			  $(PARSER_DIR)/parser.hpp $(PARSER_DIR)/directive.hpp \
+			  $(VALIDATOR_DIR)/validator.hpp $(VALIDATOR_DIR)/directive_rules.hpp \
+			  $(BUILDER_DIR)/config_builder.hpp \
+			  $(CONFIG_UTILS_DIR)/config_utils.hpp \
 			  $(CONFIG_EXCEPT_DIR)/config_exceptions.hpp \
 			  $(CGI_DIR)/cgi.hpp \
 			  $(CGI_EXEC_DIR)/cgi_executor.hpp \
